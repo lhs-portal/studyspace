@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L. Hithadhoo School - Studyspace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    
+    /* Dynamic shadows for light/dark modes */
+    .card-shadow { 
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); 
+    }
+    .dark .card-shadow { 
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5); 
+    }
+    .card-shadow:hover { 
+      box-shadow: 0 10px 25px -3px rgba(16, 185, 129, 0.18); 
+    }
+
+    /* Independent Popup: Fly in from below -> pause -> fly up & away */
+    @keyframes flyInAndAway {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, 25px) scale(0.9);
+      }
+      18% {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1.02);
+      }
+      25% {
+        transform: translate(-50%, 0) scale(1);
+      }
+      75% {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -35px) scale(0.95);
+      }
+    }
+    .animate-fly-popup {
+      animation: flyInAndAway 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes floatInUp {
+      0% {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-float-in {
+      animation: floatInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen antialiased flex flex-col transition-colors duration-200">
+
+  <!-- TOP NAVBAR -->
+  <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <!-- SCHOOL LOGO -->
+        <img 
+          src="logo.png" 
+          alt="L. Hithadhoo School Logo" 
+          class="h-10 w-10 object-contain rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-0.5"
+          onerror="this.onerror=null; this.outerHTML='<div class=\'h-10 w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm\'>LHS</div>';"
+        />
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-slate-900 dark:text-white text-lg sm:text-xl tracking-tight">L. Hithadhoo School</span>
+          </div>
+          <p class="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hidden sm:block">Studyspace</p>
+        </div>
+      </div>
+
+      <div id="navUserSection" class="flex items-center gap-3">
+        <div id="userProfileTag" class="flex items-center gap-2">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- LOGIN MODAL -->
+  <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div class="bg-gradient-to-r from-emerald-700 to-teal-800 p-6 text-white text-center border-b border-emerald-600/30">
+        <!-- SCHOOL LOGO ON LOGIN MODAL -->
+        <div class="inline-flex h-14 w-14 rounded-2xl bg-white p-2 items-center justify-center mb-3 shadow-lg">
+          <img 
+            src="logo.png" 
+            alt="L. Hithadhoo School Logo" 
+            class="h-full w-full object-contain"
+            onerror="this.onerror=null; this.outerHTML='<span class=\'text-2xl\'>🎓</span>';"
+          />
+        </div>
+        <h2 class="text-2xl font-extrabold tracking-tight text-white">L. Hithadhoo School</h2>
+        <p class="text-xs font-semibold text-emerald-200 mt-1">Studyspace</p>
+      </div>
+
+      <form id="loginForm" class="p-6 space-y-4" onsubmit="handleLoginSubmit(event)">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">School Email Address</label>
+          <input 
+            type="email" 
+            id="emailInput" 
+            required 
+            placeholder="name@lhithadhooschool.edu.mv"
+            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Password</label>
+          <input 
+            type="password" 
+            id="passwordInput" 
+            required 
+            placeholder="••••••••"
+            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+          />
+        </div>
+
+        <button 
+          type="submit" 
+          id="loginBtn"
+          class="w-full py-2.5 rounded-xl font-bold text-xs text-slate-950 bg-emerald-400 hover:bg-emerald-300 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+        >
+          Authenticate &amp; Enter Portal &rarr;
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 space-y-8">
+
+    <!-- WELCOME BOARD -->
+    <div id="welcomeBoard" class="bg-gradient-to-r from-emerald-100 via-white to-emerald-50 dark:from-emerald-950/80 dark:via-slate-900 dark:to-slate-900 p-6 rounded-2xl border border-emerald-300 dark:border-emerald-800/40 card-shadow flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h2 id="welcomeTitle" class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Welcome!</h2>
+        <p id="motivationalQuote" class="text-xs font-medium text-emerald-700 dark:text-emerald-400/90 mt-1 italic">"Success is the sum of small efforts, repeated day in and day out."</p>
+      </div>
+      <div class="px-3 py-1.5 rounded-xl bg-emerald-200/60 dark:bg-emerald-900/40 border border-emerald-400 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold w-max">
+        🚀 Keep practicing &amp; reach your goals!
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section id="dashboardSection" class="space-y-5">
+      <!-- School Banner -->
+      <div id="teacherBanner" class="hidden p-4 rounded-2xl bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-600/50 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="h-9 w-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-sm">SMT</span>
+          <div>
+            <div class="text-xs font-bold text-amber-800 dark:text-amber-300">School View Active</div>
+            <div class="text-[11px] text-amber-700 dark:text-amber-200/80">Displaying aggregate student attempts and performance records. Click any student row to view detailed analytics.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Student Stats -->
+      <div id="studentStatsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow">
+          <div class="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">BEST SCORE</div>
+          <div id="statAvgScore" class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">0%</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow">
+          <div class="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">FIRST-TRY 100%</div>
+          <div id="statFirstTry" class="text-3xl font-extrabold text-slate-900 dark:text-white">0</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow">
+          <div class="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">TOTAL ATTEMPTS</div>
+          <div id="statAttempts" class="text-3xl font-extrabold text-slate-900 dark:text-white">0</div>
+        </div>
+      </div>
+
+      <!-- Teacher Table -->
+      <div id="teacherTableContainer" class="hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 card-shadow">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">Student Performance Overview</h3>
+          <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400"></span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400">
+                <th class="p-3">Student Name</th>
+                <th class="p-3">Total Attempts</th>
+                <th class="p-3">First-Try 100%</th>
+                <th class="p-3">Highest Score</th>
+                <th class="p-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="teacherTableBody">
+              <tr><td colspan="5" class="p-3 text-slate-500">Loading student records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUIZ SELECTOR -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white">Let's Practice!</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Select any syllabus unit to take a quiz</p>
+        </div>
+        <button onclick="refreshUnits()" class="px-3 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5">
+          Refresh
+        </button>
+      </div>
+
+      <div id="quizCardsGrid" class="space-y-8 w-full">
+        <div class="text-xs text-slate-500">Loading units...</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- STUDENT DETAILED ANALYTICS MODAL -->
+  <div id="analyticsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
+        <div>
+          <span class="px-2.5 py-0.5 text-[10px] font-bold rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/50">Student Analytics</span>
+          <h3 id="analyticsStudentName" class="text-base font-bold text-slate-900 dark:text-white mt-1">Student Progress Breakdown</h3>
+        </div>
+        <button onclick="closeAnalyticsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-4 flex-1">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-2">
+          <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div class="text-[10px] font-bold text-slate-500 uppercase">Best Score</div>
+            <div id="analyticsBestScore" class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">0%</div>
+          </div>
+          <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div class="text-[10px] font-bold text-slate-500 uppercase">Total Attempts</div>
+            <div id="analyticsTotalAttempts" class="text-xl font-extrabold text-slate-900 dark:text-white">0</div>
+          </div>
+          <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div class="text-[10px] font-bold text-slate-500 uppercase">First-Try 100%</div>
+            <div id="analyticsFirstTry100" class="text-xl font-extrabold text-amber-600 dark:text-amber-300">0</div>
+          </div>
+        </div>
+
+        <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Unit Attempt History</h4>
+        
+        <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400">
+                <th class="p-3">Quiz ID / Unit</th>
+                <th class="p-3 text-center">Attempts Made</th>
+                <th class="p-3 text-center">First-Try 100%</th>
+                <th class="p-3 text-right">Highest Score</th>
+              </tr>
+            </thead>
+            <tbody id="analyticsTableBody">
+              <tr><td colspan="4" class="p-3 text-slate-500">Loading student activity...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end">
+        <button onclick="closeAnalyticsModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer">
+          Close Window
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ MODAL -->
+  <div id="quizModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
+        <div>
+          <span id="quizSubjectTag" class="px-2.5 py-0.5 text-[10px] font-bold rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/50">Subject</span>
+          <h3 id="quizModalTitle" class="text-base font-bold text-slate-900 dark:text-white mt-1">Quiz</h3>
+        </div>
+        <!-- QUESTION TIMER DISPLAY (MCQ Only) -->
+        <div class="flex items-center gap-2">
+          <div id="timerContainer" class="hidden px-3 py-1 rounded-xl bg-amber-100 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-700/60 text-amber-800 dark:text-amber-300 text-xs font-extrabold flex items-center gap-1.5">
+            ⏱️ <span id="timerCountdown">45</span>s
+          </div>
+          <button onclick="closeQuizModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl font-bold">&times;</button>
+        </div>
+      </div>
+
+      <div id="quizQuestionBody" class="p-6 overflow-y-auto space-y-4 flex-1 relative">
+        <!-- Questions -->
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end items-center">
+        <button id="nextBtn" onclick="nextQuestion()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer">
+          Next Question &rarr;
+        </button>
+        <button id="submitBtn" onclick="submitQuiz()" class="hidden px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer">
+          Submit Final Quiz Score
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING BOTTOM RIGHT THEME TOGGLE BUTTON -->
+  <button 
+    onclick="toggleTheme()" 
+    id="themeToggleBtn"
+    aria-label="Toggle Theme"
+    class="fixed bottom-5 right-5 z-40 h-12 w-12 rounded-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-xl transition-all cursor-pointer flex items-center justify-center text-lg active:scale-95"
+  >
+    <span id="themeIcon">☀️</span>
+  </button>
+
+  <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-4 text-center text-xs text-slate-500 dark:text-slate-500">
+    L. Hithadhoo School - Studyspace &copy; 2026
+  </footer>
+
+  <script>
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxp8krlvEmXQGeNp96G2ybXV9KjecxpCu61LuT34lMil2z4fklRAB9ge_K23FcOh1qFbg/exec";
+
+    const PRAISE_MESSAGES = ["Good job! 🌟", "You're so smart! 💡", "You're great at this! ✨", "Let's get them all! 🚀", "Wonderful! 🎈", "Amazing! 🎉", "That's right! 🙌", "Historic W", "You're cooking", "Iconic!", "You're farming aura", "Main character energy", "Slay", "Based", "Wow, you're locked in"];
+    const ENCOURAGEMENT_MESSAGES = ["You can get the next one! 💪", "That's okay! 🌱", "Don't worry! 😊", "You can get this next time! 🎯", "Mistakes make perfect! ✨", "No worries", "Just a little setback", "Trust the process", "It's giving learning curve", "We love a redemption arc", "That's valid, shake it off"];
+
+    const MOTIVATIONAL_QUOTES = [
+      `""Read: In the name of your Lord who created..." — Surah Al-Alaq (96:1)."`,
+      `"And say, 'My Lord, increase me in knowledge.'" — Surah Ta-Ha (20:114)"`,
+      `"God will raise those who have believed among you and those who were given knowledge, by degrees." — Surah Al-Mujadila (58:11)"`,
+      `"Are those who know equal to those who do not know?" — Surah Az-Zumar (39:9)"`,
+      `"And He taught Adam all the names..." — Surah Al-Baqarah (2:31)"`
+    ];
+
+    let currentUser = "";
+    let userRole = "";
+    let userTitle = "";
+    let userName = "";
+    let commonName = "";
+    let activeQuiz = null;
+    let activeQuestions = [];
+    let userAnswers = {};
+    let lockedQuestions = {};
+    let currentQuestionIndex = 0;
+    let cachedLeaderboardData = [];
+
+    // --- TIMER STATE MANAGEMENT ---
+    let questionTimer = null;
+    let timeLeft = 45;
+
+    function startQuestionTimer() {
+      stopQuestionTimer();
+
+      // Check if the current active question has an image link
+      const currentQ = activeQuestions[currentQuestionIndex];
+      const hasImage = currentQ && currentQ.imageUrl && currentQ.imageUrl.trim().length > 0;
+
+      // Set timer to 90 seconds for questions with images, otherwise default to 45 seconds
+      timeLeft = hasImage ? 90 : 45;
+
+      const timerBox = document.getElementById("timerContainer");
+      const timerDisplay = document.getElementById("timerCountdown");
+      if (timerBox) timerBox.classList.remove("hidden");
+      if (timerDisplay) timerDisplay.innerText = timeLeft;
+
+      questionTimer = setInterval(() => {
+        timeLeft--;
+        if (timerDisplay) timerDisplay.innerText = timeLeft;
+
+        if (timeLeft <= 0) {
+          stopQuestionTimer();
+          handleTimeExpired();
+        }
+      }, 1000);
+    }
+
+    function stopQuestionTimer() {
+      if (questionTimer) {
+        clearInterval(questionTimer);
+        questionTimer = null;
+      }
+    }
+
+    function handleTimeExpired() {
+      const idx = currentQuestionIndex;
+      if (lockedQuestions[idx]) return;
+
+      userAnswers[idx] = { 
+        selected: null, 
+        feedbackMsg: "⏰ Time's up!" 
+      };
+      lockedQuestions[idx] = true;
+
+      const answeredCount = Object.keys(lockedQuestions).length;
+      saveUnitProgress(activeQuiz.quizId, answeredCount, activeQuestions.length);
+
+      renderQuizQuestions();
+      loadQuizIndex();
+    }
+
+    // --- THEME SWITCHER LOGIC ---
+    function initTheme() {
+      const savedTheme = localStorage.getItem("lhs_theme");
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+      if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+        document.documentElement.classList.add("dark");
+        updateThemeIcon(true);
+      } else {
+        document.documentElement.classList.remove("dark");
+        updateThemeIcon(false);
+      }
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle("dark");
+      localStorage.setItem("lhs_theme", isDark ? "dark" : "light");
+      updateThemeIcon(isDark);
+    }
+
+    function updateThemeIcon(isDark) {
+      const icon = document.getElementById("themeIcon");
+      if (icon) {
+        icon.innerText = isDark ? "☀️" : "🌙";
+      }
+    }
+
+    initTheme();
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function getSavedUnitProgress(quizId) {
+      const data = localStorage.getItem(`unit_progress_${quizId}`);
+      return data ? JSON.parse(data) : { answered: 0, total: 30, percent: 0 };
+    }
+
+    function saveUnitProgress(quizId, answeredCount, totalCount) {
+      const percent = totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
+      localStorage.setItem(`unit_progress_${quizId}`, JSON.stringify({ answered: answeredCount, total: totalCount, percent }));
+    }
+
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById("emailInput").value.trim().toLowerCase();
+      const password = document.getElementById("passwordInput").value.trim();
+      const loginBtn = document.getElementById("loginBtn");
+
+      if (!email || !password) {
+        alert("Please enter both your email and password.");
+        return;
+      }
+
+      loginBtn.innerText = "Verifying credentials...";
+      loginBtn.disabled = true;
+
+      try {
+        const res = await fetch(`${GAS_API_URL}?action=checkUserRole&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
+          method: "GET",
+          redirect: "follow"
+        });
+        const data = await res.json();
+
+        if (!data.authenticated) {
+          alert(data.error || "Authentication failed. Please check your credentials.");
+          loginBtn.innerText = "Authenticate & Enter Portal →";
+          loginBtn.disabled = false;
+          return;
+        }
+
+        currentUser = email;
+        userRole = data.role;     
+        userTitle = data.title;   
+        userName = data.name || "";     
+
+        if (data.commonName) {
+          commonName = data.commonName;
+        } else if (data.name) {
+          const nameParts = data.name.trim().split(" ");
+          commonName = nameParts.length > 1 ? nameParts[1] : nameParts[0];
+        } else {
+          commonName = "Student";
+        }
+
+        localStorage.setItem("lhs_user_session", JSON.stringify({
+          email: currentUser,
+          role: userRole,
+          title: userTitle,
+          name: userName,
+          commonName: commonName
+        }));
+
+        initPortalSession();
+
+      } catch (err) {
+        alert("Error connecting to Google Apps Script backend.");
+        loginBtn.innerText = "Authenticate & Enter Portal →";
+        loginBtn.disabled = false;
+      }
+    }
+
+    function initPortalSession() {
+      document.getElementById("loginModal").classList.add("hidden");
+      updateUserUI();
+
+      if (userRole === "teacher") {
+        document.getElementById("teacherBanner").classList.remove("hidden");
+        document.getElementById("teacherTableContainer").classList.remove("hidden");
+        document.getElementById("studentStatsGrid").classList.add("hidden");
+        loadTeacherData();
+      } else {
+        document.getElementById("teacherBanner").classList.add("hidden");
+        document.getElementById("teacherTableContainer").classList.add("hidden");
+        document.getElementById("studentStatsGrid").classList.remove("hidden");
+        loadStudentStats();
+      }
+
+      loadQuizIndex();
+    }
+
+    function updateUserUI() {
+      const tag = document.getElementById("userProfileTag");
+      tag.innerHTML = `
+        <div class="text-right">
+          <div class="text-xs font-bold text-slate-900 dark:text-white">${commonName || userName || currentUser}</div>
+          <div class="text-[10px] font-semibold uppercase ${userRole === 'teacher' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}">${userTitle || userRole}</div>
+        </div>
+        <button onclick="logoutUser()" class="ml-2 px-2.5 py-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-[11px] font-medium rounded-lg border border-slate-300 dark:border-slate-700 transition-all cursor-pointer">
+          Logout
+        </button>
+      `;
+
+      document.getElementById("welcomeTitle").innerText = `Welcome ${commonName}!`;
+      const randomQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
+      document.getElementById("motivationalQuote").innerText = randomQuote;
+    }
+
+    function logoutUser() {
+      localStorage.removeItem("lhs_user_session");
+      location.reload();
+    }
+
+    async function loadStudentStats() {
+      try {
+        const res = await fetch(`${GAS_API_URL}?action=getLeaderboard`);
+        const data = await res.json();
+        cachedLeaderboardData = data;
+        const stat = data.find(s => s.email && s.email.toLowerCase() === currentUser.toLowerCase());
+
+        if (stat) {
+          document.getElementById("statAvgScore").innerText = (stat.bestScore || 0) + "%";
+          document.getElementById("statFirstTry").innerText = stat.firstTry100s || 0;
+          document.getElementById("statAttempts").innerText = stat.attemptsCount || 0;
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadTeacherData() {
+      try {
+        const res = await fetch(`${GAS_API_URL}?action=getLeaderboard`);
+        const data = await res.json();
+        cachedLeaderboardData = data;
+        const tbody = document.getElementById("teacherTableBody");
+        tbody.innerHTML = "";
+
+        if (!data || data.length === 0) {
+          tbody.innerHTML = "<tr><td colspan='5' class='p-3 text-slate-500'>No student records recorded yet.</td></tr>";
+          return;
+        }
+
+        data.forEach(r => {
+          let displayName = r.commonName || r.name;
+          if (!displayName && r.commonName) {
+            displayName = r.email;
+          } else if (displayName && !r.commonName) {
+            const parts = displayName.trim().split(" ");
+            displayName = parts.length > 1 ? parts[1] : parts[0];
+          }
+
+          tbody.innerHTML += `
+            <tr onclick="openStudentAnalytics('${r.email}')" class="border-b border-slate-200 dark:border-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
+              <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${displayName}</td>
+              <td class="p-3 text-slate-600 dark:text-slate-300">${r.attemptsCount || 0}</td>
+              <td class="p-3 text-amber-600 dark:text-amber-300">🏅 ${r.firstTry100s || 0}</td>
+              <td class="p-3 font-bold text-emerald-600 dark:text-emerald-400">${r.bestScore || 0}%</td>
+              <td class="p-3 text-right">
+                <span class="px-2 py-1 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">View Analytics &rarr;</span>
+              </td>
+            </tr>
+          `;
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    function openStudentAnalytics(studentEmail) {
+      const student = cachedLeaderboardData.find(s => s.email && s.email.toLowerCase() === studentEmail.toLowerCase());
+      if (!student) {
+        alert("Student analytics record not found.");
+        return;
+      }
+
+      let displayName = student.commonName || student.name;
+      if (!displayName) {
+        displayName = student.email;
+      } else if (!student.commonName && student.name) {
+        const parts = student.name.trim().split(" ");
+        displayName = parts.length > 1 ? parts[1] : parts[0];
+      }
+
+      document.getElementById("analyticsStudentName").innerText = `${displayName}'s Analytics`;
+      document.getElementById("analyticsBestScore").innerText = (student.bestScore || 0) + "%";
+      document.getElementById("analyticsTotalAttempts").innerText = student.attemptsCount || 0;
+      document.getElementById("analyticsFirstTry100").innerText = student.firstTry100s || 0;
+
+      const tbody = document.getElementById("analyticsTableBody");
+      tbody.innerHTML = "";
+
+      const quizDetails = student.quizBreakdown || student.quizzes || student.units || [];
+
+      if (!quizDetails || quizDetails.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">No unit breakdown details recorded for this student yet.</td></tr>`;
+      } else {
+        quizDetails.forEach(q => {
+          tbody.innerHTML += `
+            <tr class="border-b border-slate-200 dark:border-slate-800/60">
+              <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${q.quizId || q.unit || 'Quiz'}</td>
+              <td class="p-3 text-center text-slate-600 dark:text-slate-300">${q.attempts || q.attemptsCount || 1}</td>
+              <td class="p-3 text-center">${q.isFirstTry100 || q.firstTry100 ? '🏅 Yes' : '❌ No'}</td>
+              <td class="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${q.bestScore !== undefined ? q.bestScore : (q.score || 0)}%</td>
+            </tr>
+          `;
+        });
+      }
+
+      document.getElementById("analyticsModal").classList.remove("hidden");
+    }
+
+    function closeAnalyticsModal() {
+      document.getElementById("analyticsModal").classList.add("hidden");
+    }
+
+    async function refreshUnits() {
+      const grid = document.getElementById("quizCardsGrid");
+      grid.innerHTML = "<div class='text-xs text-slate-500'>Refreshing units list...</div>";
+      await loadQuizIndex();
+    }
+
+    async function loadQuizIndex() {
+      const grid = document.getElementById("quizCardsGrid");
+      try {
+        const res = await fetch(`${GAS_API_URL}?action=getQuizIndex`);
+        const list = await res.json();
+        grid.innerHTML = "";
+
+        if (!list || list.length === 0) {
+          grid.innerHTML = "<div class='text-xs text-slate-500'>No published quizzes found in Quiz_Index.</div>";
+          return;
+        }
+
+        const subjectsMap = {};
+        list.forEach(q => {
+          const subjectName = q.subject || "General";
+          if (!subjectsMap[subjectName]) {
+            subjectsMap[subjectName] = [];
+          }
+          subjectsMap[subjectName].push(q);
+        });
+
+        grid.className = "space-y-8 w-full";
+
+        Object.keys(subjectsMap).forEach(subject => {
+          const quizzes = subjectsMap[subject];
+
+          const subjectSection = document.createElement("div");
+          subjectSection.className = "space-y-3";
+
+          subjectSection.innerHTML = `
+            <div class="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+              <h3 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight">${subject}</h3>
+              <span class="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                ${quizzes.length} ${quizzes.length === 1 ? 'Unit' : 'Units'}
+              </span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="cards-for-${subject.replace(/\s+/g, '-')}"></div>
+          `;
+
+          grid.appendChild(subjectSection);
+
+          const cardsContainer = subjectSection.querySelector(`#cards-for-${subject.replace(/\s+/g, '-')}`);
+
+          quizzes.forEach(q => {
+            const prog = getSavedUnitProgress(q.quizId);
+            
+            const studyBtn = q.notesUrl 
+              ? `<a href="${q.notesUrl}" target="_blank" class="w-full text-center block py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer">Study</a>`
+              : `<button disabled class="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-900/50 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-800/50 cursor-not-allowed">Notes Unavailable</button>`;
+
+            cardsContainer.innerHTML += `
+              <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 card-shadow flex flex-col justify-between">
+                <div>
+                  <h3 class="font-bold text-slate-900 dark:text-white text-base">${q.unit}</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">${q.title}</p>
+                  
+                  <div class="mb-4">
+                    <div class="flex justify-between items-center text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                      <span>Progress</span>
+                      <span class="text-emerald-600 dark:text-emerald-400">${prog.percent}%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800">
+                      <div class="h-full bg-emerald-500 transition-all duration-300" style="width: ${prog.percent}%"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-2 mt-2">
+                  ${studyBtn}
+                  <button onclick="startQuiz('${q.sheetId}', '${q.subject}', '${q.title}', '${q.quizId}')" class="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all cursor-pointer">
+                    ${prog.answered > 0 ? 'Continue Quiz &rarr;' : 'Start Quiz &rarr;'}
+                  </button>
+                </div>
+              </div>
+            `;
+          });
+        });
+
+      } catch (e) {
+        grid.innerHTML = "<div class='text-xs text-rose-400'>Error loading quiz index.</div>";
+      }
+    }
+
+    async function startQuiz(sheetId, subject, title, quizId) {
+      activeQuiz = { sheetId, subject, title, quizId };
+      userAnswers = {};
+      lockedQuestions = {};
+      currentQuestionIndex = 0;
+
+      document.getElementById("quizSubjectTag").innerText = subject;
+      document.getElementById("quizModalTitle").innerText = title;
+      document.getElementById("quizQuestionBody").innerHTML = "<div class='text-xs text-slate-500'>Loading questions...</div>";
+      document.getElementById("quizModal").classList.remove("hidden");
+
+      const res = await fetch(`${GAS_API_URL}?action=getQuiz&sheetId=${sheetId}`);
+      const fetchedQuestions = await res.json();
+      
+      if (Array.isArray(fetchedQuestions) && fetchedQuestions.length > 0) {
+        const isBusiness = subject && subject.toLowerCase().includes("business");
+
+        if (isBusiness) {
+          // Specific logic for Business Studies (2, 4, 6, 8 mark tariffs across 2 sets)
+          const getQuestionsByMarks = (marks) => {
+            const filtered = fetchedQuestions.filter(q => Number(q.maxMarks) === marks);
+            return shuffleArray([...filtered]);
+          };
+
+          const q2 = getQuestionsByMarks(2);
+          const q4 = getQuestionsByMarks(4);
+          const q6 = getQuestionsByMarks(6);
+          const q8 = getQuestionsByMarks(8);
+
+          const set1 = [q2[0], q4[0], q6[0], q8[0]].filter(Boolean);
+          const set2 = [q2[1], q4[1], q6[1], q8[1]].filter(Boolean);
+
+          activeQuestions = [...set1, ...set2];
+        } else {
+          // Standard logic for Economics and all other subjects
+          const shuffled = shuffleArray(fetchedQuestions).map(q => {
+            if (q.options && Array.isArray(q.options)) {
+              q.options = shuffleArray([...q.options]);
+            }
+            return q;
+          });
+          activeQuestions = shuffled.slice(0, 30);
+        }
+      } else {
+        activeQuestions = [];
+      }
+
+      renderQuizQuestions();
+    }
+
+    function renderQuizQuestions() {
+      const container = document.getElementById("quizQuestionBody");
+      container.innerHTML = "";
+
+      if (!activeQuestions || activeQuestions.length === 0) return;
+
+      const idx = currentQuestionIndex;
+      const q = activeQuestions[idx];
+      const isWritten = !q.options || q.options.length === 0 || !q.options[0].text;
+
+      // Handle timer visibility
+      if (!isWritten && !lockedQuestions[idx]) {
+        startQuestionTimer();
+      } else {
+        stopQuestionTimer();
+        const timerBox = document.getElementById("timerContainer");
+        if (timerBox) timerBox.classList.add("hidden");
+      }
+
+      let correctAnswersCount = 0;
+      let totalMarksEarned = 0;
+      let totalPossibleMarks = 0;
+
+      Object.keys(lockedQuestions).forEach(qKey => {
+        const item = activeQuestions[qKey];
+        if (item.options && item.options.length > 0 && item.options[0].text) {
+          if (userAnswers[qKey]?.selected === item.correctOption) correctAnswersCount++;
+        } else {
+          totalMarksEarned += (userAnswers[qKey]?.marksAwarded || 0);
+          totalPossibleMarks += (item.maxMarks || 4);
+        }
+      });
+
+      const progressPercent = isWritten
+        ? (totalPossibleMarks > 0 ? Math.round((totalMarksEarned / totalPossibleMarks) * 100) : 0)
+        : Math.round((correctAnswersCount / activeQuestions.length) * 100);
+
+      const qCard = document.createElement("div");
+      qCard.className = "p-4 border border-slate-200 dark:border-slate-800 rounded-xl space-y-3 bg-slate-50 dark:bg-slate-950 relative";
+      
+      const qHeader = document.createElement("div");
+      qHeader.className = "flex flex-col gap-2 mb-2";
+      qHeader.innerHTML = `
+        <div class="flex justify-between items-center text-[11px] font-bold">
+          <span class="text-emerald-600 dark:text-emerald-400">Question ${idx + 1} of ${activeQuestions.length}</span>
+          <span class="text-slate-500 dark:text-slate-400">${isWritten ? `Earned Marks: ${totalMarksEarned}/${totalPossibleMarks}` : `Score Progress: ${correctAnswersCount}/${activeQuestions.length}`} (${progressPercent}%)</span>
+        </div>
+        <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-900 rounded-full overflow-hidden border border-slate-300 dark:border-slate-800">
+          <div class="h-full bg-emerald-500 transition-all duration-300" style="width: ${progressPercent}%"></div>
+        </div>
+      `;
+      qCard.appendChild(qHeader);
+
+      // Render Case Study if available
+      if (q.caseStudy) {
+        const caseBox = document.createElement("div");
+        caseBox.className = "p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-xs text-amber-900 dark:text-amber-200 leading-relaxed";
+        caseBox.innerHTML = `<strong class="text-amber-700 dark:text-amber-400 block mb-1">Case Study:</strong>${q.caseStudy}`;
+        qCard.appendChild(caseBox);
+      }
+
+      const qTitle = document.createElement("h4");
+      qTitle.className = "text-sm font-bold text-slate-900 dark:text-white";
+      qTitle.innerText = `Q${idx + 1}. ${q.question} ${q.maxMarks ? `[${q.maxMarks} marks]` : ''}`;
+      qCard.appendChild(qTitle);
+
+      if (q.imageUrl) {
+        qCard.innerHTML += `<img src="${q.imageUrl}" class="max-w-full rounded-lg my-2 border border-slate-200 dark:border-slate-800" />`;
+      }
+
+      // WRITTEN QUESTION INTERFACE
+      if (isWritten) {
+        const savedData = userAnswers[idx] || {};
+        const isLocked = !!lockedQuestions[idx];
+
+        const writtenContainer = document.createElement("div");
+        writtenContainer.className = "space-y-3 mt-2";
+
+        writtenContainer.innerHTML = `
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Your Written Answer:</label>
+            <textarea 
+              id="writtenInput_${idx}" 
+              rows="4" 
+              ${isLocked ? 'disabled' : ''} 
+              placeholder="Type your structured answer here (include knowledge, application, and reasoning)..."
+              class="w-full p-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 outline-none leading-relaxed"
+            >${savedData.text || ''}</textarea>
+          </div>
+
+          ${!isLocked ? `
+            <button 
+              id="evalBtn_${idx}" 
+              onclick="submitWrittenAnswer(${idx})"
+              class="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <span>✨ Check your answer</span>
+            </button>
+          ` : ''}
+        `;
+
+        qCard.appendChild(writtenContainer);
+
+        // DISPLAY AI EVALUATION RESULTS
+        if (isLocked && savedData.eval) {
+          const evalRes = savedData.eval;
+          const evalBox = document.createElement("div");
+          evalBox.className = "p-4 bg-slate-900 dark:bg-slate-950 border border-emerald-500/40 rounded-xl text-xs space-y-3 mt-3 animate-float-in text-slate-200";
+
+          const maxM = evalRes.maxMarks || q.maxMarks || 4;
+          const marksAwarded = evalRes.marksAwarded !== undefined ? evalRes.marksAwarded : 0;
+          const marksLost = evalRes.marksLost !== undefined ? evalRes.marksLost : (maxM - marksAwarded);
+
+          evalBox.innerHTML = `
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span class="font-bold text-emerald-400 text-sm">Cambridge AI Examiner Result</span>
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 font-extrabold rounded-lg border border-emerald-500/30">
+                  Earned: ${marksAwarded} / ${maxM}
+                </span>
+                ${marksLost > 0 ? `
+                  <span class="px-2.5 py-1 bg-rose-500/20 text-rose-300 font-extrabold rounded-lg border border-rose-500/30">
+                    Lost: ${marksLost}
+                  </span>
+                ` : `
+                  <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 font-extrabold rounded-lg border border-emerald-500/30">
+                    Full Marks! 🎉
+                  </span>
+                `}
+              </div>
+            </div>
+
+            ${evalRes.breakdown ? `
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
+                  <strong class="text-amber-400 block mb-0.5">AO1 Knowledge:</strong>
+                  <span class="text-slate-300">${evalRes.breakdown.knowledge || 'N/A'}</span>
+                </div>
+                <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
+                  <strong class="text-emerald-400 block mb-0.5">AO2 Application:</strong>
+                  <span class="text-slate-300">${evalRes.breakdown.application || 'N/A'}</span>
+                </div>
+                <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
+                  <strong class="text-sky-400 block mb-0.5">AO3 Analysis:</strong>
+                  <span class="text-slate-300">${evalRes.breakdown.analysis || 'N/A'}</span>
+                </div>
+              </div>
+            ` : ''}
+
+            ${evalRes.lostMarksReason ? `
+              <div class="p-3 bg-rose-950/30 border border-rose-800/40 rounded-lg">
+                <strong class="text-rose-400 block mb-1">❌ Explanation for Lost Marks:</strong>
+                <p class="text-slate-300 leading-relaxed">${evalRes.lostMarksReason}</p>
+              </div>
+            ` : ''}
+
+            ${evalRes.howToImprove || evalRes.constructiveFeedback ? `
+              <div class="p-3 bg-emerald-950/40 border border-emerald-800/50 rounded-lg">
+                <strong class="text-emerald-400 block mb-1">💡 How to Write the Correct Full-Mark Answer:</strong>
+                <p class="text-slate-300 leading-relaxed">${evalRes.howToImprove || evalRes.constructiveFeedback}</p>
+              </div>
+            ` : ''}
+
+            ${evalRes.modelAnswer ? `
+              <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-lg">
+                <strong class="text-amber-300 block mb-1">📝 Model Cambridge Answer:</strong>
+                <p class="text-slate-300 italic leading-relaxed">${evalRes.modelAnswer}</p>
+              </div>
+            ` : ''}
+          `;
+
+          qCard.appendChild(evalBox);
+        }
+
+      } else {
+        // MULTIPLE CHOICE INTERFACE
+        const optsContainer = document.createElement("div");
+        optsContainer.className = "space-y-1.5 mt-2";
+
+        q.options.forEach(opt => {
+          const btn = document.createElement("button");
+          btn.className = "w-full text-left p-3 rounded-xl border text-xs font-medium transition-all bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-white cursor-pointer";
+          btn.innerText = `${opt.id}. ${opt.text}`;
+
+          if (lockedQuestions[idx]) {
+            btn.disabled = true;
+            btn.classList.remove("cursor-pointer");
+            if (opt.id === q.correctOption) {
+              btn.className = "w-full text-left p-3 rounded-xl border text-xs font-bold bg-emerald-100 dark:bg-emerald-950/80 border-emerald-500 text-emerald-800 dark:text-emerald-300";
+            }
+            if (userAnswers[idx]?.selected === opt.id && opt.id !== q.correctOption) {
+              btn.className = "w-full text-left p-3 rounded-xl border text-xs font-bold bg-rose-100 dark:bg-rose-950/80 border-rose-500 text-rose-800 dark:text-rose-300";
+            }
+          } else {
+            btn.onclick = () => chooseAnswer(idx, opt.id, q.correctOption);
+          }
+
+          optsContainer.appendChild(btn);
+        });
+
+        qCard.appendChild(optsContainer);
+
+        if (lockedQuestions[idx]) {
+          const feedback = document.createElement("div");
+          feedback.className = "absolute left-1/2 bottom-12 z-20 pointer-events-none transform -translate-x-1/2 px-4 py-2 bg-emerald-900 dark:bg-emerald-950/95 border border-emerald-500 text-emerald-100 dark:text-emerald-200 text-xs font-extrabold rounded-full shadow-2xl backdrop-blur-md animate-fly-popup flex items-center gap-1.5 whitespace-nowrap";
+          feedback.innerText = userAnswers[idx].feedbackMsg;
+          qCard.appendChild(feedback);
+
+          if (q.explanation) {
+            const exp = document.createElement("div");
+            exp.className = "p-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs rounded-lg border border-slate-200 dark:border-slate-800 mt-2 animate-float-in";
+            exp.innerHTML = `<strong class="text-emerald-600 dark:text-emerald-400">Explanation:</strong> ${q.explanation}`;
+            qCard.appendChild(exp);
+          }
+        }
+      }
+
+      container.appendChild(qCard);
+
+      const nextBtn = document.getElementById("nextBtn");
+      const submitBtn = document.getElementById("submitBtn");
+      const isAnswered = !!lockedQuestions[idx];
+
+      if (idx === activeQuestions.length - 1) {
+        nextBtn.classList.add("hidden");
+        submitBtn.classList.remove("hidden");
+        submitBtn.disabled = !isAnswered;
+        if (isAnswered) {
+          submitBtn.className = "px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer";
+        } else {
+          submitBtn.className = "px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-extrabold text-xs rounded-xl transition-all opacity-50 cursor-not-allowed";
+        }
+      } else {
+        nextBtn.classList.remove("hidden");
+        submitBtn.classList.add("hidden");
+        nextBtn.disabled = !isAnswered;
+        if (isAnswered) {
+          nextBtn.className = "px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer";
+        } else {
+          nextBtn.className = "px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-extrabold text-xs rounded-xl transition-all opacity-50 cursor-not-allowed";
+        }
+      }
+    }
+
+    async function submitWrittenAnswer(qIdx) {
+      const input = document.getElementById(`writtenInput_${qIdx}`);
+      const btn = document.getElementById(`evalBtn_${qIdx}`);
+
+      if (!input || !input.value.trim()) {
+        alert("Please write your answer before submitting for evaluation.");
+        return;
+      }
+
+      const text = input.value.trim();
+      const q = activeQuestions[qIdx];
+
+      btn.disabled = true;
+      btn.innerHTML = `<span>Checking</span>`;
+
+      try {
+        const payload = {
+          action: "evaluateWrittenAnswer",
+          questionPrompt: q.question,
+          caseStudy: q.caseStudy || "",
+          markScheme: q.markScheme || "",
+          studentAnswer: text,
+          maxMarks: q.maxMarks || 4
+        };
+
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const evalRes = await res.json();
+
+        if (evalRes.error) {
+          alert("Evaluation Error: " + evalRes.error);
+          btn.disabled = false;
+          btn.innerHTML = `<span>✨ Check with AI Examiner</span>`;
+          return;
+        }
+
+        userAnswers[qIdx] = {
+          text: text,
+          marksAwarded: evalRes.marksAwarded || 0,
+          maxMarks: evalRes.maxMarks || q.maxMarks || 4,
+          eval: evalRes
+        };
+
+        lockedQuestions[qIdx] = true;
+
+        const answeredCount = Object.keys(lockedQuestions).length;
+        saveUnitProgress(activeQuiz.quizId, answeredCount, activeQuestions.length);
+
+        renderQuizQuestions();
+        loadQuizIndex();
+
+      } catch (err) {
+        console.error(err);
+        alert("Evaluation error. Please try again.");
+        btn.disabled = false;
+        btn.innerHTML = `<span>✨ Check your answer</span>`;
+      }
+    }
+
+    function nextQuestion() {
+      if (currentQuestionIndex < activeQuestions.length - 1 && lockedQuestions[currentQuestionIndex]) {
+        currentQuestionIndex++;
+        renderQuizQuestions();
+      }
+    }
+
+    function chooseAnswer(qIdx, selectedOptId, correctOptId) {
+      if (lockedQuestions[qIdx]) return;
+
+      stopQuestionTimer();
+
+      const isCorrect = selectedOptId === correctOptId;
+      const msgList = isCorrect ? PRAISE_MESSAGES : ENCOURAGEMENT_MESSAGES;
+      const feedbackMsg = msgList[Math.floor(Math.random() * msgList.length)];
+
+      userAnswers[qIdx] = { selected: selectedOptId, feedbackMsg };
+      lockedQuestions[qIdx] = true;
+
+      const answeredCount = Object.keys(lockedQuestions).length;
+      saveUnitProgress(activeQuiz.quizId, answeredCount, activeQuestions.length);
+
+      renderQuizQuestions();
+      loadQuizIndex();
+    }
+
+    async function submitQuiz() {
+      if (!lockedQuestions[currentQuestionIndex]) return;
+
+      stopQuestionTimer();
+
+      let percent = 0;
+      let scoreDetails = "";
+
+      const firstQ = activeQuestions[0];
+      const isWritten = !firstQ.options || firstQ.options.length === 0 || !firstQ.options[0].text;
+
+      if (isWritten) {
+        let earned = 0;
+        let possible = 0;
+        activeQuestions.forEach((q, idx) => {
+          earned += (userAnswers[idx]?.marksAwarded || 0);
+          possible += (q.maxMarks || 4);
+        });
+        percent = possible > 0 ? Math.round((earned / possible) * 100) : 0;
+        scoreDetails = `${earned}/${possible} marks (${percent}%)`;
+      } else {
+        let scoreCount = 0;
+        activeQuestions.forEach((q, idx) => {
+          if (userAnswers[idx]?.selected === q.correctOption) scoreCount++;
+        });
+        percent = Math.round((scoreCount / activeQuestions.length) * 100);
+        scoreDetails = `${scoreCount}/${activeQuestions.length} correct (${percent}%)`;
+      }
+
+      alert(`Quiz Completed!\nOverall Score: ${scoreDetails}`);
+
+      await fetch(GAS_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify({
+          action: "submitResult",
+          email: currentUser,
+          quizId: activeQuiz.quizId,
+          score: percent,
+          attemptNumber: 1,
+          isFirstTry100: percent === 100
+        })
+      });
+
+      closeQuizModal();
+      if (userRole === "teacher") {
+        loadTeacherData();
+      } else {
+        loadStudentStats();
+      }
+    }
+
+    function closeQuizModal() {
+      stopQuestionTimer();
+      document.getElementById("quizModal").classList.add("hidden");
+    }
+
+    window.onload = () => {
+      const savedSession = localStorage.getItem("lhs_user_session");
+      if (savedSession) {
+        try {
+          const user = JSON.parse(savedSession);
+          currentUser = user.email;
+          userRole = user.role;
+          userTitle = user.title;
+          userName = user.name;
+          commonName = user.commonName;
+          initPortalSession();
+          return;
+        } catch (e) {
+          localStorage.removeItem("lhs_user_session");
+        }
+      }
+      document.getElementById("loginModal").classList.remove("hidden");
+    };
+  </script>
+</body>
+</html>
