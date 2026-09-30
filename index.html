@@ -376,12 +376,20 @@
     function startQuestionTimer() {
       stopQuestionTimer();
 
-      // Check if the current active question has an image link
-      const currentQ = activeQuestions[currentQuestionIndex];
-      const hasImage = currentQ && currentQ.imageUrl && currentQ.imageUrl.trim().length > 0;
+      // Check if current subject is Accounting
+      const isAccounting = activeQuiz && activeQuiz.subject && activeQuiz.subject.toLowerCase().includes("account");
 
-      // Set timer to 90 seconds for questions with images, otherwise default to 45 seconds
-      timeLeft = hasImage ? 90 : 45;
+      if (isAccounting) {
+        // Accounting timer set strictly to 60 seconds
+        timeLeft = 60;
+      } else {
+        // Check if the current active question has an image link
+        const currentQ = activeQuestions[currentQuestionIndex];
+        const hasImage = currentQ && currentQ.imageUrl && currentQ.imageUrl.trim().length > 0;
+
+        // Default timer logic (Economics, etc.): 90s for images, 45s for standard
+        timeLeft = hasImage ? 90 : 45;
+      }
 
       const timerBox = document.getElementById("timerContainer");
       const timerDisplay = document.getElementById("timerCountdown");
