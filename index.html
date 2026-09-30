@@ -369,6 +369,9 @@
     let currentQuestionIndex = 0;
     let cachedLeaderboardData = [];
 
+    // Track active Paper selection (P1 vs P2) per Unit Card ID
+    const cardPaperSelections = {};
+
     // --- TIMER STATE MANAGEMENT ---
     let questionTimer = null;
     let timeLeft = 45;
@@ -476,6 +479,48 @@
     function saveUnitProgress(quizId, answeredCount, totalCount) {
       const percent = totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
       localStorage.setItem(`unit_progress_${quizId}`, JSON.stringify({ answered: answeredCount, total: totalCount, percent }));
+    }
+
+    // --- PAPER TOGGLE HANDLER ---
+    function handlePaperToggle(checkbox, quizId, hasProg) {
+      const activePaper = checkbox.checked ? "P2" : "P1";
+      cardPaperSelections[quizId] = activePaper;
+
+      const p1Label = document.getElementById(`p1-lbl-${quizId}`);
+      const p2Label = document.getElementById(`p2-lbl-${quizId}`);
+      const quizBtn = document.getElementById(`quiz-btn-${quizId}`);
+
+      if (activePaper === "P2") {
+        if (p1Label) {
+          p1Label.className = "text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors";
+        }
+        if (p2Label) {
+          p2Label.className = "text-[10px] font-extrabold text-amber-600 dark:text-amber-400 transition-colors";
+        }
+        if (quizBtn) {
+          quizBtn.className = "w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all cursor-pointer";
+          quizBtn.innerText = hasProg ? "Continue Paper 2 Quiz \u2192" : "Start Paper 2 Quiz \u2192";
+        }
+      } else {
+        if (p1Label) {
+          p1Label.className = "text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 transition-colors";
+        }
+        if (p2Label) {
+          p2Label.className = "text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors";
+        }
+        if (quizBtn) {
+          quizBtn.className = "w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all cursor-pointer";
+          quizBtn.innerText = hasProg ? "Continue Paper 1 Quiz \u2192" : "Start Paper 1 Quiz \u2192";
+        }
+      }
+    }
+
+    function handleStartQuizClick(sheetId, paper2SheetId, subject, title, quizId) {
+      const selectedPaper = cardPaperSelections[quizId] || "P1";
+      const targetSheetId = (selectedPaper === "P2" && paper2SheetId) ? paper2SheetId : sheetId;
+      const displayTitle = `${title} (${selectedPaper})`;
+
+      startQuiz(targetSheetId, subject, displayTitle, quizId);
     }
 
     async function handleLoginSubmit(e) {
@@ -728,7 +773,9 @@
 
           quizzes.forEach(q => {
             const prog = getSavedUnitProgress(q.quizId);
-            
+            const currentSelectedPaper = cardPaperSelections[q.quizId] || "P1";
+            const isP2 = currentSelectedPaper === "P2";
+
             const studyBtn = q.notesUrl 
               ? `<a href="${q.notesUrl}" target="_blank" class="w-full text-center block py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer">Study</a>`
               : `<button disabled class="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-900/50 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-800/50 cursor-not-allowed">Notes Unavailable</button>`;
@@ -736,7 +783,20 @@
             cardsContainer.innerHTML += `
               <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 card-shadow flex flex-col justify-between">
                 <div>
-                  <h3 class="font-bold text-slate-900 dark:text-white text-base">${q.unit}</h3>
+                  <div class="flex items-start justify-between gap-2 mb-1">
+                    <h3 class="font-bold text-slate-900 dark:text-white text-base leading-tight">${q.unit}</h3>
+                    
+                    <!-- Paper 1 / Paper 2 Switch -->
+                    <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0 select-none">
+                      <span id="p1-lbl-${q.quizId}" class="${!isP2 ? 'text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 transition-colors' : 'text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors'}">P1</span>
+                      <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" ${isP2 ? 'checked' : ''} onchange="handlePaperToggle(this, '${q.quizId}', ${prog.answered > 0})" class="sr-only peer">
+                        <div class="w-7 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
+                      </label>
+                      <span id="p2-lbl-${q.quizId}" class="${isP2 ? 'text-[10px] font-extrabold text-amber-600 dark:text-amber-400 transition-colors' : 'text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors'}">P2</span>
+                    </div>
+                  </div>
+
                   <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">${q.title}</p>
                   
                   <div class="mb-4">
@@ -752,8 +812,8 @@
 
                 <div class="space-y-2 mt-2">
                   ${studyBtn}
-                  <button onclick="startQuiz('${q.sheetId}', '${q.subject}', '${q.title}', '${q.quizId}')" class="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all cursor-pointer">
-                    ${prog.answered > 0 ? 'Continue Quiz &rarr;' : 'Start Quiz &rarr;'}
+                  <button id="quiz-btn-${q.quizId}" onclick="handleStartQuizClick('${q.sheetId}', '${q.paper2SheetId || ''}', '${q.subject}', '${q.title}', '${q.quizId}')" class="w-full py-2.5 px-3 rounded-xl text-xs font-bold ${isP2 ? 'bg-amber-500 hover:bg-amber-400' : 'bg-emerald-500 hover:bg-emerald-400'} text-slate-950 transition-all cursor-pointer">
+                    ${prog.answered > 0 ? `Continue Paper ${isP2 ? '2' : '1'} Quiz &rarr;` : `Start Paper ${isP2 ? '2' : '1'} Quiz &rarr;`}
                   </button>
                 </div>
               </div>
@@ -1078,7 +1138,10 @@
       try {
         const payload = {
           action: "evaluateWrittenAnswer",
+          subject: activeQuiz ? activeQuiz.subject : "",
+          questionType: q.questionType || "",
           questionPrompt: q.question,
+          dataContext: q.dataContext || "",
           caseStudy: q.caseStudy || "",
           markScheme: q.markScheme || "",
           studentAnswer: text,
