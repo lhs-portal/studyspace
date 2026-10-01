@@ -780,21 +780,23 @@
               ? `<a href="${q.notesUrl}" target="_blank" class="w-full text-center block py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer">Study</a>`
               : `<button disabled class="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-900/50 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-800/50 cursor-not-allowed">Notes Unavailable</button>`;
 
+            const p1P2ToggleHtml = (q.paper2SheetId && q.paper2SheetId.trim().length > 0) ? `
+              <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0 select-none">
+                <span id="p1-lbl-${q.quizId}" class="${!isP2 ? 'text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 transition-colors' : 'text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors'}">P1</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" ${isP2 ? 'checked' : ''} onchange="handlePaperToggle(this, '${q.quizId}', ${prog.answered > 0})" class="sr-only peer">
+                  <div class="w-7 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+                <span id="p2-lbl-${q.quizId}" class="${isP2 ? 'text-[10px] font-extrabold text-amber-600 dark:text-amber-400 transition-colors' : 'text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors'}">P2</span>
+              </div>
+            ` : '';
+
             cardsContainer.innerHTML += `
               <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 card-shadow flex flex-col justify-between">
                 <div>
                   <div class="flex items-start justify-between gap-2 mb-1">
                     <h3 class="font-bold text-slate-900 dark:text-white text-base leading-tight">${q.unit}</h3>
-                    
-                    <!-- Paper 1 / Paper 2 Switch -->
-                    <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0 select-none">
-                      <span id="p1-lbl-${q.quizId}" class="${!isP2 ? 'text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 transition-colors' : 'text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors'}">P1</span>
-                      <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" ${isP2 ? 'checked' : ''} onchange="handlePaperToggle(this, '${q.quizId}', ${prog.answered > 0})" class="sr-only peer">
-                        <div class="w-7 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
-                      </label>
-                      <span id="p2-lbl-${q.quizId}" class="${isP2 ? 'text-[10px] font-extrabold text-amber-600 dark:text-amber-400 transition-colors' : 'text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors'}">P2</span>
-                    </div>
+                    ${p1P2ToggleHtml}
                   </div>
 
                   <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">${q.title}</p>
@@ -937,9 +939,12 @@
         qCard.appendChild(caseBox);
       }
 
+      const isAccounting = activeQuiz && activeQuiz.subject && activeQuiz.subject.toLowerCase().includes("account");
+      const hideMarks = isAccounting && !isWritten;
+
       const qTitle = document.createElement("h4");
       qTitle.className = "text-sm font-bold text-slate-900 dark:text-white";
-      qTitle.innerText = `Q${idx + 1}. ${q.question} ${q.maxMarks ? `[${q.maxMarks} marks]` : ''}`;
+      qTitle.innerText = `Q${idx + 1}. ${q.question}${(!hideMarks && q.maxMarks) ? ` [${q.maxMarks} marks]` : ''}`;
       qCard.appendChild(qTitle);
 
       if (q.imageUrl) {
