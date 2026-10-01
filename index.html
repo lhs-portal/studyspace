@@ -310,7 +310,7 @@
         <!-- QUESTION TIMER DISPLAY (MCQ Only) -->
         <div class="flex items-center gap-2">
           <div id="timerContainer" class="hidden px-3 py-1 rounded-xl bg-amber-100 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-700/60 text-amber-800 dark:text-amber-300 text-xs font-extrabold flex items-center gap-1.5">
-            ⏱️️ <span id="timerCountdown">45</span>s
+            ⏱ <span id="timerCountdown">45</span>s
           </div>
           <button onclick="closeQuizModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl font-bold">&times;</button>
         </div>
@@ -342,7 +342,15 @@
   </button>
 
   <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-4 text-center text-xs text-slate-500 dark:text-slate-500">
-    L. Hithadhoo School - Studyspace &copy; 2026
+    <div class="flex flex-col items-center gap-2">
+      <button id="pwa-install-btn" class="hidden items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow transition-all cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Install App  
+      </button>
+      <div>L. Hithadhoo School - Studyspace &copy; 2026</div>
+    </div>
   </footer>
 
   <script>
@@ -1290,22 +1298,23 @@
           userName = user.name;
           commonName = user.commonName;
           initPortalSession();
-          return;
         } catch (e) {
           localStorage.removeItem("lhs_user_session");
+          document.getElementById("loginModal").classList.remove("hidden");
         }
+      } else {
+        document.getElementById("loginModal").classList.remove("hidden");
       }
-      document.getElementById("loginModal").classList.remove("hidden");
     };
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => console.log('Service Worker registered:', reg))
+          .catch((err) => console.log('Service Worker registration failed:', err));
+      });
+    }
   </script>
 </body>
 </html>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then((reg) => console.log('Service Worker registered:', reg))
-        .catch((err) => console.log('Service Worker registration failed:', err));
-    });
-  }
-</script>
