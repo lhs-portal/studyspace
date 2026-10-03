@@ -1,38 +1,20 @@
-// offline-sync.js - Handles Offline Queueing & Voice Praise
+// offline-sync.js - Handles Offline Queueing & Text-to-Speech Praise
 
-// 1. Voice Praise Setup
-const MY_VOICE_CLIPS = [
-  './audio/praise1.mp3',
-  './audio/praise2.mp3',
-  './audio/praise3.mp3'
-];
-
-function playQuizPraise(studentName, isCorrect) {
-  if (isCorrect && MY_VOICE_CLIPS.length > 0) {
-    const randomClip = MY_VOICE_CLIPS[Math.floor(Math.random() * MY_VOICE_CLIPS.length)];
-    const audio = new Audio(randomClip);
-    
-    audio.play().catch(() => {
-      speakTextFallback(studentName, isCorrect);
-    });
-    return;
-  }
-  speakTextFallback(studentName, isCorrect);
-}
-
-function speakTextFallback(studentName, isCorrect) {
+// 1. Voice Praise System (Text-to-Speech)
+function playQuizPraise(textToRead) {
   if (!('speechSynthesis' in window)) return;
+  
+  // Stop any active speech before starting a new one
   window.speechSynthesis.cancel();
 
-  const name = studentName || 'there';
-  let message = isCorrect 
-    ? `Great job, ${name}! That's completely correct.`
-    : `Good try, ${name}. Take a moment to review the feedback.`;
+  // If no specific text is passed, fallback to default
+  const message = textToRead || "Well done!";
 
   const utterance = new SpeechSynthesisUtterance(message);
-  utterance.rate = 0.95;
-  utterance.pitch = 1.05;
+  utterance.rate = 0.95;  // Speaking rate
+  utterance.pitch = 1.05; // Pitch
 
+  // Use natural English voice if available
   const voices = window.speechSynthesis.getVoices();
   const englishVoice = voices.find(v => v.lang.startsWith('en'));
   if (englishVoice) utterance.voice = englishVoice;
@@ -42,10 +24,11 @@ function speakTextFallback(studentName, isCorrect) {
 
 
 // 2. Offline Buffer & Auto-Sync
-const GAS_ENDPOINT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+const GAS_ENDPOINT_URL = 'https://script.google.com/macros/s/AKfycbxp8krlvEmXQGeNp96G2ybXV9KjecxpCu61LuT34lMil2z4fklRAB9ge_K23FcOh1qFbg/exec';
 
-function submitQuizData(payload) {
-  playQuizPraise(payload.studentName, payload.score >= 50);
+function submitQuizData(payload, praiseText) {
+  // Read the exact praise text from your HTML/Quiz UI
+  playQuizPraise(praiseText);
 
   if (navigator.onLine) {
     sendToBackend(payload);
