@@ -1,15 +1,12 @@
 // sw.js - Service Worker for offline capability and app installation
 
-const CACHE_NAME = 'studyspace-v3'; // Bumped version to refresh cache
+const CACHE_NAME = 'studyspace-v4'; // Bumped version to flush old cache
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './logo.png',
-  './offline-sync.js', // Added offline sync script
-  './audio/praise1.mp3',
-  './audio/praise2.mp3',
-  './audio/praise3.mp3'
+  './offline-sync.js'
 ];
 
 // Install event: cache initial assets
