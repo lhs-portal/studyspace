@@ -100,6 +100,8 @@
       </div>
 
       <div id="navUserSection" class="flex items-center gap-3">
+        <!-- STREAK BADGE CONTAINER -->
+        <div id="streakBadgeContainer"></div>
         <div id="userProfileTag" class="flex items-center gap-2">
           <!-- Populated dynamically -->
         </div>
@@ -595,6 +597,16 @@
     function initPortalSession() {
       document.getElementById("loginModal").classList.add("hidden");
       updateUserUI();
+
+      if (typeof initStreakModule === 'function') {
+        initStreakModule({
+          email: currentUser,
+          role: userRole,
+          title: userTitle,
+          name: userName,
+          commonName: commonName
+        });
+      }
 
       if (userRole === "teacher") {
         document.getElementById("teacherBanner").classList.remove("hidden");
@@ -1308,6 +1320,7 @@
       }
     };
   </script>
+  <script src="./streaks.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
