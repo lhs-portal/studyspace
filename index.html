@@ -164,13 +164,36 @@
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 space-y-8">
 
     <!-- WELCOME BOARD -->
-    <div id="welcomeBoard" class="bg-gradient-to-r from-emerald-100 via-white to-emerald-50 dark:from-emerald-950/80 dark:via-slate-900 dark:to-slate-900 p-6 rounded-2xl border border-emerald-300 dark:border-emerald-800/40 card-shadow flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div>
-        <h2 id="welcomeTitle" class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Welcome!</h2>
-        <p id="motivationalQuote" class="text-xs font-medium text-emerald-700 dark:text-emerald-400/90 mt-1 italic">"Success is the sum of small efforts, repeated day in and day out."</p>
+    <div id="welcomeBoard" class="bg-gradient-to-r from-emerald-100 via-white to-emerald-50 dark:from-emerald-950/80 dark:via-slate-900 dark:to-slate-900 p-6 rounded-2xl border border-emerald-300 dark:border-emerald-800/40 card-shadow flex flex-col gap-5">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 id="welcomeTitle" class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Welcome!</h2>
+          <p id="motivationalQuote" class="text-xs font-medium text-emerald-700 dark:text-emerald-400/90 mt-1 italic">"Success is the sum of small efforts, repeated day in and day out."</p>
+        </div>
+        <div class="px-3 py-1.5 rounded-xl bg-emerald-200/60 dark:bg-emerald-900/40 border border-emerald-400 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold w-max">
+          🚀 Beat your personal best!
+        </div>
       </div>
-      <div class="px-3 py-1.5 rounded-xl bg-emerald-200/60 dark:bg-emerald-900/40 border border-emerald-400 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold w-max">
-        🚀 Beat your personal best!
+
+      <!-- TODAY'S MINI QUIZ TAB -->
+      <div id="miniQuizBanner" class="p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700">
+        <div class="flex items-center gap-3">
+          <div id="miniQuizIcon" class="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 dark:text-orange-400">
+            🔥
+          </div>
+          <div>
+            <h3 id="miniQuizTitle" class="text-sm font-bold text-slate-900 dark:text-white">
+              Today's Mini Quiz
+            </h3>
+            <p id="miniQuizDesc" class="text-xs text-slate-500 dark:text-slate-400">
+              Daily Business Stream challenge — keep your streak alive!
+            </p>
+          </div>
+        </div>
+
+        <button id="btnTakeMiniQuiz" onclick="startBusinessMiniQuiz()" class="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer">
+          Take Quiz &rarr;
+        </button>
       </div>
     </div>
 
@@ -375,6 +398,7 @@
     let userTitle = "";
     let userName = "";
     let commonName = "";
+    let userStreakData = { streak: 0, streakStatus: "ACTIVE", missedDays: 0, qotdCompletedToday: false };
     let activeQuiz = null;
     let activeQuestions = [];
     let userAnswers = {};
@@ -577,12 +601,20 @@
           commonName = "Student";
         }
 
+        userStreakData = {
+          streak: data.streak || 0,
+          streakStatus: data.streakStatus || "ACTIVE",
+          missedDays: data.missedDays || 0,
+          qotdCompletedToday: data.qotdCompletedToday || false
+        };
+
         localStorage.setItem("lhs_user_session", JSON.stringify({
           email: currentUser,
           role: userRole,
           title: userTitle,
           name: userName,
-          commonName: commonName
+          commonName: commonName,
+          streakData: userStreakData
         }));
 
         initPortalSession();
@@ -596,7 +628,7 @@
 
     function initPortalSession() {
       document.getElementById("loginModal").classList.add("hidden");
-      updateUserUI();
+      updateUserUI(userStreakData);
 
       if (typeof initStreakModule === 'function') {
         initStreakModule({
@@ -623,12 +655,20 @@
       loadQuizIndex();
     }
 
-    function updateUserUI() {
+    function updateUserUI(streakData) {
+      const streakVal = (streakData && streakData.streak !== undefined) ? streakData.streak : (userStreakData.streak || 0);
       const tag = document.getElementById("userProfileTag");
       tag.innerHTML = `
-        <div class="text-right">
-          <div class="text-xs font-bold text-slate-900 dark:text-white">${commonName || userName || currentUser}</div>
-          <div class="text-[10px] font-semibold uppercase ${userRole === 'teacher' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}">${userTitle || userRole}</div>
+        <div class="text-right flex items-center gap-2">
+          <div>
+            <div class="flex items-center gap-1.5 justify-end">
+              <span class="text-xs font-bold text-slate-900 dark:text-white">${commonName || userName || currentUser}</span>
+              <span id="topStreakBadge" class="inline-flex items-center gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold text-xs">
+                🔥 <span id="streakDayCount">${streakVal}</span>
+              </span>
+            </div>
+            <div class="text-[10px] font-semibold uppercase ${userRole === 'teacher' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}">${userTitle || userRole}</div>
+          </div>
         </div>
         <button onclick="logoutUser()" class="ml-2 px-2.5 py-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-[11px] font-medium rounded-lg border border-slate-300 dark:border-slate-700 transition-all cursor-pointer">
           Logout
@@ -638,6 +678,89 @@
       document.getElementById("welcomeTitle").innerText = `Welcome ${commonName}!`;
       const randomQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
       document.getElementById("motivationalQuote").innerText = randomQuote;
+
+      updateMiniQuizBanner(streakData || userStreakData);
+    }
+
+    function updateMiniQuizBanner(streakData) {
+      const banner = document.getElementById("miniQuizBanner");
+      const titleEl = document.getElementById("miniQuizTitle");
+      const descEl = document.getElementById("miniQuizDesc");
+      const quizBtn = document.getElementById("btnTakeMiniQuiz");
+      const iconEl = document.getElementById("miniQuizIcon");
+
+      if (!banner || !titleEl || !descEl || !quizBtn || !iconEl) return;
+
+      const isLost = streakData.streakStatus === 'LOST' || streakData.missedDays > 0;
+      const isCompletedToday = streakData.qotdCompletedToday === true;
+
+      if (isLost) {
+        banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-rose-500/10 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/40";
+        titleEl.innerText = "Get your streak back!";
+        titleEl.className = "text-sm font-bold text-rose-700 dark:text-rose-400";
+        descEl.innerText = "Complete today's quick review quiz to restore your flame!";
+        iconEl.innerText = "💔";
+        iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400";
+
+        quizBtn.innerText = "Take Quiz \u2192";
+        quizBtn.disabled = false;
+        quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-500/20 transition flex items-center justify-center gap-2 cursor-pointer";
+        quizBtn.onclick = () => startBusinessMiniQuiz(true);
+      } else if (isCompletedToday) {
+        banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-emerald-500/10 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-500/30";
+        titleEl.innerText = "Today's Mini Quiz Completed!";
+        titleEl.className = "text-sm font-bold text-emerald-700 dark:text-emerald-400";
+        descEl.innerText = "Great job! Your streak is secured for today.";
+        iconEl.innerText = "✅";
+        iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 dark:text-emerald-400";
+
+        quizBtn.innerText = "Completed";
+        quizBtn.disabled = true;
+        quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-medium text-xs rounded-xl cursor-not-allowed";
+      } else {
+        banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700";
+        titleEl.innerText = "Today's Mini Quiz";
+        titleEl.className = "text-sm font-bold text-slate-900 dark:text-white";
+        descEl.innerText = "Daily Business Stream challenge — keep your streak alive!";
+        iconEl.innerText = "🔥";
+        iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 dark:text-orange-400";
+
+        quizBtn.innerText = "Take Quiz \u2192";
+        quizBtn.disabled = false;
+        quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer";
+        quizBtn.onclick = () => startBusinessMiniQuiz(false);
+      }
+    }
+
+    async function startBusinessMiniQuiz(isRecovery = false) {
+      const btn = document.getElementById("btnTakeMiniQuiz");
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = "Loading Quiz...";
+      }
+
+      const todayDateStr = new Date().toISOString().split('T')[0];
+
+      try {
+        const res = await fetch(`${GAS_API_URL}?action=getDailyMiniQuiz&stream=Business&date=${todayDateStr}&isRecovery=${isRecovery}`);
+        const data = await res.json();
+
+        if (data && data.sheetId) {
+          startQuiz(data.sheetId, data.subject || "Business Studies", data.title || "Daily Business Mini Quiz", data.quizId || "BUS_MINI_QOTD");
+        } else {
+          // Fallback to primary Business unit if API returns default
+          startQuiz("1_Business_Sheet", "Business Studies", "Daily Business Mini Quiz", "BUS_MINI_QOTD");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Unable to fetch today's mini quiz. Launching Business quiz...");
+        startQuiz("1_Business_Sheet", "Business Studies", "Daily Business Mini Quiz", "BUS_MINI_QOTD");
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = "Take Quiz \u2192";
+        }
+      }
     }
 
     function logoutUser() {
@@ -656,6 +779,16 @@
           document.getElementById("statAvgScore").innerText = (stat.bestScore || 0) + "%";
           document.getElementById("statFirstTry").innerText = stat.firstTry100s || 0;
           document.getElementById("statAttempts").innerText = stat.attemptsCount || 0;
+
+          if (stat.streak !== undefined) {
+            userStreakData = {
+              streak: stat.streak || 0,
+              streakStatus: stat.streakStatus || "ACTIVE",
+              missedDays: stat.missedDays || 0,
+              qotdCompletedToday: stat.qotdCompletedToday || false
+            };
+            updateUserUI(userStreakData);
+          }
         }
       } catch (e) { console.error(e); }
     }
@@ -1310,6 +1443,9 @@
           userTitle = user.title;
           userName = user.name;
           commonName = user.commonName;
+          if (user.streakData) {
+            userStreakData = user.streakData;
+          }
           initPortalSession();
         } catch (e) {
           localStorage.removeItem("lhs_user_session");
