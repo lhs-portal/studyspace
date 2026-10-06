@@ -141,6 +141,10 @@
   async function recordStreakActivity(payload = {}) {
     streakState.qotdCompletedToday = true;
 
+let badgeColorClass = "bg-amber-500/10 text-amber-600 border-amber-500/30 dark:text-amber-400";
+    let icon = "🔥";
+    let tooltip = `${count} Day Streak!`;
+    
     if (streakState.streakStatus === "LOST") {
       streakState.streakStatus = "ACTIVE";
       streakState.missedDays = 0;
