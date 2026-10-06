@@ -101,10 +101,6 @@
     const status = streakState.streakStatus;
     const isCompleted = streakState.qotdCompletedToday;
 
-    let badgeColorClass = "bg-amber-500/10 text-amber-600 border-amber-500/30 dark:text-amber-400";
-    let icon = "🔥";
-    let tooltip = `${count} Day Streak!`;
-
     if (status === "LOST" || streakState.missedDays > 0) {
       badgeColorClass = "bg-rose-500/10 text-rose-600 border-rose-500/30 dark:text-rose-400";
       icon = "💔";
