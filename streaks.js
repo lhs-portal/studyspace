@@ -4,9 +4,8 @@
  */
 
 (function (window) {
-  'use me strict';
+  'use strict';
 
-  // Private module state
   let userConfig = null;
   let streakState = {
     streak: 0,
@@ -21,7 +20,6 @@
 
   /**
    * Initializes the streak module for the active student session
-   * @param {Object} config User credentials and metadata
    */
   async function initStreakModule(config) {
     userConfig = config;
@@ -91,7 +89,8 @@
   }
 
   /**
-   * Renders dynamic streak badges in `#streakBadgeContainer`
+   * Renders the single streak badge to the LEFT of the student name.
+   * Format: [Number] 🔥
    */
   function renderStreakBadgeContainer() {
     const container = document.getElementById("streakBadgeContainer");
@@ -116,23 +115,17 @@
     }
 
     container.innerHTML = `
-      <div title="${tooltip}" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-extrabold transition-all ${badgeColorClass}">
-        <span class="text-sm">${icon}</span>
-        <span>${count} ${count === 1 ? 'Day' : 'Days'}</span>
+      <div title="${tooltip}" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-bold transition-all ${badgeColorClass}">
+        <span>${count}</span>
+        <span class="text-xs">${icon}</span>
       </div>
     `;
   }
 
   /**
-   * Syncs streak values to main script DOM elements (`#streakDayCount`, etc.)
+   * Syncs streak values to main script DOM elements
    */
   function syncUIWithMainScript() {
-    const streakDayCountEl = document.getElementById("streakDayCount");
-    if (streakDayCountEl) {
-      streakDayCountEl.innerText = streakState.streak || 0;
-    }
-
-    // Call update functions in main window if declared
     if (typeof window.updateMiniQuizBanner === "function") {
       window.updateMiniQuizBanner(streakState);
     }
@@ -140,7 +133,6 @@
 
   /**
    * Records completed daily quiz activity and advances streak
-   * @param {Object} payload Quiz attempt details
    */
   async function recordStreakActivity(payload = {}) {
     streakState.qotdCompletedToday = true;
@@ -160,7 +152,6 @@
     renderStreakBadgeContainer();
     syncUIWithMainScript();
 
-    // Post update to backend
     try {
       await fetch(API_URL, {
         method: "POST",
@@ -178,14 +169,10 @@
     }
   }
 
-  /**
-   * Getter for current streak state
-   */
   function getStreakState() {
     return { ...streakState };
   }
 
-  // Expose module methods globally
   window.initStreakModule = initStreakModule;
   window.recordStreakActivity = recordStreakActivity;
   window.getStreakState = getStreakState;
