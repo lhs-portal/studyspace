@@ -68,17 +68,20 @@
     if (!userConfig || !userConfig.email) return;
 
     try {
-      const response = await fetch(`${API_URL}?action=getStreakData&email=${encodeURIComponent(userConfig.email)}`);
+      const response = await fetch(`${API_URL}?action=getStreakStatus&email=${encodeURIComponent(userConfig.email)}`);
       if (response.ok) {
         const data = await response.json();
         if (data && !data.error) {
+          const isCompletedToday = data.status === "COMPLETED_TODAY";
+          const isStreakLost = data.status === "STREAK_LOST";
+
           streakState = {
             streak: data.streak ?? streakState.streak,
-            streakStatus: data.streakStatus || streakState.streakStatus,
+            streakStatus: isStreakLost ? "LOST" : (isCompletedToday ? "ACTIVE" : streakState.streakStatus),
             missedDays: data.missedDays ?? streakState.missedDays,
-            qotdCompletedToday: data.qotdCompletedToday ?? streakState.qotdCompletedToday,
-            lastActiveDate: data.lastActiveDate || streakState.lastActiveDate,
-            highestStreak: data.highestStreak || Math.max(data.streak || 0, streakState.highestStreak)
+            qotdCompletedToday: isCompletedToday,
+            lastActiveDate: streakState.lastActiveDate,
+            highestStreak: Math.max(data.streak || 0, streakState.highestStreak)
           };
           saveLocalStreakCache();
         }
@@ -143,11 +146,12 @@
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
-          action: "recordStreakActivity",
-          email: userConfig.email,
-          quizId: payload.quizId || "MINI_QUIZ",
+          action: "submitResult",
+          email: userConfig ? userConfig.email : "",
+          quizId: payload.quizId || "BUS_MINI_QOTD",
           score: payload.score || 100,
-          date: new Date().toISOString().split('T')[0]
+          isQOTD: true,
+          type: "qotd"
         })
       });
     } catch (e) {
