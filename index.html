@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="./streaks.js"></script>
   <script src="./offline-sync.js" defer></script>
   <title>L. Hithadhoo School - Studyspace</title>
   <link rel="manifest" href="./manifest.json" />
@@ -179,7 +180,7 @@
               Today's Mini Quiz
             </h3>
             <p id="miniQuizDesc" class="text-xs text-slate-500 dark:text-slate-400">
-              Daily Business Stream challenge — keep your streak alive!
+              Daily Challenge — keep your streak alive!
             </p>
           </div>
         </div>
@@ -403,6 +404,23 @@
 
     let questionTimer = null;
     let timeLeft = 45;
+
+    function launchMiniQuizModal(data) {
+      activeQuiz = { sheetId: "", subject: data.subject || "Daily Quiz", title: data.title || "Daily Mini Quiz", quizId: "BUS_MINI_QOTD" };
+      activeQuestions = data.questions;
+      userAnswers = {};
+      lockedQuestions = {};
+      currentQuestionIndex = 0;
+
+      document.getElementById("quizSubjectTag").innerText = data.subject || "Daily Quiz";
+      document.getElementById("quizModalTitle").innerText = data.title || "Daily Mini Quiz";
+      
+      const footer = document.getElementById("quizModalFooter");
+      if (footer) footer.classList.remove("hidden");
+      document.getElementById("quizModal").classList.remove("hidden");
+      
+      renderQuizQuestions();
+    }
 
     function startQuestionTimer() {
       stopQuestionTimer();
@@ -634,7 +652,6 @@
       const tag = document.getElementById("userProfileTag");
       const displayName = commonName || userName || currentUser;
       
-      // Target container for inline streak rendered directly to the LEFT of the student's name
       tag.innerHTML = `
         <div class="text-xs font-bold text-slate-900 dark:text-white flex items-center justify-end">
           <span id="inlineStreakTarget"></span>
@@ -647,85 +664,8 @@
       const randomQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
       document.getElementById("motivationalQuote").innerText = randomQuote;
 
-      updateMiniQuizBanner(streakData || userStreakData);
-    }
-
-    function updateMiniQuizBanner(streakData) {
-      const banner = document.getElementById("miniQuizBanner");
-      const titleEl = document.getElementById("miniQuizTitle");
-      const descEl = document.getElementById("miniQuizDesc");
-      const quizBtn = document.getElementById("btnTakeMiniQuiz");
-      const iconEl = document.getElementById("miniQuizIcon");
-
-      if (!banner || !titleEl || !descEl || !quizBtn || !iconEl) return;
-
-      const isLost = streakData.streakStatus === 'LOST' || streakData.missedDays > 0;
-      const isCompletedToday = streakData.qotdCompletedToday === true;
-
-      if (isLost) {
-        banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-rose-500/10 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/40";
-        titleEl.innerText = "Get your streak back!";
-        titleEl.className = "text-sm font-bold text-rose-700 dark:text-rose-400";
-        descEl.innerText = "Complete today's quick review quiz to restore your flame!";
-        iconEl.innerText = "💔";
-        iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400";
-
-        quizBtn.innerText = "Take Quiz \u2192";
-        quizBtn.disabled = false;
-        quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-500/20 transition flex items-center justify-center gap-2 cursor-pointer";
-        quizBtn.onclick = () => startBusinessMiniQuiz(true);
-      } else if (isCompletedToday) {
-        banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-emerald-500/10 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-500/30";
-        titleEl.innerText = "Today's Mini Quiz Completed!";
-        titleEl.className = "text-sm font-bold text-emerald-700 dark:text-emerald-400";
-        descEl.innerText = "Great job! Your streak is secured for today.";
-        iconEl.innerText = "✅";
-        iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 dark:text-emerald-400";
-
-        quizBtn.innerText = "Completed";
-        quizBtn.disabled = true;
-        quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-medium text-xs rounded-xl cursor-not-allowed";
-      } else {
-        banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700";
-        titleEl.innerText = "Today's Mini Quiz";
-        titleEl.className = "text-sm font-bold text-slate-900 dark:text-white";
-        descEl.innerText = "Daily Business Stream challenge — keep your streak alive!";
-        iconEl.innerText = "🔥";
-        iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 dark:text-orange-400";
-
-        quizBtn.innerText = "Take Quiz \u2192";
-        quizBtn.disabled = false;
-        quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer";
-        quizBtn.onclick = () => startBusinessMiniQuiz(false);
-      }
-    }
-
-    async function startBusinessMiniQuiz(isRecovery = false) {
-      const btn = document.getElementById("btnTakeMiniQuiz");
-      if (btn) {
-        btn.disabled = true;
-        btn.innerText = "Loading Quiz...";
-      }
-
-      const todayDateStr = new Date().toISOString().split('T')[0];
-
-      try {
-        const res = await fetch(`${GAS_API_URL}?action=getDailyMiniQuiz&stream=Business&date=${todayDateStr}&isRecovery=${isRecovery}`);
-        const data = await res.json();
-
-        if (data && data.sheetId) {
-          startQuiz(data.sheetId, data.subject || "Business Studies", data.title || "Daily Business Mini Quiz", data.quizId || "BUS_MINI_QOTD");
-        } else {
-          startQuiz("1_Business_Sheet", "Business Studies", "Daily Business Mini Quiz", "BUS_MINI_QOTD");
-        }
-      } catch (err) {
-        console.error(err);
-        startQuiz("1_Business_Sheet", "Business Studies", "Daily Business Mini Quiz", "BUS_MINI_QOTD");
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerText = "Take Quiz \u2192";
-        }
+      if (typeof updateMiniQuizBanner === "function") {
+        updateMiniQuizBanner(streakData || userStreakData);
       }
     }
 
@@ -1385,6 +1325,12 @@
 
       alert(`Quiz Completed!\nOverall Score: ${scoreDetails}`);
 
+      if (activeQuiz && activeQuiz.quizId === "BUS_MINI_QOTD") {
+        if (typeof recordStreakActivity === 'function') {
+          recordStreakActivity({ quizId: activeQuiz.quizId, score: percent });
+        }
+      }
+
       await fetch(GAS_API_URL, {
         method: "POST",
         headers: {
@@ -1393,7 +1339,7 @@
         body: JSON.stringify({
           action: "submitResult",
           email: currentUser,
-          quizId: activeQuiz.quizId,
+          quizId: activeQuiz ? activeQuiz.quizId : "QUIZ",
           score: percent,
           attemptNumber: 1,
           isFirstTry100: percent === 100
@@ -1436,7 +1382,6 @@
       }
     };
   </script>
-  <script src="./streaks.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
