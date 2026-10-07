@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="./offline-sync.js" defer></script>
   <title>L. Hithadhoo School - Studyspace</title>
-  <link rel="manifest" href="./manifest.json">
+  <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="logo.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -82,7 +82,6 @@
   <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <!-- SCHOOL LOGO -->
         <img 
           src="logo.png" 
           alt="L. Hithadhoo School Logo" 
@@ -97,7 +96,7 @@
         </div>
       </div>
 
-      <!-- TOP BANNER RIGHT SIDE: STREAK (LEFT) -> NAME -> ROLE -->
+      <!-- TOP BANNER: STREAK BADGE -> STUDENT NAME & ROLE -->
       <div id="navUserSection" class="flex items-center gap-2.5">
         <div id="streakBadgeContainer"></div>
         <div id="userProfileTag" class="flex items-center gap-2"></div>
@@ -349,12 +348,11 @@
     </div>
   </div>
 
-  <!-- FOOTER WITH THEME TOGGLE & SIGNOUT BUTTON MOVED ALL THE WAY DOWN -->
+  <!-- FOOTER WITH THEME TOGGLE & SIGNOUT BUTTON -->
   <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500 dark:text-slate-500 mt-auto">
     <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div>L. Hithadhoo School - Studyspace &copy; 2026</div>
 
-      <!-- FOOTER CONTROLS: THEME TOGGLE & SIGNOUT -->
       <div class="flex items-center gap-3">
         <button 
           onclick="toggleTheme()" 
@@ -382,11 +380,11 @@
     const ENCOURAGEMENT_MESSAGES = ["You can get the next one! 💪", "That's okay! 🌱", "Don't worry! 😊", "You can get this next time! 🎯", "Mistakes make perfect! ✨", "No worries", "Just a little setback", "Trust the process", "It's giving learning curve", "We love a redemption arc", "That's valid, shake it off"];
 
     const MOTIVATIONAL_QUOTES = [
-      `""Read: In the name of your Lord who created..." — Surah Al-Alaq (96:1)."`,
-      `"And say, 'My Lord, increase me in knowledge.'" — Surah Ta-Ha (20:114)"`,
-      `"God will raise those who have believed among you and those who were given knowledge, by degrees." — Surah Al-Mujadila (58:11)"`,
-      `"Are those who know equal to those who do not know?" — Surah Az-Zumar (39:9)"`,
-      `"And He taught Adam all the names..." — Surah Al-Baqarah (2:31)"`
+      "Read: In the name of your Lord who created... — Surah Al-Alaq (96:1).",
+      "And say, 'My Lord, increase me in knowledge.' — Surah Ta-Ha (20:114)",
+      "God will raise those who have believed among you and those who were given knowledge, by degrees. — Surah Al-Mujadila (58:11)",
+      "Are those who know equal to those who do not know? — Surah Az-Zumar (39:9)",
+      "And He taught Adam all the names... — Surah Al-Baqarah (2:31)"
     ];
 
     let currentUser = "";
@@ -635,8 +633,6 @@
 
     function updateUserUI(streakData) {
       const tag = document.getElementById("userProfileTag");
-      
-      // Clean header layout: [Name] [Role Badge]
       tag.innerHTML = `
         <div class="flex items-center gap-2">
           <span class="text-xs font-bold text-slate-900 dark:text-white">${commonName || userName || currentUser}</span>
