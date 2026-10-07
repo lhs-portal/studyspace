@@ -96,9 +96,8 @@
         </div>
       </div>
 
-      <!-- TOP BANNER RIGHT SIDE: STREAK (LEFT) -> NAME & ROLE (VERTICAL) -->
+      <!-- TOP BANNER RIGHT SIDE -->
       <div id="navUserSection" class="flex items-center gap-3">
-        <div id="streakBadgeContainer"></div>
         <div id="userProfileTag" class="text-right"></div>
       </div>
     </div>
@@ -633,10 +632,14 @@
 
     function updateUserUI(streakData) {
       const tag = document.getElementById("userProfileTag");
+      const displayName = commonName || userName || currentUser;
       
-      // Restored vertical original structure: Name on top, Role underneath (no border box)
+      // Target container for inline streak rendered directly to the LEFT of the student's name
       tag.innerHTML = `
-        <div class="text-xs font-bold text-slate-900 dark:text-white">${commonName || userName || currentUser}</div>
+        <div class="text-xs font-bold text-slate-900 dark:text-white flex items-center justify-end">
+          <span id="inlineStreakTarget"></span>
+          <span>${displayName}</span>
+        </div>
         <div class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">${userTitle || userRole}</div>
       `;
 
