@@ -26,7 +26,6 @@
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
     
-    /* Dynamic shadows for light/dark modes */
     .card-shadow { 
       box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); 
     }
@@ -37,7 +36,6 @@
       box-shadow: 0 10px 25px -3px rgba(16, 185, 129, 0.18); 
     }
 
-    /* Independent Popup: Fly in from below -> pause -> fly up & away */
     @keyframes flyInAndAway {
       0% {
         opacity: 0;
@@ -99,12 +97,10 @@
         </div>
       </div>
 
-      <div id="navUserSection" class="flex items-center gap-3">
-        <!-- STREAK BADGE CONTAINER -->
+      <!-- TOP BANNER RIGHT SIDE: STREAK (LEFT) -> NAME -> ROLE -->
+      <div id="navUserSection" class="flex items-center gap-2.5">
         <div id="streakBadgeContainer"></div>
-        <div id="userProfileTag" class="flex items-center gap-2">
-          <!-- Populated dynamically -->
-        </div>
+        <div id="userProfileTag" class="flex items-center gap-2"></div>
       </div>
     </div>
   </header>
@@ -113,7 +109,6 @@
   <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
     <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
       <div class="bg-gradient-to-r from-emerald-700 to-teal-800 p-6 text-white text-center border-b border-emerald-600/30">
-        <!-- SCHOOL LOGO ON LOGIN MODAL -->
         <div class="inline-flex h-14 w-14 rounded-2xl bg-white p-2 items-center justify-center mb-3 shadow-lg">
           <img 
             src="logo.png" 
@@ -134,7 +129,7 @@
             id="emailInput" 
             required 
             placeholder="name@lhithadhooschool.edu.mv"
-            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 outline-none"
           />
         </div>
 
@@ -145,7 +140,7 @@
             id="passwordInput" 
             required 
             placeholder="••••••••"
-            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 outline-none"
           />
         </div>
 
@@ -199,7 +194,6 @@
 
     <!-- DASHBOARD -->
     <section id="dashboardSection" class="space-y-5">
-      <!-- School Banner -->
       <div id="teacherBanner" class="hidden p-4 rounded-2xl bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-600/50 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <span class="h-9 w-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-sm">SMT</span>
@@ -232,7 +226,6 @@
       <div id="teacherTableContainer" class="hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 card-shadow">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-base font-bold text-slate-900 dark:text-white">Student Performance Overview</h3>
-          <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400"></span>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
@@ -333,7 +326,6 @@
           <span id="quizSubjectTag" class="px-2.5 py-0.5 text-[10px] font-bold rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/50">Subject</span>
           <h3 id="quizModalTitle" class="text-base font-bold text-slate-900 dark:text-white mt-1">Quiz</h3>
         </div>
-        <!-- QUESTION TIMER DISPLAY (MCQ Only) -->
         <div class="flex items-center gap-2">
           <div id="timerContainer" class="hidden px-3 py-1 rounded-xl bg-amber-100 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-700/60 text-amber-800 dark:text-amber-300 text-xs font-extrabold flex items-center gap-1.5">
             ⏱ <span id="timerCountdown">45</span>s
@@ -342,11 +334,11 @@
         </div>
       </div>
 
-      <div id="quizQuestionBody" class="p-6 overflow-y-auto space-y-4 flex-1 relative">
-        <!-- Questions -->
+      <div id="quizQuestionBody" class="p-6 overflow-y-auto space-y-4 flex-1 relative min-h-[220px]">
+        <!-- Questions rendered dynamically -->
       </div>
 
-      <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end items-center">
+      <div id="quizModalFooter" class="hidden px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end items-center">
         <button id="nextBtn" onclick="nextQuestion()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer">
           Next Question &rarr;
         </button>
@@ -357,25 +349,29 @@
     </div>
   </div>
 
-  <!-- FLOATING BOTTOM RIGHT THEME TOGGLE BUTTON -->
-  <button 
-    onclick="toggleTheme()" 
-    id="themeToggleBtn"
-    aria-label="Toggle Theme"
-    class="fixed bottom-5 right-5 z-40 h-12 w-12 rounded-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-xl transition-all cursor-pointer flex items-center justify-center text-lg active:scale-95"
-  >
-    <span id="themeIcon">☀️</span>
-  </button>
-
-  <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-4 text-center text-xs text-slate-500 dark:text-slate-500">
-    <div class="flex flex-col items-center gap-2">
-      <button id="pwa-install-btn" class="hidden items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow transition-all cursor-pointer">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-        </svg>
-        Install App  
-      </button>
+  <!-- FOOTER WITH THEME TOGGLE & SIGNOUT BUTTON MOVED ALL THE WAY DOWN -->
+  <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500 dark:text-slate-500 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div>L. Hithadhoo School - Studyspace &copy; 2026</div>
+
+      <!-- FOOTER CONTROLS: THEME TOGGLE & SIGNOUT -->
+      <div class="flex items-center gap-3">
+        <button 
+          onclick="toggleTheme()" 
+          id="themeToggleBtn"
+          aria-label="Toggle Theme"
+          class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-bold text-xs transition cursor-pointer flex items-center gap-1.5"
+        >
+          <span id="themeIcon">☀️</span> Toggle Theme
+        </button>
+
+        <button 
+          onclick="logoutUser()" 
+          class="px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs rounded-xl border border-rose-500/20 transition cursor-pointer flex items-center gap-1.5"
+        >
+          <span>🚪</span> Sign Out
+        </button>
+      </div>
     </div>
   </footer>
 
@@ -406,28 +402,21 @@
     let currentQuestionIndex = 0;
     let cachedLeaderboardData = [];
 
-    // Track active Paper selection (P1 vs P2) per Unit Card ID
     const cardPaperSelections = {};
 
-    // --- TIMER STATE MANAGEMENT ---
     let questionTimer = null;
     let timeLeft = 45;
 
     function startQuestionTimer() {
       stopQuestionTimer();
 
-      // Check if current subject is Accounting
       const isAccounting = activeQuiz && activeQuiz.subject && activeQuiz.subject.toLowerCase().includes("account");
 
       if (isAccounting) {
-        // Accounting timer set strictly to 60 seconds
         timeLeft = 60;
       } else {
-        // Check if the current active question has an image link
         const currentQ = activeQuestions[currentQuestionIndex];
         const hasImage = currentQ && currentQ.imageUrl && currentQ.imageUrl.trim().length > 0;
-
-        // Default timer logic (Economics, etc.): 90s for images, 45s for standard
         timeLeft = hasImage ? 90 : 45;
       }
 
@@ -471,7 +460,6 @@
       loadQuizIndex();
     }
 
-    // --- THEME SWITCHER LOGIC ---
     function initTheme() {
       const savedTheme = localStorage.getItem("lhs_theme");
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -518,7 +506,6 @@
       localStorage.setItem(`unit_progress_${quizId}`, JSON.stringify({ answered: answeredCount, total: totalCount, percent }));
     }
 
-    // --- PAPER TOGGLE HANDLER ---
     function handlePaperToggle(checkbox, quizId, hasProg) {
       const activePaper = checkbox.checked ? "P2" : "P1";
       cardPaperSelections[quizId] = activePaper;
@@ -528,23 +515,15 @@
       const quizBtn = document.getElementById(`quiz-btn-${quizId}`);
 
       if (activePaper === "P2") {
-        if (p1Label) {
-          p1Label.className = "text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors";
-        }
-        if (p2Label) {
-          p2Label.className = "text-[10px] font-extrabold text-amber-600 dark:text-amber-400 transition-colors";
-        }
+        if (p1Label) p1Label.className = "text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors";
+        if (p2Label) p2Label.className = "text-[10px] font-extrabold text-amber-600 dark:text-amber-400 transition-colors";
         if (quizBtn) {
           quizBtn.className = "w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all cursor-pointer";
           quizBtn.innerText = hasProg ? "Continue Paper 2 Quiz \u2192" : "Start Paper 2 Quiz \u2192";
         }
       } else {
-        if (p1Label) {
-          p1Label.className = "text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 transition-colors";
-        }
-        if (p2Label) {
-          p2Label.className = "text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors";
-        }
+        if (p1Label) p1Label.className = "text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 transition-colors";
+        if (p2Label) p2Label.className = "text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors";
         if (quizBtn) {
           quizBtn.className = "w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all cursor-pointer";
           quizBtn.innerText = hasProg ? "Continue Paper 1 Quiz \u2192" : "Start Paper 1 Quiz \u2192";
@@ -555,7 +534,6 @@
     function handleStartQuizClick(sheetId, paper2SheetId, subject, title, quizId) {
       const selectedPaper = cardPaperSelections[quizId] || "P1";
       const targetSheetId = (selectedPaper === "P2" && paper2SheetId) ? paper2SheetId : sheetId;
-
       startQuiz(targetSheetId, subject, title, quizId);
     }
 
@@ -656,23 +634,16 @@
     }
 
     function updateUserUI(streakData) {
-      const streakVal = (streakData && streakData.streak !== undefined) ? streakData.streak : (userStreakData.streak || 0);
       const tag = document.getElementById("userProfileTag");
+      
+      // Clean header layout: [Name] [Role Badge]
       tag.innerHTML = `
-        <div class="text-right flex items-center gap-2">
-          <div>
-            <div class="flex items-center gap-1.5 justify-end">
-              <span class="text-xs font-bold text-slate-900 dark:text-white">${commonName || userName || currentUser}</span>
-              <span id="topStreakBadge" class="inline-flex items-center gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold text-xs">
-                🔥 <span id="streakDayCount">${streakVal}</span>
-              </span>
-            </div>
-            <div class="text-[10px] font-semibold uppercase ${userRole === 'teacher' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}">${userTitle || userRole}</div>
-          </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-slate-900 dark:text-white">${commonName || userName || currentUser}</span>
+          <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border ${userRole === 'teacher' ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20'}">
+            ${userTitle || userRole}
+          </span>
         </div>
-        <button onclick="logoutUser()" class="ml-2 px-2.5 py-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-[11px] font-medium rounded-lg border border-slate-300 dark:border-slate-700 transition-all cursor-pointer">
-          Logout
-        </button>
       `;
 
       document.getElementById("welcomeTitle").innerText = `Welcome ${commonName}!`;
@@ -748,12 +719,10 @@
         if (data && data.sheetId) {
           startQuiz(data.sheetId, data.subject || "Business Studies", data.title || "Daily Business Mini Quiz", data.quizId || "BUS_MINI_QOTD");
         } else {
-          // Fallback to primary Business unit if API returns default
           startQuiz("1_Business_Sheet", "Business Studies", "Daily Business Mini Quiz", "BUS_MINI_QOTD");
         }
       } catch (err) {
         console.error(err);
-        alert("Unable to fetch today's mini quiz. Launching Business quiz...");
         startQuiz("1_Business_Sheet", "Business Studies", "Daily Business Mini Quiz", "BUS_MINI_QOTD");
       } finally {
         if (btn) {
@@ -991,46 +960,65 @@
 
       document.getElementById("quizSubjectTag").innerText = subject;
       document.getElementById("quizModalTitle").innerText = title;
-      document.getElementById("quizQuestionBody").innerHTML = "<div class='text-xs text-slate-500'>Loading questions...</div>";
+      
+      const modalBody = document.getElementById("quizQuestionBody");
+      const modalFooter = document.getElementById("quizModalFooter");
+      if (modalFooter) modalFooter.classList.add("hidden");
+
+      modalBody.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-16 gap-3 text-center">
+          <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-2">Fetching questions...</p>
+        </div>
+      `;
       document.getElementById("quizModal").classList.remove("hidden");
 
-      const res = await fetch(`${GAS_API_URL}?action=getQuiz&sheetId=${sheetId}`);
-      const fetchedQuestions = await res.json();
-      
-      if (Array.isArray(fetchedQuestions) && fetchedQuestions.length > 0) {
-        const isBusiness = subject && subject.toLowerCase().includes("business");
+      try {
+        const res = await fetch(`${GAS_API_URL}?action=getQuiz&sheetId=${encodeURIComponent(sheetId)}`);
+        const fetchedQuestions = await res.json();
 
-        if (isBusiness) {
-          // Specific logic for Business Studies (2, 4, 6, 8 mark tariffs across 2 sets)
-          const getQuestionsByMarks = (marks) => {
-            const filtered = fetchedQuestions.filter(q => Number(q.maxMarks) === marks);
-            return shuffleArray([...filtered]);
-          };
+        if (Array.isArray(fetchedQuestions) && fetchedQuestions.length > 0) {
+          const isBusiness = subject && subject.toLowerCase().includes("business");
 
-          const q2 = getQuestionsByMarks(2);
-          const q4 = getQuestionsByMarks(4);
-          const q6 = getQuestionsByMarks(6);
-          const q8 = getQuestionsByMarks(8);
+          if (isBusiness) {
+            const getQuestionsByMarks = (marks) => {
+              const filtered = fetchedQuestions.filter(q => Number(q.maxMarks) === marks);
+              return shuffleArray([...filtered]);
+            };
 
-          const set1 = [q2[0], q4[0], q6[0], q8[0]].filter(Boolean);
-          const set2 = [q2[1], q4[1], q6[1], q8[1]].filter(Boolean);
+            const q2 = getQuestionsByMarks(2);
+            const q4 = getQuestionsByMarks(4);
+            const q6 = getQuestionsByMarks(6);
+            const q8 = getQuestionsByMarks(8);
 
-          activeQuestions = [...set1, ...set2];
-        } else {
-          // Standard logic for Economics and all other subjects
-          const shuffled = shuffleArray(fetchedQuestions).map(q => {
-            if (q.options && Array.isArray(q.options)) {
-              q.options = shuffleArray([...q.options]);
+            const set1 = [q2[0], q4[0], q6[0], q8[0]].filter(Boolean);
+            const set2 = [q2[1], q4[1], q6[1], q8[1]].filter(Boolean);
+
+            activeQuestions = [...set1, ...set2];
+
+            if (activeQuestions.length === 0) {
+              activeQuestions = shuffleArray([...fetchedQuestions]).slice(0, 8);
             }
-            return q;
-          });
-          activeQuestions = shuffled.slice(0, 30);
-        }
-      } else {
-        activeQuestions = [];
-      }
+          } else {
+            const shuffled = shuffleArray([...fetchedQuestions]).map(q => {
+              if (q.options && Array.isArray(q.options)) {
+                q.options = shuffleArray([...q.options]);
+              }
+              return q;
+            });
+            activeQuestions = shuffled.slice(0, 30);
+          }
 
-      renderQuizQuestions();
+          if (modalFooter) modalFooter.classList.remove("hidden");
+          renderQuizQuestions();
+
+        } else {
+          modalBody.innerHTML = `<div class="p-8 text-center text-xs text-slate-500">No questions found for this unit.</div>`;
+        }
+      } catch (err) {
+        console.error(err);
+        modalBody.innerHTML = `<div class="p-8 text-center text-xs text-rose-500 font-bold">Error loading quiz. Please try again.</div>`;
+      }
     }
 
     function renderQuizQuestions() {
@@ -1043,7 +1031,6 @@
       const q = activeQuestions[idx];
       const isWritten = !q.options || q.options.length === 0 || !q.options[0].text;
 
-      // Handle timer visibility
       if (!isWritten && !lockedQuestions[idx]) {
         startQuestionTimer();
       } else {
@@ -1086,7 +1073,6 @@
       `;
       qCard.appendChild(qHeader);
 
-      // Render Case Study if available
       if (q.caseStudy) {
         const caseBox = document.createElement("div");
         caseBox.className = "p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-xs text-amber-900 dark:text-amber-200 leading-relaxed";
@@ -1106,7 +1092,6 @@
         qCard.innerHTML += `<img src="${q.imageUrl}" class="max-w-full rounded-lg my-2 border border-slate-200 dark:border-slate-800" />`;
       }
 
-      // WRITTEN QUESTION INTERFACE
       if (isWritten) {
         const savedData = userAnswers[idx] || {};
         const isLocked = !!lockedQuestions[idx];
@@ -1139,7 +1124,6 @@
 
         qCard.appendChild(writtenContainer);
 
-        // DISPLAY AI EVALUATION RESULTS
         if (isLocked && savedData.eval) {
           const evalRes = savedData.eval;
           const evalBox = document.createElement("div");
@@ -1211,7 +1195,6 @@
         }
 
       } else {
-        // MULTIPLE CHOICE INTERFACE
         const optsContainer = document.createElement("div");
         optsContainer.className = "space-y-1.5 mt-2";
 
