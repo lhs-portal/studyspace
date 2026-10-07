@@ -32,7 +32,7 @@
 
     // Render UI components
     renderInlineStreak();
-    syncUIWithMainScript();
+    updateMiniQuizBanner(streakState);
   }
 
   /**
@@ -112,11 +112,91 @@
   }
 
   /**
-   * Syncs streak values to main script DOM elements
+   * Updates the UI Banner for Today's Mini Quiz based on current streak status
    */
-  function syncUIWithMainScript() {
-    if (typeof window.updateMiniQuizBanner === "function") {
-      window.updateMiniQuizBanner(streakState);
+  function updateMiniQuizBanner(stateData) {
+    const currentData = stateData || streakState;
+    const banner = document.getElementById("miniQuizBanner");
+    const titleEl = document.getElementById("miniQuizTitle");
+    const descEl = document.getElementById("miniQuizDesc");
+    const quizBtn = document.getElementById("btnTakeMiniQuiz");
+    const iconEl = document.getElementById("miniQuizIcon");
+
+    if (!banner || !titleEl || !descEl || !quizBtn || !iconEl) return;
+
+    const isLost = currentData.streakStatus === 'LOST' || currentData.missedDays > 0;
+    const isCompletedToday = currentData.qotdCompletedToday === true;
+
+    if (isLost) {
+      banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-rose-500/10 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/40";
+      titleEl.innerText = "Get your streak back!";
+      titleEl.className = "text-sm font-bold text-rose-700 dark:text-rose-400";
+      descEl.innerText = "Complete today's quick review quiz to restore your flame!";
+      iconEl.innerText = "💔";
+      iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400";
+
+      quizBtn.innerText = "Take Quiz →";
+      quizBtn.disabled = false;
+      quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-500/20 transition flex items-center justify-center gap-2 cursor-pointer";
+      quizBtn.onclick = () => startBusinessMiniQuiz(true);
+    } else if (isCompletedToday) {
+      banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-emerald-500/10 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-500/30";
+      titleEl.innerText = "Today's Mini Quiz Completed!";
+      titleEl.className = "text-sm font-bold text-emerald-700 dark:text-emerald-400";
+      descEl.innerText = "Great job! Your streak is secured for today.";
+      iconEl.innerText = "✅";
+      iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 dark:text-emerald-400";
+
+      quizBtn.innerText = "Completed";
+      quizBtn.disabled = true;
+      quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-medium text-xs rounded-xl cursor-not-allowed";
+    } else {
+      banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700";
+      titleEl.innerText = "Today's Mini Quiz";
+      titleEl.className = "text-sm font-bold text-slate-900 dark:text-white";
+      descEl.innerText = "Daily Stream Challenge — keep your streak alive!";
+      iconEl.innerText = "🔥";
+      iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 dark:text-orange-400";
+
+      quizBtn.innerText = "Take Quiz →";
+      quizBtn.disabled = false;
+      quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer";
+      quizBtn.onclick = () => startBusinessMiniQuiz(false);
+    }
+  }
+
+  /**
+   * Fetches daily mini quiz questions and opens the quiz modal directly
+   */
+  async function startBusinessMiniQuiz(isRecovery = false) {
+    const btn = document.getElementById("btnTakeMiniQuiz");
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = "Loading Quiz...";
+    }
+
+    try {
+      const email = userConfig ? userConfig.email : "";
+      const res = await fetch(`${API_URL}?action=getDailyMiniQuiz&email=${encodeURIComponent(email)}&isRecovery=${isRecovery}`);
+      const data = await res.json();
+
+      if (data && data.questions && data.questions.length > 0) {
+        if (typeof window.launchMiniQuizModal === "function") {
+          window.launchMiniQuizModal(data);
+        } else {
+          alert("Quiz modal launcher is missing in main window.");
+        }
+      } else {
+        alert(data.error || "Mini quiz is currently unavailable.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error fetching daily mini quiz.");
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerText = "Take Quiz →";
+      }
     }
   }
 
@@ -139,7 +219,7 @@
 
     saveLocalStreakCache();
     renderInlineStreak();
-    syncUIWithMainScript();
+    updateMiniQuizBanner(streakState);
 
     try {
       await fetch(API_URL, {
@@ -164,6 +244,8 @@
   }
 
   window.initStreakModule = initStreakModule;
+  window.updateMiniQuizBanner = updateMiniQuizBanner;
+  window.startBusinessMiniQuiz = startBusinessMiniQuiz;
   window.recordStreakActivity = recordStreakActivity;
   window.getStreakState = getStreakState;
 
