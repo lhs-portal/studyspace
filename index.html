@@ -96,10 +96,10 @@
         </div>
       </div>
 
-      <!-- TOP BANNER: STREAK BADGE -> STUDENT NAME & ROLE -->
-      <div id="navUserSection" class="flex items-center gap-2.5">
+      <!-- TOP BANNER RIGHT SIDE: STREAK (LEFT) -> NAME & ROLE (VERTICAL) -->
+      <div id="navUserSection" class="flex items-center gap-3">
         <div id="streakBadgeContainer"></div>
-        <div id="userProfileTag" class="flex items-center gap-2"></div>
+        <div id="userProfileTag" class="text-right"></div>
       </div>
     </div>
   </header>
@@ -358,16 +358,16 @@
           onclick="toggleTheme()" 
           id="themeToggleBtn"
           aria-label="Toggle Theme"
-          class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-bold text-xs transition cursor-pointer flex items-center gap-1.5"
+          class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
         >
-          <span id="themeIcon">☀️</span> Toggle Theme
+          <span id="themeIcon">☀️</span>
         </button>
 
         <button 
           onclick="logoutUser()" 
-          class="px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs rounded-xl border border-rose-500/20 transition cursor-pointer flex items-center gap-1.5"
+          class="px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs rounded-xl border border-rose-500/20 transition cursor-pointer"
         >
-          <span>🚪</span> Sign Out
+          Sign Out
         </button>
       </div>
     </div>
@@ -633,13 +633,11 @@
 
     function updateUserUI(streakData) {
       const tag = document.getElementById("userProfileTag");
+      
+      // Restored vertical original structure: Name on top, Role underneath (no border box)
       tag.innerHTML = `
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-bold text-slate-900 dark:text-white">${commonName || userName || currentUser}</span>
-          <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border ${userRole === 'teacher' ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20'}">
-            ${userTitle || userRole}
-          </span>
-        </div>
+        <div class="text-xs font-bold text-slate-900 dark:text-white">${commonName || userName || currentUser}</div>
+        <div class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">${userTitle || userRole}</div>
       `;
 
       document.getElementById("welcomeTitle").innerText = `Welcome ${commonName}!`;
