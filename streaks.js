@@ -31,7 +31,7 @@
     await fetchStreakStatusFromBackend();
 
     // Render UI components
-    renderStreakBadgeContainer();
+    renderInlineStreak();
     syncUIWithMainScript();
   }
 
@@ -89,37 +89,23 @@
   }
 
   /**
-   * Renders the single streak badge to the LEFT of the student name.
-   * Format: [Number] 🔥
+   * Renders the streak inline to the LEFT of the student name: [Number][Icon]
    */
-  function renderStreakBadgeContainer() {
-    const container = document.getElementById("streakBadgeContainer");
-    if (!container) return;
+  function renderInlineStreak() {
+    const inlineContainer = document.getElementById("inlineStreakTarget");
+    if (!inlineContainer) return;
 
     const count = streakState.streak || 0;
     const status = streakState.streakStatus;
-    const isCompleted = streakState.qotdCompletedToday;
 
-    let badgeColorClass = "bg-amber-500/10 text-amber-600 border-amber-500/30 dark:text-amber-400";
     let icon = "🔥";
-    let tooltip = `${count} Day Streak!`;
-
     if (status === "LOST" || streakState.missedDays > 0) {
-      badgeColorClass = "bg-rose-500/10 text-rose-600 border-rose-500/30 dark:text-rose-400";
       icon = "💔";
-      tooltip = "Streak broken! Take today's quiz to recover!";
-    } else if (isCompleted) {
-      badgeColorClass = "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400";
+    } else if (streakState.qotdCompletedToday) {
       icon = "✅";
-      tooltip = "Today's streak activity completed!";
     }
 
-    container.innerHTML = `
-      <div title="${tooltip}" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-bold transition-all ${badgeColorClass}">
-        <span>${count}</span>
-        <span class="text-xs">${icon}</span>
-      </div>
-    `;
+    inlineContainer.innerHTML = `<span class="mr-1.5 font-bold">${count}${icon}</span>`;
   }
 
   /**
@@ -149,7 +135,7 @@
     }
 
     saveLocalStreakCache();
-    renderStreakBadgeContainer();
+    renderInlineStreak();
     syncUIWithMainScript();
 
     try {
