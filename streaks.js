@@ -19,11 +19,29 @@
   const API_URL = "https://script.google.com/macros/s/AKfycbxp8krlvEmXQGeNp96G2ybXV9KjecxpCu61LuT34lMil2z4fklRAB9ge_K23FcOh1qFbg/exec";
 
   /**
+   * Checks whether the current user is a staff member
+   */
+  function isStaffUser() {
+    if (!userConfig || !userConfig.role) return false;
+    const role = userConfig.role.toLowerCase();
+    return role === "teacher" || role === "admin" || role === "smt";
+  }
+
+  /**
    * Initializes the streak module for the active student session
    */
   async function initStreakModule(config) {
     userConfig = config;
     
+    // Hide streak components completely for teachers, admins, and SMT members
+    if (isStaffUser()) {
+      const banner = document.getElementById("miniQuizBanner");
+      if (banner) banner.style.display = "none";
+      const inlineContainer = document.getElementById("inlineStreakTarget");
+      if (inlineContainer) inlineContainer.innerHTML = "";
+      return;
+    }
+
     // Load local cached streak data first for instant UI response
     loadLocalStreakCache();
 
@@ -65,7 +83,7 @@
    * Fetches real-time streak details from the backend
    */
   async function fetchStreakStatusFromBackend() {
-    if (!userConfig || !userConfig.email) return;
+    if (!userConfig || !userConfig.email || isStaffUser()) return;
 
     try {
       const response = await fetch(`${API_URL}?action=getStreakStatus&email=${encodeURIComponent(userConfig.email)}`);
@@ -93,19 +111,19 @@
 
   /**
    * Renders the streak inline to the LEFT of the student name: [Number][Icon]
+   * Always displays 🔥 for active streaks (even when completed today)
    */
   function renderInlineStreak() {
     const inlineContainer = document.getElementById("inlineStreakTarget");
-    if (!inlineContainer) return;
+    if (!inlineContainer || isStaffUser()) return;
 
     const count = streakState.streak || 0;
     const status = streakState.streakStatus;
 
+    // Use broken heart if lost, otherwise keep the fire 🔥 permanent!
     let icon = "🔥";
     if (status === "LOST" || streakState.missedDays > 0) {
       icon = "💔";
-    } else if (streakState.qotdCompletedToday) {
-      icon = "✅";
     }
 
     inlineContainer.innerHTML = `<span class="mr-1.5 font-bold">${count}${icon}</span>`;
@@ -115,14 +133,24 @@
    * Updates the UI Banner for Today's Mini Quiz based on current streak status
    */
   function updateMiniQuizBanner(stateData) {
-    const currentData = stateData || streakState;
     const banner = document.getElementById("miniQuizBanner");
+    if (!banner) return;
+
+    // Hide banner completely if active user is staff
+    if (isStaffUser()) {
+      banner.style.display = "none";
+      return;
+    }
+
+    banner.style.display = "flex";
+
+    const currentData = stateData || streakState;
     const titleEl = document.getElementById("miniQuizTitle");
     const descEl = document.getElementById("miniQuizDesc");
     const quizBtn = document.getElementById("btnTakeMiniQuiz");
     const iconEl = document.getElementById("miniQuizIcon");
 
-    if (!banner || !titleEl || !descEl || !quizBtn || !iconEl) return;
+    if (!titleEl || !descEl || !quizBtn || !iconEl) return;
 
     const isLost = currentData.streakStatus === 'LOST' || currentData.missedDays > 0;
     const isCompletedToday = currentData.qotdCompletedToday === true;
@@ -169,6 +197,8 @@
    * Fetches daily mini quiz questions and opens the quiz modal directly
    */
   async function startBusinessMiniQuiz(isRecovery = false) {
+    if (isStaffUser()) return;
+
     const btn = document.getElementById("btnTakeMiniQuiz");
     if (btn) {
       btn.disabled = true;
@@ -204,6 +234,8 @@
    * Records completed daily quiz activity and advances streak
    */
   async function recordStreakActivity(payload = {}) {
+    if (isStaffUser()) return;
+
     streakState.qotdCompletedToday = true;
 
     if (streakState.streakStatus === "LOST") {
