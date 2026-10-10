@@ -20,27 +20,17 @@
 
   /**
    * Checks whether the current user is a staff member
+   * Updated: Always returns false so all users (teachers, SMT, students) can build streaks
    */
   function isStaffUser() {
-    if (!userConfig || !userConfig.role) return false;
-    const role = userConfig.role.toLowerCase();
-    return role === "teacher" || role === "admin" || role === "smt";
+    return false;
   }
 
   /**
-   * Initializes the streak module for the active student session
+   * Initializes the streak module for the active session
    */
   async function initStreakModule(config) {
     userConfig = config;
-    
-    // Hide streak components completely for teachers, admins, and SMT members
-    if (isStaffUser()) {
-      const banner = document.getElementById("miniQuizBanner");
-      if (banner) banner.style.display = "none";
-      const inlineContainer = document.getElementById("inlineStreakTarget");
-      if (inlineContainer) inlineContainer.innerHTML = "";
-      return;
-    }
 
     // Load local cached streak data first for instant UI response
     loadLocalStreakCache();
@@ -83,7 +73,7 @@
    * Fetches real-time streak details from the backend
    */
   async function fetchStreakStatusFromBackend() {
-    if (!userConfig || !userConfig.email || isStaffUser()) return;
+    if (!userConfig || !userConfig.email) return;
 
     try {
       const response = await fetch(`${API_URL}?action=getStreakStatus&email=${encodeURIComponent(userConfig.email)}`);
@@ -110,12 +100,12 @@
   }
 
   /**
-   * Renders the streak inline to the LEFT of the student name: [Number][Icon]
+   * Renders the streak inline to the LEFT of the user name: [Number][Icon]
    * Always displays 🔥 for active streaks (even when completed today)
    */
   function renderInlineStreak() {
     const inlineContainer = document.getElementById("inlineStreakTarget");
-    if (!inlineContainer || isStaffUser()) return;
+    if (!inlineContainer) return;
 
     const count = streakState.streak || 0;
     const status = streakState.streakStatus;
@@ -135,12 +125,6 @@
   function updateMiniQuizBanner(stateData) {
     const banner = document.getElementById("miniQuizBanner");
     if (!banner) return;
-
-    // Hide banner completely if active user is staff
-    if (isStaffUser()) {
-      banner.style.display = "none";
-      return;
-    }
 
     banner.style.display = "flex";
 
@@ -197,8 +181,6 @@
    * Fetches daily mini quiz questions and opens the quiz modal directly
    */
   async function startBusinessMiniQuiz(isRecovery = false) {
-    if (isStaffUser()) return;
-
     const btn = document.getElementById("btnTakeMiniQuiz");
     if (btn) {
       btn.disabled = true;
@@ -234,8 +216,6 @@
    * Records completed daily quiz activity and advances streak
    */
   async function recordStreakActivity(payload = {}) {
-    if (isStaffUser()) return;
-
     streakState.qotdCompletedToday = true;
 
     if (streakState.streakStatus === "LOST") {
