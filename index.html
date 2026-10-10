@@ -633,6 +633,9 @@
         });
       }
 
+      const miniBanner = document.getElementById("miniQuizBanner");
+      if (miniBanner) miniBanner.classList.remove("hidden");
+
       if (userRole === "teacher") {
         document.getElementById("teacherBanner").classList.remove("hidden");
         document.getElementById("teacherTableContainer").classList.remove("hidden");
