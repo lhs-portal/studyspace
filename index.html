@@ -1108,12 +1108,11 @@
             const q8 = getQuestionsByMarks(8);
 
             const set1 = [q2[0], q4[0], q6[0], q8[0]].filter(Boolean);
-            const set2 = [q2[1], q4[1], q6[1], q8[1]].filter(Boolean);
 
-            activeQuestions = [...set1, ...set2];
+            activeQuestions = [...set1];
 
             if (activeQuestions.length === 0) {
-              activeQuestions = shuffleArray([...fetchedQuestions]).slice(0, 8);
+              activeQuestions = shuffleArray([...fetchedQuestions]).slice(0, 4);
             }
           } else {
             const shuffled = shuffleArray([...fetchedQuestions]).map(q => {
