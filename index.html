@@ -480,11 +480,11 @@
       const isAccounting = activeQuiz && activeQuiz.subject && activeQuiz.subject.toLowerCase().includes("account");
 
       if (isAccounting) {
-        timeLeft = 60;
+        timeLeft = 90;
       } else {
         const currentQ = activeQuestions[currentQuestionIndex];
         const hasImage = currentQ && currentQ.imageUrl && currentQ.imageUrl.trim().length > 0;
-        timeLeft = hasImage ? 90 : 45;
+        timeLeft = hasImage ? 90 : 60;
       }
 
       const timerBox = document.getElementById("timerContainer");
