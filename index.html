@@ -204,14 +204,14 @@
       </div>
 
       <!-- Student Stats -->
-      <div id="studentStatsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div id="studentStatsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow">
           <div class="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">BEST SCORE</div>
           <div id="statAvgScore" class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">0%</div>
         </div>
 
         <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow">
-          <div class="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">Medals</div>
+          <div class="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">MEDALS</div>
           <div id="statFirstTry" class="text-3xl font-extrabold text-slate-900 dark:text-white">0</div>
         </div>
 
@@ -219,17 +219,29 @@
           <div class="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">TOTAL ATTEMPTS</div>
           <div id="statAttempts" class="text-3xl font-extrabold text-slate-900 dark:text-white">0</div>
         </div>
+
+        <!-- LEADERBOARD TAB (BELOW TOTAL ATTEMPTS) -->
+        <div onclick="openLeaderboardModal()" class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow cursor-pointer hover:border-emerald-500 transition-all group">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold">LEADERBOARD</div>
+            <span class="text-xs text-emerald-500 font-bold group-hover:translate-x-1 transition-transform">View &rarr;</span>
+          </div>
+          <div id="statRank" class="text-3xl font-extrabold text-amber-500 dark:text-amber-400">#--</div>
+          <div class="text-[10px] text-slate-400 mt-1">Class Stream Standing</div>
+        </div>
       </div>
 
       <!-- Teacher Table -->
       <div id="teacherTableContainer" class="hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 card-shadow">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-base font-bold text-slate-900 dark:text-white">Student Performance Overview</h3>
+          <div id="teacherSubjectFilter" class="flex items-center gap-2"></div>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead>
               <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400">
+                <th class="p-3">Rank</th>
                 <th class="p-3">Student Name</th>
                 <th class="p-3">Total Attempts</th>
                 <th class="p-3">First-Try 100%</th>
@@ -238,7 +250,7 @@
               </tr>
             </thead>
             <tbody id="teacherTableBody">
-              <tr><td colspan="5" class="p-3 text-slate-500">Loading student records...</td></tr>
+              <tr><td colspan="6" class="p-3 text-slate-500">Loading student records...</td></tr>
             </tbody>
           </table>
         </div>
@@ -262,6 +274,44 @@
       </div>
     </section>
   </main>
+
+  <!-- FULL STREAM LEADERBOARD MODAL -->
+  <div id="leaderboardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
+        <div>
+          <span class="px-2.5 py-0.5 text-[10px] font-bold rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/50">Stream Rankings</span>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white mt-1">🏆 Class Leaderboard</h3>
+        </div>
+        <button onclick="closeLeaderboardModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <div class="p-5 overflow-y-auto flex-1">
+        <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400">
+                <th class="p-3 w-12 text-center">Rank</th>
+                <th class="p-3">Student</th>
+                <th class="p-3 text-center">Medals 🏅</th>
+                <th class="p-3 text-center">Attempts</th>
+                <th class="p-3 text-right">Best Score</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardModalTableBody">
+              <tr><td colspan="5" class="p-4 text-center text-slate-500">Loading leaderboard...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end">
+        <button onclick="closeLeaderboardModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- STUDENT DETAILED ANALYTICS MODAL -->
   <div id="analyticsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -392,6 +442,7 @@
     let userTitle = "";
     let userName = "";
     let commonName = "";
+    let userGradeStream = "9B";
     let userStreakData = { streak: 0, streakStatus: "ACTIVE", missedDays: 0, qotdCompletedToday: false };
     let activeQuiz = null;
     let activeQuestions = [];
@@ -399,6 +450,7 @@
     let lockedQuestions = {};
     let currentQuestionIndex = 0;
     let cachedLeaderboardData = [];
+    let filteredLeaderboardList = [];
 
     const cardPaperSelections = {};
 
@@ -583,7 +635,8 @@
         currentUser = email;
         userRole = data.role;     
         userTitle = data.title;   
-        userName = data.name || "";     
+        userName = data.name || "";
+        userGradeStream = data.grade || data.gradeStream || "9B";
 
         if (data.commonName) {
           commonName = data.commonName;
@@ -607,6 +660,7 @@
           title: userTitle,
           name: userName,
           commonName: commonName,
+          gradeStream: userGradeStream,
           streakData: userStreakData
         }));
 
@@ -677,45 +731,90 @@
       location.reload();
     }
 
+    // STREAM FILTERING HELPER FOR STUDENTS & TEACHERS
+    function isStudentInStream(studentGradeStream, targetStream) {
+      if (!studentGradeStream || !targetStream) return false;
+      const cleanStudent = String(studentGradeStream).trim().toUpperCase();
+      const cleanTarget = String(targetStream).trim().toUpperCase();
+
+      // Science Streams (S)
+      if (cleanTarget.includes("SCIENCE") || cleanTarget.includes("9S") || cleanTarget.includes("10S")) {
+        return cleanStudent.includes("9S") || cleanStudent.includes("10S");
+      }
+      // Business Streams (B)
+      if (cleanTarget.includes("BUSINESS") || cleanTarget.includes("9B") || cleanTarget.includes("10B")) {
+        return cleanStudent.includes("9B") || cleanStudent.includes("10B");
+      }
+      return cleanStudent === cleanTarget;
+    }
+
+    // RANK SORTING LOGIC: Ascending by Rank (Best Score Descending, Tie-breaker: Most Medals/FirstTry100s)
+    function sortRankings(list) {
+      return [...list].sort((a, b) => {
+        const scoreA = Number(a.bestScore || 0);
+        const scoreB = Number(b.bestScore || 0);
+        
+        if (scoreB !== scoreA) {
+          return scoreB - scoreA; // Highest score first
+        }
+        
+        // Tie-breaker: Student with most Medals (First-Try 100s) ranks higher
+        const medalsA = Number(a.firstTry100s || 0);
+        const medalsB = Number(b.firstTry100s || 0);
+        return medalsB - medalsA;
+      });
+    }
+
     async function loadStudentStats() {
       try {
         const res = await fetch(`${GAS_API_URL}?action=getLeaderboard`);
         const data = await res.json();
-        cachedLeaderboardData = data;
-        const stat = data.find(s => s.email && s.email.toLowerCase() === currentUser.toLowerCase());
+        cachedLeaderboardData = Array.isArray(data) ? data : [];
 
-        if (stat) {
-          document.getElementById("statAvgScore").innerText = (stat.bestScore || 0) + "%";
-          document.getElementById("statFirstTry").innerText = stat.firstTry100s || 0;
-          document.getElementById("statAttempts").innerText = stat.attemptsCount || 0;
+        // 1. Filter student list matching current student's stream (Science vs Business)
+        filteredLeaderboardList = cachedLeaderboardData.filter(s => {
+          if (!s.gradeStream && !s.grade) return true; // Include if unspecified
+          return isStudentInStream(s.gradeStream || s.grade, userGradeStream);
+        });
 
-          if (stat.streak !== undefined) {
+        // 2. Sort leaderboard ascending from Rank 1 to N
+        const rankedList = sortRankings(filteredLeaderboardList);
+
+        // 3. Find current student's rank
+        const studentIndex = rankedList.findIndex(s => s.email && s.email.toLowerCase() === currentUser.toLowerCase());
+        const studentStat = studentIndex !== -1 ? rankedList[studentIndex] : null;
+
+        if (studentStat) {
+          document.getElementById("statAvgScore").innerText = (studentStat.bestScore || 0) + "%";
+          document.getElementById("statFirstTry").innerText = studentStat.firstTry100s || 0;
+          document.getElementById("statAttempts").innerText = studentStat.attemptsCount || 0;
+          document.getElementById("statRank").innerText = `#${studentIndex + 1}`;
+
+          if (studentStat.streak !== undefined) {
             userStreakData = {
-              streak: stat.streak || 0,
-              streakStatus: stat.streakStatus || "ACTIVE",
-              missedDays: stat.missedDays || 0,
-              qotdCompletedToday: stat.qotdCompletedToday || false
+              streak: studentStat.streak || 0,
+              streakStatus: studentStat.streakStatus || "ACTIVE",
+              missedDays: studentStat.missedDays || 0,
+              qotdCompletedToday: studentStat.qotdCompletedToday || false
             };
             updateUserUI(userStreakData);
           }
+        } else {
+          document.getElementById("statRank").innerText = "#--";
         }
       } catch (e) { console.error(e); }
     }
 
-    async function loadTeacherData() {
-      try {
-        const res = await fetch(`${GAS_API_URL}?action=getLeaderboard`);
-        const data = await res.json();
-        cachedLeaderboardData = data;
-        const tbody = document.getElementById("teacherTableBody");
-        tbody.innerHTML = "";
+    function openLeaderboardModal() {
+      const tbody = document.getElementById("leaderboardModalTableBody");
+      tbody.innerHTML = "";
 
-        if (!data || data.length === 0) {
-          tbody.innerHTML = "<tr><td colspan='5' class='p-3 text-slate-500'>No student records recorded yet.</td></tr>";
-          return;
-        }
+      const rankedList = sortRankings(filteredLeaderboardList.length > 0 ? filteredLeaderboardList : cachedLeaderboardData);
 
-        data.forEach(r => {
+      if (!rankedList || rankedList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No leaderboard entries found for your stream.</td></tr>`;
+      } else {
+        rankedList.forEach((r, idx) => {
           let displayName = r.commonName || r.name;
           if (!displayName && r.commonName) {
             displayName = r.email;
@@ -725,11 +824,85 @@
           }
 
           const streakVal = r.streak || r.streakCount || 0;
-          const streakTag = streakVal > 0 ? ` 🔥${streakVal}` : "";
+          // Format Name with Streak: "Mifraah 🔥1"
+          const nameWithStreak = `${displayName} ${streakVal > 0 ? `🔥${streakVal}` : ''}`;
+          const isCurrent = r.email && r.email.toLowerCase() === currentUser.toLowerCase();
+
+          tbody.innerHTML += `
+            <tr class="border-b border-slate-200 dark:border-slate-800/60 ${isCurrent ? 'bg-emerald-500/10 font-bold' : ''}">
+              <td class="p-3 text-center font-bold ${idx === 0 ? 'text-amber-500 text-sm' : idx === 1 ? 'text-slate-400' : idx === 2 ? 'text-amber-700' : 'text-slate-500'}">
+                ${idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `#${idx + 1}`}
+              </td>
+              <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${nameWithStreak}</td>
+              <td class="p-3 text-center text-amber-600 dark:text-amber-300 font-bold">${r.firstTry100s || 0}</td>
+              <td class="p-3 text-center text-slate-600 dark:text-slate-300">${r.attemptsCount || 0}</td>
+              <td class="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${r.bestScore || 0}%</td>
+            </tr>
+          `;
+        });
+      }
+
+      document.getElementById("leaderboardModal").classList.remove("hidden");
+    }
+
+    function closeLeaderboardModal() {
+      document.getElementById("leaderboardModal").classList.add("hidden");
+    }
+
+    async function loadTeacherData() {
+      try {
+        const res = await fetch(`${GAS_API_URL}?action=getLeaderboard`);
+        const data = await res.json();
+        cachedLeaderboardData = Array.isArray(data) ? data : [];
+        
+        const teacherTitleClean = String(userTitle || "").toLowerCase();
+
+        // Teacher Subject Filtering Logic
+        let teacherFiltered = cachedLeaderboardData;
+
+        if (teacherTitleClean.includes("english")) {
+          // English teacher sees ALL students across school
+          teacherFiltered = cachedLeaderboardData;
+        } else if (teacherTitleClean.includes("travel") || teacherTitleClean.includes("tourism")) {
+          // Travel & Tourism teacher sees 9B and 9S students only
+          teacherFiltered = cachedLeaderboardData.filter(s => {
+            const st = String(s.gradeStream || s.grade || "").toUpperCase();
+            return st.includes("9B") || st.includes("9S");
+          });
+        } else if (teacherTitleClean.includes("science") || teacherTitleClean.includes("physics") || teacherTitleClean.includes("chem") || teacherTitleClean.includes("bio")) {
+          // Science teachers see Science students only (9S & 10S)
+          teacherFiltered = cachedLeaderboardData.filter(s => isStudentInStream(s.gradeStream || s.grade, "SCIENCE"));
+        } else if (teacherTitleClean.includes("business") || teacherTitleClean.includes("eco") || teacherTitleClean.includes("account")) {
+          // Business teachers see Business students only (9B & 10B)
+          teacherFiltered = cachedLeaderboardData.filter(s => isStudentInStream(s.gradeStream || s.grade, "BUSINESS"));
+        }
+
+        const rankedList = sortRankings(teacherFiltered);
+        const tbody = document.getElementById("teacherTableBody");
+        tbody.innerHTML = "";
+
+        if (!rankedList || rankedList.length === 0) {
+          tbody.innerHTML = "<tr><td colspan='6' class='p-3 text-slate-500'>No student records found for your subject stream.</td></tr>";
+          return;
+        }
+
+        rankedList.forEach((r, idx) => {
+          let displayName = r.commonName || r.name;
+          if (!displayName && r.commonName) {
+            displayName = r.email;
+          } else if (displayName && !r.commonName) {
+            const parts = displayName.trim().split(" ");
+            displayName = parts.length > 1 ? parts[1] : parts[0];
+          }
+
+          const streakVal = r.streak || r.streakCount || 0;
+          // Format Name with Streak: "Mifraah 🔥1"
+          const nameWithStreak = `${displayName} ${streakVal > 0 ? `🔥${streakVal}` : ''}`;
 
           tbody.innerHTML += `
             <tr onclick="openStudentAnalytics('${r.email}')" class="border-b border-slate-200 dark:border-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
-              <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${displayName}${streakTag}</td>
+              <td class="p-3 font-bold text-slate-500">#${idx + 1}</td>
+              <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${nameWithStreak}</td>
               <td class="p-3 text-slate-600 dark:text-slate-300">${r.attemptsCount || 0}</td>
               <td class="p-3 text-amber-600 dark:text-amber-300">🏅 ${r.firstTry100s || 0}</td>
               <td class="p-3 font-bold text-emerald-600 dark:text-emerald-400">${r.bestScore || 0}%</td>
@@ -1375,6 +1548,7 @@
           userTitle = user.title;
           userName = user.name;
           commonName = user.commonName;
+          userGradeStream = user.gradeStream || user.grade || "9B";
           if (user.streakData) {
             userStreakData = user.streakData;
           }
