@@ -1195,8 +1195,10 @@
         qCard.appendChild(caseBox);
       }
 
-      const isAccounting = activeQuiz && activeQuiz.subject && activeQuiz.subject.toLowerCase().includes("account");
-      const hideMarks = isAccounting && !isWritten;
+      const activeSubjectClean = activeQuiz && activeQuiz.subject ? activeQuiz.subject.toLowerCase() : "";
+      const isAccounting = activeSubjectClean.includes("account");
+      const isEconomics = activeSubjectClean.includes("eco");
+      const hideMarks = (isAccounting || isEconomics) && !isWritten;
 
       const qTitle = document.createElement("h4");
       qTitle.className = "text-sm font-bold text-slate-900 dark:text-white";
