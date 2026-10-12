@@ -18,6 +18,14 @@
 
   const API_URL = "https://script.google.com/macros/s/AKfycbxp8krlvEmXQGeNp96G2ybXV9KjecxpCu61LuT34lMil2z4fklRAB9ge_K23FcOh1qFbg/exec";
 
+  function getTodayDateString() {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   /**
    * Checks whether the current user is a staff member
    * Updated: Always returns false so all users (teachers, SMT, students) can build streaks
@@ -44,7 +52,7 @@
   }
 
   /**
-   * Reads cached streak state from localStorage
+   * Reads cached streak state from localStorage and verifies if the completion is from TODAY
    */
   function loadLocalStreakCache() {
     if (!userConfig || !userConfig.email) return;
@@ -54,6 +62,12 @@
       try {
         const parsed = JSON.parse(cached);
         streakState = { ...streakState, ...parsed };
+
+        // DAILY RESET CHECK: If the recorded active date is NOT today, reset qotdCompletedToday!
+        const todayStr = getTodayDateString();
+        if (streakState.lastActiveDate !== todayStr) {
+          streakState.qotdCompletedToday = false;
+        }
       } catch (e) {
         console.warn("Error parsing cached streak data", e);
       }
@@ -82,15 +96,22 @@
         if (data && !data.error) {
           const isCompletedToday = data.status === "COMPLETED_TODAY";
           const isStreakLost = data.status === "STREAK_LOST";
+          const todayStr = getTodayDateString();
 
           streakState = {
             streak: data.streak ?? streakState.streak,
-            streakStatus: isStreakLost ? "LOST" : (isCompletedToday ? "ACTIVE" : streakState.streakStatus),
+            streakStatus: isStreakLost ? "LOST" : (isCompletedToday ? "ACTIVE" : (data.status === "PENDING_TODAY" ? "ACTIVE" : streakState.streakStatus)),
             missedDays: data.missedDays ?? streakState.missedDays,
             qotdCompletedToday: isCompletedToday,
-            lastActiveDate: streakState.lastActiveDate,
+            lastActiveDate: isCompletedToday ? todayStr : (data.lastActiveDate || streakState.lastActiveDate),
             highestStreak: Math.max(data.streak || 0, streakState.highestStreak)
           };
+
+          // Final verification: If date isn't today, force qotdCompletedToday to false
+          if (streakState.lastActiveDate !== todayStr) {
+            streakState.qotdCompletedToday = false;
+          }
+
           saveLocalStreakCache();
         }
       }
@@ -216,7 +237,9 @@
    * Records completed daily quiz activity and advances streak
    */
   async function recordStreakActivity(payload = {}) {
+    const todayStr = getTodayDateString();
     streakState.qotdCompletedToday = true;
+    streakState.lastActiveDate = todayStr;
 
     if (streakState.streakStatus === "LOST") {
       streakState.streakStatus = "ACTIVE";
