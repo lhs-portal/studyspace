@@ -1,26 +1,27 @@
 // sw.js - Service Worker for offline capability and app installation
 
-const CACHE_NAME = 'studyspace-v4'; // Bumped version to flush old cache
+const CACHE_NAME = 'studyspace-v5'; // Bumped version to flush old cache automatically
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './logo.png',
-  './offline-sync.js'
+  './offline-sync.js',
+  './streaks.js'
 ];
 
-// Install event: cache initial assets
+// Install event: cache initial assets & skip waiting for instant activation
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[Service Worker] Caching core assets');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
-  self.skipWaiting();
 });
 
-// Activate event: clean up old cache versions automatically
+// Activate event: clean up all old cache versions automatically and claim clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -32,27 +33,20 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch event: serve cached assets offline, bypass API submissions to allow offline queueing
+// Fetch event: Network-First strategy to ensure newest code/streaks, fallback to cache if offline
 self.addEventListener('fetch', (event) => {
-  // Let Google Apps Script API submissions pass directly through to app.js offline handler
+  // Let Google Apps Script API submissions pass directly through to live backend
   if (event.request.url.includes('script.google.com')) {
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Return cached file if found
-      if (response) {
-        return response;
-      }
-      
-      // If not in cache, fetch from network and store a copy for next time
-      return fetch(event.request).then((networkResponse) => {
+    fetch(event.request)
+      .then((networkResponse) => {
         if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
           return networkResponse;
         }
@@ -63,10 +57,12 @@ self.addEventListener('fetch', (event) => {
         });
 
         return networkResponse;
-      });
-    }).catch(() => {
-      // Fallback for offline navigation
-      return caches.match('./index.html');
-    })
+      })
+      .catch(() => {
+        // Fallback to cache ONLY if completely offline
+        return caches.match(event.request).then((cachedResponse) => {
+          return cachedResponse || caches.match('./index.html');
+        });
+      })
   );
 });
