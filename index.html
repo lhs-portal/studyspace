@@ -245,12 +245,11 @@
                 <th class="p-3">Student Name</th>
                 <th class="p-3">Total Attempts</th>
                 <th class="p-3">First-Try 100%</th>
-                <th class="p-3">Highest Score</th>
-                <th class="p-3 text-right">Action</th>
+                <th class="p-3 text-right">Highest Score</th>
               </tr>
             </thead>
             <tbody id="teacherTableBody">
-              <tr><td colspan="6" class="p-3 text-slate-500">Loading student records...</td></tr>
+              <tr><td colspan="5" class="p-3 text-slate-500">Loading student records...</td></tr>
             </tbody>
           </table>
         </div>
@@ -882,7 +881,7 @@
         tbody.innerHTML = "";
 
         if (!rankedList || rankedList.length === 0) {
-          tbody.innerHTML = "<tr><td colspan='6' class='p-3 text-slate-500'>No student records found for your subject stream.</td></tr>";
+          tbody.innerHTML = "<tr><td colspan='5' class='p-3 text-slate-500'>No student records found for your subject stream.</td></tr>";
           return;
         }
 
@@ -905,10 +904,7 @@
               <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${nameWithStreak}</td>
               <td class="p-3 text-slate-600 dark:text-slate-300">${r.attemptsCount || 0}</td>
               <td class="p-3 text-amber-600 dark:text-amber-300">🏅 ${r.firstTry100s || 0}</td>
-              <td class="p-3 font-bold text-emerald-600 dark:text-emerald-400">${r.bestScore || 0}%</td>
-              <td class="p-3 text-right">
-                <span class="px-2 py-1 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">View Analytics &rarr;</span>
-              </td>
+              <td class="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${r.bestScore || 0}%</td>
             </tr>
           `;
         });
