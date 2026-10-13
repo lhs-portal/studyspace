@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="./streaks.js"></script>
-  <script src="./offline-sync.js" defer></script>
+  <script src="./streaks.js?v=5"></script>
+  <script src="./offline-sync.js?v=5" defer></script>
   <title>Hithadhoo School - Studyspace</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="logo.png" />
@@ -1563,12 +1563,41 @@
       }
     };
   </script>
+  
+  <!-- AUTOMATED SERVICE WORKER REGISTRATION & AUTO-RELOAD CONTROLLER -->
   <script>
     if ('serviceWorker' in navigator) {
+      let refreshing = false;
+
+      // Automatically reload page when new Service Worker activates and takes control
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          console.log('[App] New service worker took control. Reloading for fresh cache...');
+          window.location.reload();
+        }
+      });
+
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then((reg) => console.log('Service Worker registered:', reg))
-          .catch((err) => console.log('Service Worker registration failed:', err));
+        navigator.serviceWorker.register('./sw.js').then((reg) => {
+          console.log('Service Worker registered with scope:', reg.scope);
+          
+          // Force browser to check sw.js for updates on every page visit
+          reg.update();
+
+          reg.onupdatefound = () => {
+            const installingWorker = reg.installing;
+            if (installingWorker) {
+              installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('New update installed! Triggering controller change...');
+                }
+              };
+            }
+          };
+        }).catch((err) => {
+          console.log('Service Worker registration failed:', err);
+        });
       });
     }
   </script>
