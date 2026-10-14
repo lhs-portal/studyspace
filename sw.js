@@ -1,34 +1,35 @@
-// sw.js - Service Worker for offline capability and app installation
+// sw.js - Service Worker for offline capability and immediate cache purging
 
-const CACHE_NAME = 'studyspace-v5'; // Bumped version to flush old cache automatically
+const CACHE_NAME = 'studyspace-v6'; // Bumped version to flush all old v1–v5 caches automatically
+
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './logo.png',
   './offline-sync.js',
-  './streaks.js'
+  './streaks.js?v=6'
 ];
 
-// Install event: cache initial assets & skip waiting for instant activation
+// 1. Install event: Cache core assets and bypass waiting phase immediately
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching core assets');
+      console.log('[Service Worker] Caching core assets for v6');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
 });
 
-// Activate event: clean up all old cache versions automatically and claim clients
+// 2. Activate event: Erase ALL old cache versions and claim all open client tabs
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
           if (cache !== CACHE_NAME) {
-            console.log('[Service Worker] Deleting old cache:', cache);
+            console.log('[Service Worker] Deleting outdated cache:', cache);
             return caches.delete(cache);
           }
         })
@@ -37,10 +38,15 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event: Network-First strategy to ensure newest code/streaks, fallback to cache if offline
+// 3. Fetch event: Network-First strategy to guarantee fresh code/streaks, fallback to cache if offline
 self.addEventListener('fetch', (event) => {
-  // Let Google Apps Script API submissions pass directly through to live backend
+  // Let Google Apps Script API submissions pass directly through to live backend without caching
   if (event.request.url.includes('script.google.com')) {
+    return;
+  }
+
+  // Bypass GET requests that aren't HTTP/HTTPS (e.g. chrome-extension://)
+  if (!event.request.url.startsWith('http')) {
     return;
   }
 
@@ -51,6 +57,7 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         }
 
+        // Cache a clone of the fresh network response for offline use
         const responseToCache = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(event.request, responseToCache);
@@ -59,7 +66,7 @@ self.addEventListener('fetch', (event) => {
         return networkResponse;
       })
       .catch(() => {
-        // Fallback to cache ONLY if completely offline
+        // Fallback to cached copy ONLY when completely offline
         return caches.match(event.request).then((cachedResponse) => {
           return cachedResponse || caches.match('./index.html');
         });
