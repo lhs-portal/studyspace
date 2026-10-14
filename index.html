@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="./streaks.js?v=5"></script>
-  <script src="./offline-sync.js?v=5" defer></script>
+  <script src="./streaks.js?v=6"></script>
+  <script src="./offline-sync.js?v=6" defer></script>
   <title>Hithadhoo School - Studyspace</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="logo.png" />
@@ -450,11 +450,40 @@
     let currentQuestionIndex = 0;
     let cachedLeaderboardData = [];
     let filteredLeaderboardList = [];
+    let midnightTimer = null;
 
     const cardPaperSelections = {};
 
     let questionTimer = null;
     let timeLeft = 45;
+
+    /**
+     * Syncs client clock with Google Apps Script atomic server time & schedules midnight refresh
+     */
+    async function syncServerTimeAndScheduleReset() {
+      try {
+        const res = await fetch(`${GAS_API_URL}?action=getServerTime`);
+        const serverInfo = await res.json();
+
+        console.log(`[Server Clock] Today: ${serverInfo.today} | Time: ${serverInfo.time}`);
+
+        if (midnightTimer) clearTimeout(midnightTimer);
+
+        // Schedule automatic refresh at 12:00:01 AM
+        midnightTimer = setTimeout(() => {
+          console.log("🌙 Midnight reached! Auto-refreshing daily mini quiz...");
+          if (typeof loadQuizIndex === "function") loadQuizIndex();
+          if (userRole === "teacher") {
+            if (typeof loadTeacherData === "function") loadTeacherData();
+          } else {
+            if (typeof loadStudentStats === "function") loadStudentStats();
+          }
+        }, serverInfo.msUntilMidnight + 1000);
+
+      } catch (err) {
+        console.error("Server time sync failed:", err);
+      }
+    }
 
     function launchMiniQuizModal(data) {
       activeQuiz = { sheetId: "", subject: data.subject || "Daily Quiz", title: data.title || "Daily Mini Quiz", quizId: "BUS_MINI_QOTD" };
@@ -701,6 +730,7 @@
         loadStudentStats();
       }
 
+      syncServerTimeAndScheduleReset();
       loadQuizIndex();
     }
 
@@ -730,34 +760,29 @@
       location.reload();
     }
 
-    // STREAM FILTERING HELPER FOR STUDENTS & TEACHERS
     function isStudentInStream(studentGradeStream, targetStream) {
       if (!studentGradeStream || !targetStream) return false;
       const cleanStudent = String(studentGradeStream).trim().toUpperCase();
       const cleanTarget = String(targetStream).trim().toUpperCase();
 
-      // Science Streams (S)
       if (cleanTarget.includes("SCIENCE") || cleanTarget.includes("9S") || cleanTarget.includes("10S")) {
         return cleanStudent.includes("9S") || cleanStudent.includes("10S");
       }
-      // Business Streams (B)
       if (cleanTarget.includes("BUSINESS") || cleanTarget.includes("9B") || cleanTarget.includes("10B")) {
         return cleanStudent.includes("9B") || cleanStudent.includes("10B");
       }
       return cleanStudent === cleanTarget;
     }
 
-    // RANK SORTING LOGIC: Ascending by Rank (Best Score Descending, Tie-breaker: Most Medals/FirstTry100s)
     function sortRankings(list) {
       return [...list].sort((a, b) => {
         const scoreA = Number(a.bestScore || 0);
         const scoreB = Number(b.bestScore || 0);
         
         if (scoreB !== scoreA) {
-          return scoreB - scoreA; // Highest score first
+          return scoreB - scoreA;
         }
         
-        // Tie-breaker: Student with most Medals (First-Try 100s) ranks higher
         const medalsA = Number(a.firstTry100s || 0);
         const medalsB = Number(b.firstTry100s || 0);
         return medalsB - medalsA;
@@ -770,16 +795,13 @@
         const data = await res.json();
         cachedLeaderboardData = Array.isArray(data) ? data : [];
 
-        // 1. Filter student list matching current student's stream (Science vs Business)
         filteredLeaderboardList = cachedLeaderboardData.filter(s => {
-          if (!s.gradeStream && !s.grade) return true; // Include if unspecified
+          if (!s.gradeStream && !s.grade) return true;
           return isStudentInStream(s.gradeStream || s.grade, userGradeStream);
         });
 
-        // 2. Sort leaderboard ascending from Rank 1 to N
         const rankedList = sortRankings(filteredLeaderboardList);
 
-        // 3. Find current student's rank
         const studentIndex = rankedList.findIndex(s => s.email && s.email.toLowerCase() === currentUser.toLowerCase());
         const studentStat = studentIndex !== -1 ? rankedList[studentIndex] : null;
 
@@ -823,7 +845,6 @@
           }
 
           const streakVal = r.streak || r.streakCount || 0;
-          // Format Name with Streak: "Mifraah 🔥1"
           const nameWithStreak = `${displayName} ${streakVal > 0 ? `🔥${streakVal}` : ''}`;
           const isCurrent = r.email && r.email.toLowerCase() === currentUser.toLowerCase();
 
@@ -856,23 +877,18 @@
         
         const teacherTitleClean = String(userTitle || "").toLowerCase();
 
-        // Teacher Subject Filtering Logic
         let teacherFiltered = cachedLeaderboardData;
 
         if (teacherTitleClean.includes("english")) {
-          // English teacher sees ALL students across school
           teacherFiltered = cachedLeaderboardData;
         } else if (teacherTitleClean.includes("travel") || teacherTitleClean.includes("tourism")) {
-          // Travel & Tourism teacher sees 9B and 9S students only
           teacherFiltered = cachedLeaderboardData.filter(s => {
             const st = String(s.gradeStream || s.grade || "").toUpperCase();
             return st.includes("9B") || st.includes("9S");
           });
         } else if (teacherTitleClean.includes("science") || teacherTitleClean.includes("physics") || teacherTitleClean.includes("chem") || teacherTitleClean.includes("bio")) {
-          // Science teachers see Science students only (9S & 10S)
           teacherFiltered = cachedLeaderboardData.filter(s => isStudentInStream(s.gradeStream || s.grade, "SCIENCE"));
         } else if (teacherTitleClean.includes("business") || teacherTitleClean.includes("eco") || teacherTitleClean.includes("account")) {
-          // Business teachers see Business students only (9B & 10B)
           teacherFiltered = cachedLeaderboardData.filter(s => isStudentInStream(s.gradeStream || s.grade, "BUSINESS"));
         }
 
@@ -895,7 +911,6 @@
           }
 
           const streakVal = r.streak || r.streakCount || 0;
-          // Format Name with Streak: "Mifraah 🔥1"
           const nameWithStreak = `${displayName} ${streakVal > 0 ? `🔥${streakVal}` : ''}`;
 
           tbody.innerHTML += `
@@ -1501,11 +1516,7 @@
 
       alert(`Quiz Completed!\nOverall Score: ${scoreDetails}`);
 
-      if (activeQuiz && activeQuiz.quizId === "BUS_MINI_QOTD") {
-        if (typeof recordStreakActivity === 'function') {
-          recordStreakActivity({ quizId: activeQuiz.quizId, score: percent });
-        }
-      }
+      const isMini = activeQuiz && activeQuiz.quizId === "BUS_MINI_QOTD";
 
       await fetch(GAS_API_URL, {
         method: "POST",
@@ -1518,9 +1529,21 @@
           quizId: activeQuiz ? activeQuiz.quizId : "QUIZ",
           score: percent,
           attemptNumber: 1,
-          isFirstTry100: percent === 100
+          isFirstTry100: percent === 100,
+          isQOTD: isMini,
+          type: isMini ? "qotd" : "regular"
         })
       });
+
+      if (typeof initStreakModule === "function") {
+        initStreakModule({
+          email: currentUser,
+          role: userRole,
+          title: userTitle,
+          name: userName,
+          commonName: commonName
+        });
+      }
 
       closeQuizModal();
       if (userRole === "teacher") {
@@ -1560,12 +1583,11 @@
     };
   </script>
   
-  <!-- AUTOMATED SERVICE WORKER REGISTRATION & AUTO-RELOAD CONTROLLER -->
+  <!-- SERVICE WORKER REGISTRATION & AUTO-RELOAD -->
   <script>
     if ('serviceWorker' in navigator) {
       let refreshing = false;
 
-      // Automatically reload page when new Service Worker activates and takes control
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!refreshing) {
           refreshing = true;
@@ -1577,8 +1599,6 @@
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').then((reg) => {
           console.log('Service Worker registered with scope:', reg.scope);
-          
-          // Force browser to check sw.js for updates on every page visit
           reg.update();
 
           reg.onupdatefound = () => {
