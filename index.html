@@ -553,9 +553,6 @@
       };
       lockedQuestions[idx] = true;
 
-      const answeredCount = Object.keys(lockedQuestions).length;
-      saveUnitProgress(activeQuiz.quizId, answeredCount, activeQuestions.length);
-
       renderQuizQuestions();
       loadQuizIndex();
     }
@@ -596,14 +593,32 @@
       return array;
     }
 
+    /**
+     * READS UNIT PROGRESS DIRECTLY FROM GOOGLE SHEET DATABASE (cachedLeaderboardData)
+     * Matches quizId against the active student's recorded highest score.
+     */
     function getSavedUnitProgress(quizId) {
-      const data = localStorage.getItem(`unit_progress_${quizId}`);
-      return data ? JSON.parse(data) : { answered: 0, total: 30, percent: 0 };
-    }
+      if (!cachedLeaderboardData || cachedLeaderboardData.length === 0 || !currentUser) {
+        return { answered: 0, total: 100, percent: 0 };
+      }
 
-    function saveUnitProgress(quizId, answeredCount, totalCount) {
-      const percent = totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
-      localStorage.setItem(`unit_progress_${quizId}`, JSON.stringify({ answered: answeredCount, total: totalCount, percent }));
+      const student = cachedLeaderboardData.find(
+        s => s.email && s.email.toLowerCase() === currentUser.toLowerCase()
+      );
+
+      if (!student) return { answered: 0, total: 100, percent: 0 };
+
+      const breakdown = student.quizBreakdown || student.quizzes || student.units || [];
+      const match = breakdown.find(
+        q => (q.quizId || q.unit || "").toString().toLowerCase() === (quizId || "").toString().toLowerCase()
+      );
+
+      if (match) {
+        const score = Number(match.bestScore !== undefined ? match.bestScore : match.score) || 0;
+        return { answered: score > 0 ? 1 : 0, total: 1, percent: score };
+      }
+
+      return { answered: 0, total: 100, percent: 0 };
     }
 
     function handlePaperToggle(checkbox, quizId, hasProg) {
@@ -697,7 +712,7 @@
           streakData: userStreakData
         }));
 
-        initPortalSession();
+        await initPortalSession();
 
       } catch (err) {
         alert("Error connecting to Google Apps Script backend.");
@@ -706,7 +721,7 @@
       }
     }
 
-    function initPortalSession() {
+    async function initPortalSession() {
       document.getElementById("loginModal").classList.add("hidden");
       updateUserUI(userStreakData);
 
@@ -727,12 +742,12 @@
         document.getElementById("teacherBanner").classList.remove("hidden");
         document.getElementById("teacherTableContainer").classList.remove("hidden");
         document.getElementById("studentStatsGrid").classList.add("hidden");
-        loadTeacherData();
+        await loadTeacherData();
       } else {
         document.getElementById("teacherBanner").classList.add("hidden");
         document.getElementById("teacherTableContainer").classList.add("hidden");
         document.getElementById("studentStatsGrid").classList.remove("hidden");
-        loadStudentStats();
+        await loadStudentStats(); // Wait for sheet analytics data before rendering quiz progress
       }
 
       syncServerTimeAndScheduleReset();
@@ -980,6 +995,11 @@
     async function refreshUnits() {
       const grid = document.getElementById("quizCardsGrid");
       grid.innerHTML = "<div class='text-xs text-slate-500'>Refreshing units list...</div>";
+      if (userRole === "teacher") {
+        await loadTeacherData();
+      } else {
+        await loadStudentStats();
+      }
       await loadQuizIndex();
     }
 
@@ -1039,7 +1059,7 @@
               <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0 select-none">
                 <span id="p1-lbl-${q.quizId}" class="${!isP2 ? 'text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 transition-colors' : 'text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors'}">P1</span>
                 <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" ${isP2 ? 'checked' : ''} onchange="handlePaperToggle(this, '${q.quizId}', ${prog.answered > 0})" class="sr-only peer">
+                  <input type="checkbox" ${isP2 ? 'checked' : ''} onchange="handlePaperToggle(this, '${q.quizId}', ${prog.percent > 0})" class="sr-only peer">
                   <div class="w-7 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
                 </label>
                 <span id="p2-lbl-${q.quizId}" class="${isP2 ? 'text-[10px] font-extrabold text-amber-600 dark:text-amber-400 transition-colors' : 'text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors'}">P2</span>
@@ -1070,7 +1090,7 @@
                 <div class="space-y-2 mt-2">
                   ${studyBtn}
                   <button id="quiz-btn-${q.quizId}" onclick="handleStartQuizClick('${q.sheetId}', '${q.paper2SheetId || ''}', '${q.subject}', '${q.title}', '${q.quizId}')" class="w-full py-2.5 px-3 rounded-xl text-xs font-bold ${isP2 ? 'bg-amber-500 hover:bg-amber-400' : 'bg-emerald-500 hover:bg-emerald-400'} text-slate-950 transition-all cursor-pointer">
-                    ${prog.answered > 0 ? `Continue Paper ${isP2 ? '2' : '1'} Quiz &rarr;` : `Start Paper ${isP2 ? '2' : '1'} Quiz &rarr;`}
+                    ${prog.percent > 0 ? `Continue Paper ${isP2 ? '2' : '1'} Quiz &rarr;` : `Start Paper ${isP2 ? '2' : '1'} Quiz &rarr;`}
                   </button>
                 </div>
               </div>
@@ -1449,9 +1469,6 @@
 
         lockedQuestions[qIdx] = true;
 
-        const answeredCount = Object.keys(lockedQuestions).length;
-        saveUnitProgress(activeQuiz.quizId, answeredCount, activeQuestions.length);
-
         renderQuizQuestions();
         loadQuizIndex();
 
@@ -1481,9 +1498,6 @@
 
       userAnswers[qIdx] = { selected: selectedOptId, feedbackMsg };
       lockedQuestions[qIdx] = true;
-
-      const answeredCount = Object.keys(lockedQuestions).length;
-      saveUnitProgress(activeQuiz.quizId, answeredCount, activeQuestions.length);
 
       renderQuizQuestions();
       loadQuizIndex();
@@ -1544,11 +1558,14 @@
       }
 
       closeQuizModal();
+
+      // Refresh sheet analytics & progress bars
       if (userRole === "teacher") {
-        loadTeacherData();
+        await loadTeacherData();
       } else {
-        loadStudentStats();
+        await loadStudentStats();
       }
+      loadQuizIndex();
     }
 
     function closeQuizModal() {
