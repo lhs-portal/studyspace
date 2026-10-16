@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="./streaks.js?v=7"></script>
-  <script src="./offline-sync.js?v=7" defer></script>
+  <script src="./streaks.js?v=8"></script>
+  <script src="./offline-sync.js?v=8" defer></script>
   <title>Hithadhoo School - Studyspace</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="logo.png" />
@@ -765,7 +765,9 @@
     }
 
     function logoutUser() {
-      localStorage.removeItem("lhs_user_session");
+      const savedTheme = localStorage.getItem("lhs_theme");
+      localStorage.clear();
+      if (savedTheme) localStorage.setItem("lhs_theme", savedTheme);
       location.reload();
     }
 
@@ -820,7 +822,6 @@
           document.getElementById("statAttempts").innerText = studentStat.attemptsCount || 0;
           document.getElementById("statRank").innerText = `#${studentIndex + 1}`;
 
-          // Do not overwrite live streak state from getLeaderboard
           if (typeof renderInlineStreak === "function") renderInlineStreak();
           
         } else {
@@ -1560,6 +1561,7 @@
       if (savedSession) {
         try {
           const user = JSON.parse(savedSession);
+          if (!user || !user.email) throw new Error("Invalid session data");
           currentUser = user.email;
           userRole = user.role;
           userTitle = user.title;
