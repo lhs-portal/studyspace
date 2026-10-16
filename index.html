@@ -820,15 +820,9 @@
           document.getElementById("statAttempts").innerText = studentStat.attemptsCount || 0;
           document.getElementById("statRank").innerText = `#${studentIndex + 1}`;
 
-          if (studentStat.streak !== undefined) {
-            userStreakData = {
-              streak: studentStat.streak || 0,
-              streakStatus: studentStat.streakStatus || "ACTIVE",
-              missedDays: studentStat.missedDays || 0,
-              qotdCompletedToday: studentStat.qotdCompletedToday || false
-            };
-            updateUserUI(userStreakData);
-          }
+          // Do not overwrite live streak state from getLeaderboard
+          if (typeof renderInlineStreak === "function") renderInlineStreak();
+          
         } else {
           document.getElementById("statRank").innerText = "#--";
         }
