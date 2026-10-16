@@ -1,6 +1,6 @@
 // sw.js - Service Worker for offline capability and immediate cache purging
 
-const CACHE_NAME = 'studyspace-v7'; // Bumped version to flush all old v1–v5 caches automatically
+const CACHE_NAME = 'studyspace-v8'; // Bumped version to flush all old v1–v5 caches automatically
 
 const ASSETS_TO_CACHE = [
   './',
