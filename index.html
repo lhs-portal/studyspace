@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="./streaks.js?v=6"></script>
-  <script src="./offline-sync.js?v=6" defer></script>
+  <script src="./streaks.js?v=7"></script>
+  <script src="./offline-sync.js?v=7" defer></script>
   <title>Hithadhoo School - Studyspace</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="logo.png" />
@@ -85,13 +85,13 @@
       <div class="flex items-center gap-3">
         <img 
           src="logo.png" 
-          alt="L. Hithadhoo School Logo" 
+          alt="Hithadhoo School Logo" 
           class="h-10 w-10 object-contain rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-0.5"
-          onerror="this.onerror=null; this.outerHTML='<div class=\'h-10 w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm\'>LHS</div>';"
+          onerror="this.onerror=null; this.outerHTML='<div class=\'h-10 w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm\'>HS</div>';"
         />
         <div>
           <div class="flex items-center gap-2">
-            <span class="font-bold text-slate-900 dark:text-white text-lg sm:text-xl tracking-tight">L. Hithadhoo School</span>
+            <span class="font-bold text-slate-900 dark:text-white text-lg sm:text-xl tracking-tight">Hithadhoo School</span>
           </div>
           <p class="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hidden sm:block">Studyspace</p>
         </div>
@@ -111,7 +111,7 @@
         <div class="inline-flex h-14 w-14 rounded-2xl bg-white p-2 items-center justify-center mb-3 shadow-lg">
           <img 
             src="logo.png" 
-            alt="L. Hithadhoo School Logo" 
+            alt="Hithadhoo School Logo" 
             class="h-full w-full object-contain"
             onerror="this.onerror=null; this.outerHTML='<span class=\'text-2xl\'>🎓</span>';"
           />
@@ -127,7 +127,7 @@
             type="email" 
             id="emailInput" 
             required 
-            placeholder="name@lhithadhooschool.edu.mv"
+            placeholder="name@hithadhooschool.edu.mv"
             class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 outline-none"
           />
         </div>
@@ -220,7 +220,7 @@
           <div id="statAttempts" class="text-3xl font-extrabold text-slate-900 dark:text-white">0</div>
         </div>
 
-        <!-- LEADERBOARD TAB (BELOW TOTAL ATTEMPTS) -->
+        <!-- LEADERBOARD TAB -->
         <div onclick="openLeaderboardModal()" class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow cursor-pointer hover:border-emerald-500 transition-all group">
           <div class="flex items-center justify-between mb-2">
             <div class="text-slate-500 dark:text-slate-400 text-xs font-bold">LEADERBOARD</div>
@@ -457,9 +457,6 @@
     let questionTimer = null;
     let timeLeft = 45;
 
-    /**
-     * Syncs client clock with Google Apps Script atomic server time & schedules midnight refresh
-     */
     async function syncServerTimeAndScheduleReset() {
       try {
         const res = await fetch(`${GAS_API_URL}?action=getServerTime`);
@@ -469,7 +466,6 @@
 
         if (midnightTimer) clearTimeout(midnightTimer);
 
-        // Schedule automatic refresh at 12:00:01 AM
         midnightTimer = setTimeout(() => {
           console.log("🌙 Midnight reached! Auto-refreshing daily mini quiz...");
           if (typeof loadQuizIndex === "function") loadQuizIndex();
@@ -749,6 +745,10 @@
       document.getElementById("welcomeTitle").innerText = `Welcome ${commonName}!`;
       const randomQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
       document.getElementById("motivationalQuote").innerText = randomQuote;
+
+      if (typeof renderInlineStreak === "function") {
+        renderInlineStreak();
+      }
 
       if (typeof updateMiniQuizBanner === "function") {
         updateMiniQuizBanner(streakData || userStreakData);
@@ -1518,30 +1518,24 @@
 
       const isMini = activeQuiz && activeQuiz.quizId === "BUS_MINI_QOTD";
 
-      await fetch(GAS_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8"
-        },
-        body: JSON.stringify({
-          action: "submitResult",
-          email: currentUser,
-          quizId: activeQuiz ? activeQuiz.quizId : "QUIZ",
-          score: percent,
-          attemptNumber: 1,
-          isFirstTry100: percent === 100,
-          isQOTD: isMini,
-          type: isMini ? "qotd" : "regular"
-        })
-      });
-
-      if (typeof initStreakModule === "function") {
-        initStreakModule({
-          email: currentUser,
-          role: userRole,
-          title: userTitle,
-          name: userName,
-          commonName: commonName
+      if (isMini && typeof recordStreakActivity === "function") {
+        await recordStreakActivity({ quizId: "BUS_MINI_QOTD", score: percent });
+      } else {
+        await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify({
+            action: "submitResult",
+            email: currentUser,
+            quizId: activeQuiz ? activeQuiz.quizId : "QUIZ",
+            score: percent,
+            attemptNumber: 1,
+            isFirstTry100: percent === 100,
+            isQOTD: false,
+            type: "regular"
+          })
         });
       }
 
