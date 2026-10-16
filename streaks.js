@@ -9,7 +9,8 @@
   let userConfig = null;
   let streakState = {
     streak: 0,
-    streakStatus: "PENDING_TODAY", // "COMPLETED_TODAY", "PENDING_TODAY", "STREAK_LOST", "NEVER_PLAYED"
+    status: "PENDING_TODAY", // "COMPLETED_TODAY", "PENDING_TODAY", "STREAK_LOST", "NEVER_PLAYED"
+    streakStatus: "PENDING_TODAY",
     missedDays: 0,
     qotdCompletedToday: false,
     lastActiveDate: null,
@@ -46,19 +47,20 @@
       if (response.ok) {
         const data = await response.json();
         if (data && !data.error) {
-          const isCompleted = (data.status === "COMPLETED_TODAY");
-          const isLost = (data.status === "STREAK_LOST");
+          const rawStatus = data.status || data.streakStatus || "PENDING_TODAY";
+          const isCompleted = (rawStatus === "COMPLETED_TODAY");
 
           streakState = {
             streak: Number(data.streak) || 0,
-            streakStatus: data.status || "PENDING_TODAY",
+            status: rawStatus,
+            streakStatus: rawStatus,
             missedDays: Number(data.missedDays) || 0,
             qotdCompletedToday: isCompleted,
             lastActiveDate: data.lastActiveDate || null,
             highestStreak: Math.max(Number(data.streak) || 0, streakState.highestStreak)
           };
 
-          // Save fresh state to cache
+          // Save fresh state to user-scoped cache
           saveLocalStreakCache();
         }
       }
@@ -70,7 +72,7 @@
 
   function loadLocalStreakCache() {
     if (!userConfig || !userConfig.email) return;
-    const cacheKey = `lhs_streak_${userConfig.email}`;
+    const cacheKey = `lhs_streak_${userConfig.email.toLowerCase()}`;
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
       try {
@@ -84,7 +86,7 @@
 
   function saveLocalStreakCache() {
     if (!userConfig || !userConfig.email) return;
-    const cacheKey = `lhs_streak_${userConfig.email}`;
+    const cacheKey = `lhs_streak_${userConfig.email.toLowerCase()}`;
     localStorage.setItem(cacheKey, JSON.stringify(streakState));
   }
 
@@ -96,7 +98,8 @@
     if (!inlineContainer) return;
 
     const count = streakState.streak || 0;
-    const isLost = streakState.streakStatus === "STREAK_LOST" || streakState.missedDays > 0;
+    const currentStatus = streakState.status || streakState.streakStatus || "PENDING_TODAY";
+    const isLost = currentStatus === "STREAK_LOST" || streakState.missedDays > 0;
     const icon = isLost ? "💔" : "🔥";
 
     inlineContainer.innerHTML = `<span class="mr-1.5 font-bold">${count}${icon}</span>`;
@@ -119,8 +122,9 @@
 
     if (!titleEl || !descEl || !quizBtn || !iconEl) return;
 
-    const isLost = currentData.streakStatus === 'STREAK_LOST' || currentData.missedDays > 0;
-    const isCompletedToday = currentData.qotdCompletedToday === true || currentData.streakStatus === "COMPLETED_TODAY";
+    const currentStatus = currentData.status || currentData.streakStatus || "PENDING_TODAY";
+    const isLost = currentStatus === 'STREAK_LOST' || currentData.missedDays > 0;
+    const isCompletedToday = currentData.qotdCompletedToday === true || currentStatus === "COMPLETED_TODAY";
 
     if (isLost) {
       banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-rose-500/10 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/40";
@@ -225,6 +229,7 @@
   }
 
   window.initStreakModule = initStreakModule;
+  window.renderInlineStreak = renderInlineStreak;
   window.updateMiniQuizBanner = updateMiniQuizBanner;
   window.startBusinessMiniQuiz = startBusinessMiniQuiz;
   window.recordStreakActivity = recordStreakActivity;
