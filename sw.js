@@ -1,6 +1,6 @@
 // sw.js - Service Worker for offline capability and immediate cache purging
 
-const CACHE_NAME = 'studyspace-v8'; // Bumped version to flush all old v1–v5 caches automatically
+const CACHE_NAME = 'studyspace-v9'; // Bumped version to flush all old v1–v7 caches automatically
 
 const ASSETS_TO_CACHE = [
   './',
@@ -8,7 +8,8 @@ const ASSETS_TO_CACHE = [
   './manifest.json',
   './logo.png',
   './offline-sync.js',
-  './streaks.js?v=6'
+  './streaks.js?v=8',
+  './cache-reset.js?v=8'
 ];
 
 // 1. Install event: Cache core assets and bypass waiting phase immediately
@@ -16,7 +17,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching core assets for v6');
+      console.log('[Service Worker] Caching core assets for v8');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
