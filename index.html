@@ -595,9 +595,9 @@
 
     /**
      * READS UNIT PROGRESS DIRECTLY FROM GOOGLE SHEET DATABASE (cachedLeaderboardData)
-     * Matches quizId against the active student's recorded highest score.
+     * Matches quizId and paperMode (P1 or P2) against student's recorded scores.
      */
-    function getSavedUnitProgress(quizId) {
+    function getSavedUnitProgress(quizId, paperMode = "P1") {
       if (!cachedLeaderboardData || cachedLeaderboardData.length === 0 || !currentUser) {
         return { answered: 0, total: 100, percent: 0 };
       }
@@ -609,8 +609,10 @@
       if (!student) return { answered: 0, total: 100, percent: 0 };
 
       const breakdown = student.quizBreakdown || student.quizzes || student.units || [];
+      const targetId = paperMode === "P2" ? `${quizId}_P2` : quizId;
+
       const match = breakdown.find(
-        q => (q.quizId || q.unit || "").toString().toLowerCase() === (quizId || "").toString().toLowerCase()
+        q => (q.quizId || q.unit || "").toString().toLowerCase() === targetId.toLowerCase()
       );
 
       if (match) {
@@ -621,27 +623,51 @@
       return { answered: 0, total: 100, percent: 0 };
     }
 
-    function handlePaperToggle(checkbox, quizId, hasProg) {
+    function handlePaperToggle(checkbox, quizId) {
       const activePaper = checkbox.checked ? "P2" : "P1";
       cardPaperSelections[quizId] = activePaper;
 
       const p1Label = document.getElementById(`p1-lbl-${quizId}`);
       const p2Label = document.getElementById(`p2-lbl-${quizId}`);
       const quizBtn = document.getElementById(`quiz-btn-${quizId}`);
+      const progText = document.getElementById(`prog-text-${quizId}`);
+      const progBar = document.getElementById(`prog-bar-${quizId}`);
+
+      const prog = getSavedUnitProgress(quizId, activePaper);
 
       if (activePaper === "P2") {
         if (p1Label) p1Label.className = "text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors";
         if (p2Label) p2Label.className = "text-[10px] font-extrabold text-amber-600 dark:text-amber-400 transition-colors";
+        
+        if (progText) {
+          progText.className = "text-amber-600 dark:text-amber-400 font-bold";
+          progText.innerText = `${prog.percent}%`;
+        }
+        if (progBar) {
+          progBar.className = "h-full bg-amber-500 transition-all duration-300";
+          progBar.style.width = `${prog.percent}%`;
+        }
+
         if (quizBtn) {
           quizBtn.className = "w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all cursor-pointer";
-          quizBtn.innerText = hasProg ? "Continue Paper 2 Quiz \u2192" : "Start Paper 2 Quiz \u2192";
+          quizBtn.innerText = prog.percent > 0 ? "Continue Paper 2 Quiz \u2192" : "Start Paper 2 Quiz \u2192";
         }
       } else {
         if (p1Label) p1Label.className = "text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 transition-colors";
         if (p2Label) p2Label.className = "text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors";
+
+        if (progText) {
+          progText.className = "text-emerald-600 dark:text-emerald-400 font-bold";
+          progText.innerText = `${prog.percent}%`;
+        }
+        if (progBar) {
+          progBar.className = "h-full bg-emerald-500 transition-all duration-300";
+          progBar.style.width = `${prog.percent}%`;
+        }
+
         if (quizBtn) {
           quizBtn.className = "w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all cursor-pointer";
-          quizBtn.innerText = hasProg ? "Continue Paper 1 Quiz \u2192" : "Start Paper 1 Quiz \u2192";
+          quizBtn.innerText = prog.percent > 0 ? "Continue Paper 1 Quiz \u2192" : "Start Paper 1 Quiz \u2192";
         }
       }
     }
@@ -1047,9 +1073,9 @@
           const cardsContainer = subjectSection.querySelector(`#cards-for-${subject.replace(/\s+/g, '-')}`);
 
           quizzes.forEach(q => {
-            const prog = getSavedUnitProgress(q.quizId);
             const currentSelectedPaper = cardPaperSelections[q.quizId] || "P1";
             const isP2 = currentSelectedPaper === "P2";
+            const prog = getSavedUnitProgress(q.quizId, currentSelectedPaper);
 
             const studyBtn = q.notesUrl 
               ? `<a href="${q.notesUrl}" target="_blank" class="w-full text-center block py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer">Study</a>`
@@ -1059,7 +1085,7 @@
               <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0 select-none">
                 <span id="p1-lbl-${q.quizId}" class="${!isP2 ? 'text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 transition-colors' : 'text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors'}">P1</span>
                 <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" ${isP2 ? 'checked' : ''} onchange="handlePaperToggle(this, '${q.quizId}', ${prog.percent > 0})" class="sr-only peer">
+                  <input type="checkbox" ${isP2 ? 'checked' : ''} onchange="handlePaperToggle(this, '${q.quizId}')" class="sr-only peer">
                   <div class="w-7 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
                 </label>
                 <span id="p2-lbl-${q.quizId}" class="${isP2 ? 'text-[10px] font-extrabold text-amber-600 dark:text-amber-400 transition-colors' : 'text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors'}">P2</span>
@@ -1079,10 +1105,10 @@
                   <div class="mb-4">
                     <div class="flex justify-between items-center text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
                       <span>Progress</span>
-                      <span class="text-emerald-600 dark:text-emerald-400">${prog.percent}%</span>
+                      <span id="prog-text-${q.quizId}" class="${isP2 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-emerald-600 dark:text-emerald-400 font-bold'}">${prog.percent}%</span>
                     </div>
                     <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800">
-                      <div class="h-full bg-emerald-500 transition-all duration-300" style="width: ${prog.percent}%"></div>
+                      <div id="prog-bar-${q.quizId}" class="h-full ${isP2 ? 'bg-amber-500' : 'bg-emerald-500'} transition-all duration-300" style="width: ${prog.percent}%"></div>
                     </div>
                   </div>
                 </div>
@@ -1535,6 +1561,8 @@
       alert(`Quiz Completed!\nOverall Score: ${scoreDetails}`);
 
       const isMini = activeQuiz && activeQuiz.quizId === "BUS_MINI_QOTD";
+      const selectedPaper = cardPaperSelections[activeQuiz?.quizId] || "P1";
+      const targetQuizId = (selectedPaper === "P2" && activeQuiz?.quizId) ? `${activeQuiz.quizId}_P2` : (activeQuiz ? activeQuiz.quizId : "QUIZ");
 
       if (isMini && typeof recordStreakActivity === "function") {
         await recordStreakActivity({ quizId: "BUS_MINI_QOTD", score: percent });
@@ -1547,7 +1575,7 @@
           body: JSON.stringify({
             action: "submitResult",
             email: currentUser,
-            quizId: activeQuiz ? activeQuiz.quizId : "QUIZ",
+            quizId: targetQuizId,
             score: percent,
             attemptNumber: 1,
             isFirstTry100: percent === 100,
