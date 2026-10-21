@@ -774,7 +774,7 @@
         document.getElementById("teacherBanner").classList.add("hidden");
         document.getElementById("teacherTableContainer").classList.add("hidden");
         document.getElementById("studentStatsGrid").classList.remove("hidden");
-        await loadStudentStats(); // Wait for sheet analytics data before rendering quiz progress
+        await loadStudentStats(); 
       }
 
       syncServerTimeAndScheduleReset();
@@ -1156,35 +1156,8 @@
         const fetchedQuestions = await res.json();
 
         if (Array.isArray(fetchedQuestions) && fetchedQuestions.length > 0) {
-          const isBusiness = subject && subject.toLowerCase().includes("business");
-
-          if (isBusiness) {
-            const getQuestionsByMarks = (marks) => {
-              const filtered = fetchedQuestions.filter(q => Number(q.maxMarks) === marks);
-              return shuffleArray([...filtered]);
-            };
-
-            const q2 = getQuestionsByMarks(2);
-            const q4 = getQuestionsByMarks(4);
-            const q6 = getQuestionsByMarks(6);
-            const q8 = getQuestionsByMarks(8);
-
-            const set1 = [q2[0], q4[0], q6[0], q8[0]].filter(Boolean);
-
-            activeQuestions = [...set1];
-
-            if (activeQuestions.length === 0) {
-              activeQuestions = shuffleArray([...fetchedQuestions]).slice(0, 4);
-            }
-          } else {
-            const shuffled = shuffleArray([...fetchedQuestions]).map(q => {
-              if (q.options && Array.isArray(q.options)) {
-                q.options = shuffleArray([...q.options]);
-              }
-              return q;
-            });
-            activeQuestions = shuffled.slice(0, 15);
-          }
+          // Process question sets using the centralized Subject Quiz Registry
+          activeQuestions = SubjectQuizRegistry.processQuizQuestions(subject, fetchedQuestions);
 
           if (modalFooter) modalFooter.classList.remove("hidden");
           renderQuizQuestions();
@@ -1530,7 +1503,6 @@
 
       closeQuizModal();
 
-      // Refresh sheet analytics & progress bars
       if (userRole === "teacher") {
         await loadTeacherData();
       } else {
@@ -1570,7 +1542,6 @@
     };
   </script>
   
-  <!-- SERVICE WORKER REGISTRATION & AUTO-RELOAD -->
   <script>
     if ('serviceWorker' in navigator) {
       let refreshing = false;
