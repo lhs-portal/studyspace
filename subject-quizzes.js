@@ -159,8 +159,11 @@ const SubjectQuizRegistry = {
   economics: {
     code: "0455",
     name: "Economics",
-    defaultTimerSec: 60,
+    defaultTimerSec: 90,
     hasP2: true,
+    getTimer: function(hasImage) {
+    return hasImage ? 120 : 90;
+    },
 
     processQuestions: function (fetchedQuestions) {
       const isWritten = fetchedQuestions.some(q => !q.options || q.options.length === 0 || !q.options[0].text);
