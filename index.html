@@ -507,6 +507,23 @@
       
       renderQuizQuestions();
     }
+    
+    function launchRestoreQuizModal(data) {
+      activeQuiz = { sheetId: "", subject: data.subject || "Economics", title: data.title || "Streak Restoration Challenge", quizId: "STREAK_RESTORE", isRestore: true, challengeId: data.challengeId };
+      activeQuestions = data.questions;
+      userAnswers = {};
+      lockedQuestions = {};
+      currentQuestionIndex = 0;
+
+      document.getElementById("quizSubjectTag").innerText = data.subject || "Economics";
+      document.getElementById("quizModalTitle").innerText = data.title || "Streak Restoration Challenge";
+
+      const footer = document.getElementById("quizModalFooter");
+      if (footer) footer.classList.remove("hidden");
+      document.getElementById("quizModal").classList.remove("hidden");
+
+      renderQuizQuestions();
+    }
 
     function startQuestionTimer() {
       stopQuestionTimer();
@@ -1449,6 +1466,34 @@
       if (!lockedQuestions[currentQuestionIndex]) return;
 
       stopQuestionTimer();
+
+      // Streak restoration challenge: the SERVER marks the answers and decides
+      if (activeQuiz && activeQuiz.isRestore) {
+        if (activeQuiz.submitting) return;
+        activeQuiz.submitting = true;
+
+        const pickedAnswers = activeQuestions.map((q, i) => (userAnswers[i] && userAnswers[i].selected) || "");
+        let outcome;
+        try {
+          outcome = await window.submitRestoreChallenge(activeQuiz.challengeId, pickedAnswers);
+        } catch (err) {
+          console.error(err);
+          activeQuiz.submitting = false;
+          alert("Could not reach the server. Your answers were not submitted. Please try again.");
+          return;
+        }
+
+        alert(outcome && outcome.message ? outcome.message : "Something went wrong. Please try again.");
+        closeQuizModal();
+
+        if (userRole === "teacher") {
+          await loadTeacherData();
+        } else {
+          await loadStudentStats();
+        }
+        loadQuizIndex();
+        return;
+      }
 
       let percent = 0;
       let scoreDetails = "";
