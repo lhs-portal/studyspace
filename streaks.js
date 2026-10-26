@@ -20,8 +20,6 @@
     restoreDaysLeft: 0
   };
 
-  const API_URL = "https://script.google.com/macros/s/AKfycbxp8krlvEmXQGeNp96G2ybXV9KjecxpCu61LuT34lMil2z4fklRAB9ge_K23FcOh1qFbg/exec";
-
   /**
    * Initializes the streak module for the active session
    */
@@ -46,9 +44,8 @@
     if (!userConfig || !userConfig.email) return;
 
     try {
-      const response = await fetch(`${API_URL}?action=getStreakStatus&email=${encodeURIComponent(userConfig.email)}`);
-      if (response.ok) {
-        const data = await response.json();
+      const data = await API.call("getStreakStatus");
+      {
         if (data && !data.error) {
           const rawStatus = data.status || data.streakStatus || "PENDING_TODAY";
           const isCompleted = (rawStatus === "COMPLETED_TODAY");
@@ -224,8 +221,6 @@
    * Asks the server for a streak restoration challenge and opens it as a quiz
    */
   async function startRestoreChallenge() {
-    const email = userConfig ? userConfig.email : "";
-
     ["btnTakeMiniQuiz", "btnRestoreStreak"].forEach(id => {
       const b = document.getElementById(id);
       if (b) {
@@ -235,8 +230,7 @@
     });
 
     try {
-      const res = await fetch(`${API_URL}?action=getRedemptionQuiz&email=${encodeURIComponent(email)}`);
-      const data = await res.json();
+      const data = await API.call("getRedemptionQuiz");
 
       if (data && data.challengeId && data.questions && data.questions.length > 0) {
         if (typeof window.launchRestoreQuizModal === "function") {
@@ -260,17 +254,7 @@
    * Resolves with the server's answer ({ success, restored, message, ... }).
    */
   async function submitRestoreChallenge(challengeId, answers) {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        action: "submitRecoveryResult",
-        email: userConfig ? userConfig.email : "",
-        challengeId: challengeId,
-        answers: answers
-      })
-    });
-    const outcome = await res.json();
+    const outcome = await API.call("submitRecoveryResult", { challengeId: challengeId, answers: answers });
 
     await fetchStreakStatusFromBackend();
     renderInlineStreak();
@@ -287,9 +271,7 @@
     }
 
     try {
-      const email = userConfig ? userConfig.email : "";
-      const res = await fetch(`${API_URL}?action=getDailyMiniQuiz&email=${encodeURIComponent(email)}&isRecovery=${isRecovery}`);
-      const data = await res.json();
+      const data = await API.call("getDailyMiniQuiz");
 
       if (data && data.questions && data.questions.length > 0) {
         if (typeof window.launchMiniQuizModal === "function") {
@@ -316,18 +298,13 @@
    */
   async function recordStreakActivity(payload = {}) {
     try {
-      await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "submitResult",
-          email: userConfig ? userConfig.email : "",
-          quizId: payload.quizId || "BUS_MINI_QOTD",
-          score: (payload.score !== undefined ? payload.score : 100),
-          isQOTD: true,
-          type: "qotd"
-        })
+      const saved = await API.call("submitResult", {
+        quizId: payload.quizId || "BUS_MINI_QOTD",
+        score: (payload.score !== undefined ? payload.score : 100),
+        isQOTD: true,
+        type: "qotd"
       });
+      if (saved && saved.error) console.warn("Result was not saved:", saved.error);
 
       // Refresh status directly from server to get true server-calculated streak
       await fetchStreakStatusFromBackend();
