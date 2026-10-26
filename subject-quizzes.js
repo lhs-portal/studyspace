@@ -532,7 +532,7 @@ const SubjectQuizRegistry = {
     if (cleanSubj.includes("account") || cleanSubj.includes("0452")) {
       return this.accounting.getTimer();
     }
-    if (cleanSubj.includes("travel") || cleanSubj.includes("0471")) {
+    if (cleanSubj.includes("travel") || cleanSubj.includes("tourism") || cleanSubj.includes("0471")) {
       return this.travel_tourism.getTimer(hasImage);
     }
     if (cleanSubj.includes("business") || cleanSubj.includes("0450")) {
@@ -554,7 +554,7 @@ const SubjectQuizRegistry = {
     if (cleanSubj.includes("account") || cleanSubj.includes("0452")) {
       return this.accounting.processQuestions(fetchedQuestions);
     }
-    if (cleanSubj.includes("travel") || cleanSubj.includes("0471")) {
+    if (cleanSubj.includes("travel") || cleanSubj.includes("tourism") || cleanSubj.includes("0471")) {
       return this.travel_tourism.processQuestions(fetchedQuestions);
     }
 
@@ -580,7 +580,7 @@ const SubjectQuizRegistry = {
     if (cleanSubj.includes("account") || cleanSubj.includes("0452")) {
       return this.accounting.renderEvaluationHTML(evalRes, questionObj);
     }
-    if (cleanSubj.includes("travel") || cleanSubj.includes("0471")) {
+    if (cleanSubj.includes("travel") || cleanSubj.includes("tourism") || cleanSubj.includes("0471")) {
       return this.travel_tourism.renderEvaluationHTML(evalRes, questionObj);
     }
 
