@@ -8,7 +8,8 @@ const ASSETS_TO_CACHE = [
   './manifest.json',
   './logo.png',
   './offline-sync.js',
-  './streaks.js?v=8',
+  './api.js?v=1',
+  './streaks.js?v=9',
   './cache-reset.js?v=8'
 ];
 
