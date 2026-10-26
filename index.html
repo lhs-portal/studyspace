@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="./subject-quizzes.js?v=1"></script>
-  <script src="./streaks.js?v=8"></script>
+  <script src="./api.js?v=1"></script>
+  <script src="./streaks.js?v=9"></script>
   <script src="./offline-sync.js?v=8" defer></script>
   <title>Hithadhoo School - Studyspace</title>
   <link rel="manifest" href="./manifest.json" />
@@ -469,8 +470,7 @@
 
     async function syncServerTimeAndScheduleReset() {
       try {
-        const res = await fetch(`${GAS_API_URL}?action=getServerTime`);
-        const serverInfo = await res.json();
+        const serverInfo = await API.call("getServerTime");
 
         console.log(`[Server Clock] Today: ${serverInfo.today} | Time: ${serverInfo.time}`);
 
@@ -507,7 +507,7 @@
       
       renderQuizQuestions();
     }
-    
+
     function launchRestoreQuizModal(data) {
       activeQuiz = { sheetId: "", subject: data.subject || "Economics", title: data.title || "Streak Restoration Challenge", quizId: "STREAK_RESTORE", isRestore: true, challengeId: data.challengeId };
       activeQuestions = data.questions;
@@ -711,11 +711,7 @@
       loginBtn.disabled = true;
 
       try {
-        const res = await fetch(`${GAS_API_URL}?action=checkUserRole&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
-          method: "GET",
-          redirect: "follow"
-        });
-        const data = await res.json();
+        const data = await API.call("login", { email: email, password: password });
 
         if (!data.authenticated) {
           alert(data.error || "Authentication failed. Please check your credentials.");
@@ -723,6 +719,14 @@
           loginBtn.disabled = false;
           return;
         }
+
+        if (!data.token) {
+          alert("Could not start a secure session. Please try again, or tell your teacher.");
+          loginBtn.innerText = "Authenticate & Enter Portal →";
+          loginBtn.disabled = false;
+          return;
+        }
+        API.setToken(data.token);
 
         currentUser = email;
         userRole = data.role;     
@@ -743,7 +747,10 @@
           streak: data.streak || 0,
           streakStatus: data.streakStatus || "ACTIVE",
           missedDays: data.missedDays || 0,
-          qotdCompletedToday: data.qotdCompletedToday || false
+          qotdCompletedToday: data.qotdCompletedToday || false,
+          canRestore: data.canRestore === true,
+          restorableStreak: data.restorableStreak || 0,
+          restoreDaysLeft: data.restoreDaysLeft || 0
         };
 
         localStorage.setItem("lhs_user_session", JSON.stringify({
@@ -861,8 +868,7 @@
 
     async function loadStudentStats() {
       try {
-        const res = await fetch(`${GAS_API_URL}?action=getLeaderboard`);
-        const data = await res.json();
+        const data = await API.call("getLeaderboard");
         cachedLeaderboardData = Array.isArray(data) ? data : [];
 
         filteredLeaderboardList = cachedLeaderboardData.filter(s => {
@@ -934,8 +940,7 @@
 
     async function loadTeacherData() {
       try {
-        const res = await fetch(`${GAS_API_URL}?action=getLeaderboard`);
-        const data = await res.json();
+        const data = await API.call("getLeaderboard");
         cachedLeaderboardData = Array.isArray(data) ? data : [];
         
         const teacherTitleClean = String(userTitle || "").toLowerCase();
@@ -1050,8 +1055,7 @@
     async function loadQuizIndex() {
       const grid = document.getElementById("quizCardsGrid");
       try {
-        const res = await fetch(`${GAS_API_URL}?action=getQuizIndex`);
-        const list = await res.json();
+        const list = await API.call("getQuizIndex");
         grid.innerHTML = "";
 
         if (!list || list.length === 0) {
@@ -1169,8 +1173,7 @@
       document.getElementById("quizModal").classList.remove("hidden");
 
       try {
-        const res = await fetch(`${GAS_API_URL}?action=getQuiz&sheetId=${encodeURIComponent(sheetId)}`);
-        const fetchedQuestions = await res.json();
+        const fetchedQuestions = await API.call("getQuiz", { sheetId: sheetId });
 
         if (Array.isArray(fetchedQuestions) && fetchedQuestions.length > 0) {
           // Process question sets using the centralized Subject Quiz Registry
@@ -1402,15 +1405,7 @@
           maxMarks: q.maxMarks || 4
         };
 
-        const res = await fetch(GAS_API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const evalRes = await res.json();
+        const evalRes = await API.call("evaluateWrittenAnswer", payload);
 
         if (evalRes.error) {
           alert("Evaluation Error: " + evalRes.error);
@@ -1528,22 +1523,13 @@
       if (isMini && typeof recordStreakActivity === "function") {
         await recordStreakActivity({ quizId: "BUS_MINI_QOTD", score: percent });
       } else {
-        await fetch(GAS_API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-          },
-          body: JSON.stringify({
-            action: "submitResult",
-            email: currentUser,
-            quizId: targetQuizId,
-            score: percent,
-            attemptNumber: 1,
-            isFirstTry100: percent === 100,
-            isQOTD: false,
-            type: "regular"
-          })
+        const saved = await API.call("submitResult", {
+          quizId: targetQuizId,
+          score: percent,
+          isQOTD: false,
+          type: "regular"
         });
+        if (saved && saved.error) console.warn("Result was not saved:", saved.error);
       }
 
       closeQuizModal();
@@ -1561,9 +1547,42 @@
       document.getElementById("quizModal").classList.add("hidden");
     }
 
+    // If the server says the session has ended, sign out (once) and go back to the login screen
+    API.setExpiredHandler(() => {
+      alert("Your session has ended. Please sign in again.");
+      logoutUser();
+    });
+
+    // Asks the server who this person really is, so the role and details never depend on what is stored in the browser
+    async function refreshProfileFromServer() {
+      try {
+        const data = await API.call("whoami");
+        if (!data || !data.authenticated) return;
+
+        const roleChanged = data.role !== userRole;
+        userRole = data.role;
+        userTitle = data.title;
+        userName = data.name || "";
+        userGradeStream = data.grade || userGradeStream;
+        if (data.commonName) commonName = data.commonName;
+
+        const saved = JSON.parse(localStorage.getItem("lhs_user_session") || "{}");
+        saved.role = userRole;
+        saved.title = userTitle;
+        saved.name = userName;
+        saved.commonName = commonName;
+        saved.gradeStream = userGradeStream;
+        localStorage.setItem("lhs_user_session", JSON.stringify(saved));
+
+        if (roleChanged) location.reload();
+      } catch (e) {
+        // Offline, or the session ended (the handler above deals with that): keep what we have
+      }
+    }
+
     window.onload = () => {
       const savedSession = localStorage.getItem("lhs_user_session");
-      if (savedSession) {
+      if (savedSession && API.getToken()) {
         try {
           const user = JSON.parse(savedSession);
           if (!user || !user.email) throw new Error("Invalid session data");
@@ -1577,11 +1596,14 @@
             userStreakData = user.streakData;
           }
           initPortalSession();
+          refreshProfileFromServer();
         } catch (e) {
           localStorage.removeItem("lhs_user_session");
           document.getElementById("loginModal").classList.remove("hidden");
         }
       } else {
+        // First visit, or signed in before secure sessions existed: sign in (once) to get a session
+        localStorage.removeItem("lhs_user_session");
         document.getElementById("loginModal").classList.remove("hidden");
       }
     };
