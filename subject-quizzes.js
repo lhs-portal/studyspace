@@ -314,7 +314,7 @@ const SubjectQuizRegistry = {
       `;
     }
   },
-
+  
   // =========================================================================
   // 3. ACCOUNTING MODULE (CIE 0452)
   // =========================================================================
@@ -386,10 +386,161 @@ const SubjectQuizRegistry = {
       `;
     }
   },
-
+  
+// =========================================================================
+  // 4. TRAVEL & TOURISM MODULE (CIE 0471 - WRITTEN ONLY)
   // =========================================================================
+  travel_tourism: {
+    code: "0471",
+    name: "Travel & Tourism",
+    defaultTimerSec: 90,
+    hasP2: true,
+
+    getTimer: function (hasImage) {
+      return hasImage ? 90 : 60;
+    },
+
+    /**
+     * Builds and samples Travel & Tourism written question sets (Paper 1 / Paper 2).
+     */
+    processQuestions: function (fetchedQuestions) {
+      // Check if this is a Paper 2 set (contains 9-mark evaluation questions)
+      const isPaper2Set = fetchedQuestions.some(q => Number(q.maxMarks) === 9 || (q.questionType && q.questionType === "evaluate_9mark"));
+
+      if (isPaper2Set) {
+        // ===================================================================
+        // TRAVEL & TOURISM: PAPER 2 LOGIC (DESTINATION MANAGEMENT & MARKETING)
+        // Standard Set: 1 x 4m/6m Short Written + 1 x 9m Evaluation Question
+        // ===================================================================
+        const poolShort = fetchedQuestions.filter(q => Number(q.maxMarks) < 9);
+        const pool9m = fetchedQuestions.filter(q => Number(q.maxMarks) === 9 || (q.questionType && q.questionType === "evaluate_9mark"));
+
+        const p2Set = [];
+        if (poolShort.length > 0) p2Set.push(SubjectQuizRegistry.shuffleArray(poolShort)[0]);
+        if (pool9m.length > 0) p2Set.push(SubjectQuizRegistry.shuffleArray(pool9m)[0]);
+
+        return p2Set.length > 0 ? p2Set : SubjectQuizRegistry.shuffleArray(fetchedQuestions).slice(0, 2);
+      } else {
+        // ===================================================================
+        // TRAVEL & TOURISM: PAPER 1 LOGIC (KEY TERMS & CONCEPTS)
+        // Standard Set: 1x2m/3m + 1x4m + 1x6m Assess
+        // ===================================================================
+        const getQuestionsByMarks = (marks) => {
+          const filtered = fetchedQuestions.filter(q => Number(q.maxMarks) === marks);
+          return SubjectQuizRegistry.shuffleArray(filtered);
+        };
+
+        const q2or3 = fetchedQuestions.filter(q => Number(q.maxMarks) <= 3);
+        const q4 = getQuestionsByMarks(4);
+        const q6 = getQuestionsByMarks(6);
+
+        const p1Set = [
+          q2or3.length > 0 ? SubjectQuizRegistry.shuffleArray(q2or3)[0] : null,
+          q4[0],
+          q6[0]
+        ].filter(Boolean);
+
+        return p1Set.length > 0 ? p1Set : SubjectQuizRegistry.shuffleArray(fetchedQuestions).slice(0, 4);
+      }
+    },
+
+    renderEvaluationHTML: function (evalRes, q) {
+      const maxM = evalRes.maxMarks || q.maxMarks || 4;
+      const marksAwarded = evalRes.marksAwarded !== undefined ? evalRes.marksAwarded : 0;
+      const marksLost = evalRes.marksLost !== undefined ? evalRes.marksLost : (maxM - marksAwarded);
+
+      let breakdownHtml = "";
+      if (evalRes.breakdown) {
+        breakdownHtml = `
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[11px]">
+            <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
+              <strong class="text-teal-400 block mb-0.5">Band / Level:</strong>
+              <span class="text-slate-300">${evalRes.breakdown.level || 'N/A'}</span>
+            </div>
+            <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
+              <strong class="text-amber-400 block mb-0.5">AO1 Knowledge:</strong>
+              <span class="text-slate-300">${evalRes.breakdown.knowledge || 'N/A'}</span>
+            </div>
+            <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
+              <strong class="text-emerald-400 block mb-0.5">AO2 Application:</strong>
+              <span class="text-slate-300">${evalRes.breakdown.application || 'N/A'}</span>
+            </div>
+            <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
+              <strong class="text-sky-400 block mb-0.5">AO3/AO4 Evaluation:</strong>
+              <span class="text-slate-300">${evalRes.breakdown.analysis || evalRes.breakdown.evaluation || 'N/A'}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="p-4 bg-slate-900 dark:bg-slate-950 border border-teal-500/40 rounded-xl text-xs space-y-3 mt-3 animate-float-in text-slate-200">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="font-bold text-teal-400 text-sm">Cambridge AI Examiner Result (0471 Travel & Tourism)</span>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-1 bg-teal-500/20 text-teal-300 font-extrabold rounded-lg border border-teal-500/30">
+                Earned: ${marksAwarded} / ${maxM}
+              </span>
+              ${marksLost > 0 ? `
+                <span class="px-2.5 py-1 bg-rose-500/20 text-rose-300 font-extrabold rounded-lg border border-rose-500/30">
+                  Lost: ${marksLost}
+                </span>
+              ` : `
+                <span class="px-2.5 py-1 bg-teal-500/20 text-teal-300 font-extrabold rounded-lg border border-teal-500/30">
+                  Full Marks! 🎉
+                </span>
+              `}
+            </div>
+          </div>
+
+          ${breakdownHtml}
+
+          ${evalRes.lostMarksReason ? `
+            <div class="p-3 bg-rose-950/30 border border-rose-800/40 rounded-lg">
+              <strong class="text-rose-400 block mb-1">❌ Explanation for Lost Marks:</strong>
+              <p class="text-slate-300 leading-relaxed">${evalRes.lostMarksReason}</p>
+            </div>
+          ` : ''}
+
+          ${evalRes.howToImprove ? `
+            <div class="p-3 bg-teal-950/40 border border-teal-800/50 rounded-lg">
+              <strong class="text-teal-400 block mb-1">💡 How to Write the Full-Mark Answer:</strong>
+              <p class="text-slate-300 leading-relaxed">${evalRes.howToImprove}</p>
+            </div>
+          ` : ''}
+
+          ${evalRes.modelAnswer ? `
+            <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-lg">
+              <strong class="text-amber-300 block mb-1">📝 Cambridge Model Answer:</strong>
+              <p class="text-slate-300 italic leading-relaxed">${evalRes.modelAnswer}</p>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+  },
+
+// =========================================================================
   // GLOBAL ROUTER METHODS
   // =========================================================================
+
+  getTimer: function (subjectName, hasImage) {
+    const cleanSubj = String(subjectName || "").toLowerCase();
+    if (cleanSubj.includes("eco") || cleanSubj.includes("0455")) {
+      return this.economics.getTimer(hasImage);
+    }
+    if (cleanSubj.includes("account") || cleanSubj.includes("0452")) {
+      return this.accounting.getTimer();
+    }
+    if (cleanSubj.includes("travel") || cleanSubj.includes("0471")) {
+      return this.travel_tourism.getTimer(hasImage);
+    }
+    if (cleanSubj.includes("business") || cleanSubj.includes("0450")) {
+      return this.business.getTimer(hasImage);
+    }
+    // Default Fallback
+    return hasImage ? 90 : 60;
+  },
 
   processQuizQuestions: function (subjectName, fetchedQuestions) {
     const cleanSubj = String(subjectName || "").toLowerCase();
@@ -402,6 +553,9 @@ const SubjectQuizRegistry = {
     }
     if (cleanSubj.includes("account") || cleanSubj.includes("0452")) {
       return this.accounting.processQuestions(fetchedQuestions);
+    }
+    if (cleanSubj.includes("travel") || cleanSubj.includes("0471")) {
+      return this.travel_tourism.processQuestions(fetchedQuestions);
     }
 
     // Default Fallback
@@ -425,6 +579,9 @@ const SubjectQuizRegistry = {
     }
     if (cleanSubj.includes("account") || cleanSubj.includes("0452")) {
       return this.accounting.renderEvaluationHTML(evalRes, questionObj);
+    }
+    if (cleanSubj.includes("travel") || cleanSubj.includes("0471")) {
+      return this.travel_tourism.renderEvaluationHTML(evalRes, questionObj);
     }
 
     // Default Fallback
