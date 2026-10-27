@@ -520,6 +520,222 @@ const SubjectQuizRegistry = {
     }
   },
 
+    // =========================================================================
+  // 5. BIOLOGY MODULE (CIE 0610)
+  // =========================================================================
+  biology: {
+    code: "0610",
+    name: "Biology",
+    defaultTimerSec: 90,
+    hasP2: true,
+
+    /**
+     * Biology: PAPER 1 MCQ LOGIC (CAPPED AT 15 MCQs)
+     */
+    processQuestions: function (fetchedQuestions) {
+      const shuffled = SubjectQuizRegistry.shuffleArray(fetchedQuestions).map(q => {
+        if (q.options && Array.isArray(q.options)) {
+          q.options = SubjectQuizRegistry.shuffleArray(q.options);
+        }
+        return q;
+      });
+      return shuffled.slice(0, 15);
+    },
+
+    renderEvaluationHTML: function (evalRes, q) {
+      const maxM = evalRes.maxMarks || q.maxMarks || 4;
+      const marksAwarded = evalRes.marksAwarded !== undefined ? evalRes.marksAwarded : 0;
+      const marksLost = evalRes.marksLost !== undefined ? evalRes.marksLost : (maxM - marksAwarded);
+
+      return `
+        <div class="p-4 bg-slate-900 dark:bg-slate-950 border border-sky-500/40 rounded-xl text-xs space-y-3 mt-3 animate-float-in text-slate-200">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="font-bold text-sky-400 text-sm">Cambridge AI Examiner Result (0452 Accounting)</span>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-1 bg-sky-500/20 text-sky-300 font-extrabold rounded-lg border border-sky-500/30">
+                Earned: ${marksAwarded} / ${maxM}
+              </span>
+              ${marksLost > 0 ? `
+                <span class="px-2.5 py-1 bg-rose-500/20 text-rose-300 font-extrabold rounded-lg border border-rose-500/30">
+                  Lost: ${marksLost}
+                </span>
+              ` : `
+                <span class="px-2.5 py-1 bg-sky-500/20 text-sky-300 font-extrabold rounded-lg border border-sky-500/30">
+                  Full Marks! 🎉
+                </span>
+              `}
+            </div>
+          </div>
+
+          ${evalRes.lostMarksReason ? `
+            <div class="p-3 bg-rose-950/30 border border-rose-800/40 rounded-lg">
+              <strong class="text-rose-400 block mb-1">❌ Accounting/Working Errors:</strong>
+              <p class="text-slate-300 leading-relaxed">${evalRes.lostMarksReason}</p>
+            </div>
+          ` : ''}
+
+          ${evalRes.howToImprove ? `
+            <div class="p-3 bg-sky-950/40 border border-sky-800/50 rounded-lg">
+              <strong class="text-sky-400 block mb-1">💡 Step-by-Step Ledger/Calculation Guide:</strong>
+              <p class="text-slate-300 leading-relaxed">${evalRes.howToImprove}</p>
+            </div>
+          ` : ''}
+
+          ${evalRes.modelAnswer ? `
+            <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-lg">
+              <strong class="text-amber-300 block mb-1">📝 Correct Entry / Model Solution:</strong>
+              <p class="text-slate-300 italic font-mono leading-relaxed">${evalRes.modelAnswer}</p>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+  },
+
+  // =========================================================================
+  // 6. CHEMISTRY MODULE (CIE 0620)
+  // =========================================================================
+  chemistry: {
+    code: "0620",
+    name: "Chemistry",
+    defaultTimerSec: 90,
+    hasP2: true,
+
+    /**
+     * Chemistry: PAPER 1 MCQ LOGIC (CAPPED AT 15 MCQs)
+     */
+    processQuestions: function (fetchedQuestions) {
+      const shuffled = SubjectQuizRegistry.shuffleArray(fetchedQuestions).map(q => {
+        if (q.options && Array.isArray(q.options)) {
+          q.options = SubjectQuizRegistry.shuffleArray(q.options);
+        }
+        return q;
+      });
+      return shuffled.slice(0, 15);
+    },
+
+    renderEvaluationHTML: function (evalRes, q) {
+      const maxM = evalRes.maxMarks || q.maxMarks || 4;
+      const marksAwarded = evalRes.marksAwarded !== undefined ? evalRes.marksAwarded : 0;
+      const marksLost = evalRes.marksLost !== undefined ? evalRes.marksLost : (maxM - marksAwarded);
+
+      return `
+        <div class="p-4 bg-slate-900 dark:bg-slate-950 border border-sky-500/40 rounded-xl text-xs space-y-3 mt-3 animate-float-in text-slate-200">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="font-bold text-sky-400 text-sm">Cambridge AI Examiner Result (0452 Accounting)</span>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-1 bg-sky-500/20 text-sky-300 font-extrabold rounded-lg border border-sky-500/30">
+                Earned: ${marksAwarded} / ${maxM}
+              </span>
+              ${marksLost > 0 ? `
+                <span class="px-2.5 py-1 bg-rose-500/20 text-rose-300 font-extrabold rounded-lg border border-rose-500/30">
+                  Lost: ${marksLost}
+                </span>
+              ` : `
+                <span class="px-2.5 py-1 bg-sky-500/20 text-sky-300 font-extrabold rounded-lg border border-sky-500/30">
+                  Full Marks! 🎉
+                </span>
+              `}
+            </div>
+          </div>
+
+          ${evalRes.lostMarksReason ? `
+            <div class="p-3 bg-rose-950/30 border border-rose-800/40 rounded-lg">
+              <strong class="text-rose-400 block mb-1">❌ Accounting/Working Errors:</strong>
+              <p class="text-slate-300 leading-relaxed">${evalRes.lostMarksReason}</p>
+            </div>
+          ` : ''}
+
+          ${evalRes.howToImprove ? `
+            <div class="p-3 bg-sky-950/40 border border-sky-800/50 rounded-lg">
+              <strong class="text-sky-400 block mb-1">💡 Step-by-Step Ledger/Calculation Guide:</strong>
+              <p class="text-slate-300 leading-relaxed">${evalRes.howToImprove}</p>
+            </div>
+          ` : ''}
+
+          ${evalRes.modelAnswer ? `
+            <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-lg">
+              <strong class="text-amber-300 block mb-1">📝 Correct Entry / Model Solution:</strong>
+              <p class="text-slate-300 italic font-mono leading-relaxed">${evalRes.modelAnswer}</p>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+  },
+
+  // =========================================================================
+  // 7. PHYSICS MODULE (CIE 0625)
+  // =========================================================================
+  physics: {
+    code: "0625",
+    name: "Physics",
+    defaultTimerSec: 90,
+    hasP2: true,
+
+    /**
+     * Physics: PAPER 1 MCQ LOGIC (CAPPED AT 15 MCQs)
+     */
+    processQuestions: function (fetchedQuestions) {
+      const shuffled = SubjectQuizRegistry.shuffleArray(fetchedQuestions).map(q => {
+        if (q.options && Array.isArray(q.options)) {
+          q.options = SubjectQuizRegistry.shuffleArray(q.options);
+        }
+        return q;
+      });
+      return shuffled.slice(0, 15);
+    },
+
+    renderEvaluationHTML: function (evalRes, q) {
+      const maxM = evalRes.maxMarks || q.maxMarks || 4;
+      const marksAwarded = evalRes.marksAwarded !== undefined ? evalRes.marksAwarded : 0;
+      const marksLost = evalRes.marksLost !== undefined ? evalRes.marksLost : (maxM - marksAwarded);
+
+      return `
+        <div class="p-4 bg-slate-900 dark:bg-slate-950 border border-sky-500/40 rounded-xl text-xs space-y-3 mt-3 animate-float-in text-slate-200">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="font-bold text-sky-400 text-sm">Cambridge AI Examiner Result (0452 Accounting)</span>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-1 bg-sky-500/20 text-sky-300 font-extrabold rounded-lg border border-sky-500/30">
+                Earned: ${marksAwarded} / ${maxM}
+              </span>
+              ${marksLost > 0 ? `
+                <span class="px-2.5 py-1 bg-rose-500/20 text-rose-300 font-extrabold rounded-lg border border-rose-500/30">
+                  Lost: ${marksLost}
+                </span>
+              ` : `
+                <span class="px-2.5 py-1 bg-sky-500/20 text-sky-300 font-extrabold rounded-lg border border-sky-500/30">
+                  Full Marks! 🎉
+                </span>
+              `}
+            </div>
+          </div>
+
+          ${evalRes.lostMarksReason ? `
+            <div class="p-3 bg-rose-950/30 border border-rose-800/40 rounded-lg">
+              <strong class="text-rose-400 block mb-1">❌ Accounting/Working Errors:</strong>
+              <p class="text-slate-300 leading-relaxed">${evalRes.lostMarksReason}</p>
+            </div>
+          ` : ''}
+
+          ${evalRes.howToImprove ? `
+            <div class="p-3 bg-sky-950/40 border border-sky-800/50 rounded-lg">
+              <strong class="text-sky-400 block mb-1">💡 Step-by-Step Ledger/Calculation Guide:</strong>
+              <p class="text-slate-300 leading-relaxed">${evalRes.howToImprove}</p>
+            </div>
+          ` : ''}
+
+          ${evalRes.modelAnswer ? `
+            <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-lg">
+              <strong class="text-amber-300 block mb-1">📝 Correct Entry / Model Solution:</strong>
+              <p class="text-slate-300 italic font-mono leading-relaxed">${evalRes.modelAnswer}</p>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+  },
+  
 // =========================================================================
   // GLOBAL ROUTER METHODS
   // =========================================================================
