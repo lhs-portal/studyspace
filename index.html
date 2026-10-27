@@ -1084,7 +1084,7 @@
             <div class="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
               <h3 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight">${subject}</h3>
               <span class="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                ${quizzes.length} ${quizzes.length === 1 ? 'Unit' : 'Units'}
+                ${quizzes.some(u => u.locked) ? quizzes.filter(u => !u.locked).length + ' of ' + quizzes.length + ' Units open' : quizzes.length + ' ' + (quizzes.length === 1 ? 'Unit' : 'Units')}
               </span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="cards-for-${subject.replace(/\s+/g, '-')}"></div>
@@ -1095,6 +1095,23 @@
           const cardsContainer = subjectSection.querySelector(`#cards-for-${subject.replace(/\s+/g, '-')}`);
 
           quizzes.forEach(q => {
+            // A unit the class has not reached yet (set in Syllabus_Config): show it, but keep it closed
+            if (q.locked) {
+              cardsContainer.innerHTML += `
+                <div class="bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-5 flex flex-col justify-between opacity-80">
+                  <div>
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                      <h3 class="font-bold text-slate-500 dark:text-slate-400 text-base leading-tight">${q.unit}</h3>
+                      <span class="text-base" aria-hidden="true">🔒</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-500 mb-3">${q.title}</p>
+                  </div>
+                  <button disabled class="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-900/50 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-800/50 cursor-not-allowed mt-2">Opens when your class reaches it</button>
+                </div>
+              `;
+              return;
+            }
+
             const currentSelectedPaper = cardPaperSelections[q.quizId] || "P1";
             const isP2 = currentSelectedPaper === "P2";
             const prog = getSavedUnitProgress(q.quizId, currentSelectedPaper);
