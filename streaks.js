@@ -1,332 +1,1663 @@
-/**
- * Studyspace - Streaks & Gamification Module (streaks.js)
- * L. Hithadhoo School
- */
-
-(function (window) {
-  'use strict';
-
-  let userConfig = null;
-  let streakState = {
-    streak: 0,
-    status: "PENDING_TODAY", // "COMPLETED_TODAY", "PENDING_TODAY", "STREAK_LOST", "NEVER_PLAYED"
-    streakStatus: "PENDING_TODAY",
-    missedDays: 0,
-    qotdCompletedToday: false,
-    lastActiveDate: null,
-    highestStreak: 0,
-    canRestore: false,
-    restorableStreak: 0,
-    restoreDaysLeft: 0
-  };
-
-  /**
-   * Initializes the streak module for the active session
-   */
-  async function initStreakModule(config) {
-    userConfig = config;
-
-    // Reset local state to ensure fresh sync from Google atomic server clock
-    streakState.qotdCompletedToday = false;
-
-    // Fetch real-time status directly from backend
-    await fetchStreakStatusFromBackend();
-
-    // Render UI components
-    renderInlineStreak();
-    updateMiniQuizBanner(streakState);
-  }
-
-  /**
-   * Fetches real-time streak details directly from the Apps Script atomic clock backend
-   */
-  async function fetchStreakStatusFromBackend() {
-    if (!userConfig || !userConfig.email) return;
-
-    try {
-      const data = await API.call("getStreakStatus");
-      {
-        if (data && !data.error) {
-          const rawStatus = data.status || data.streakStatus || "PENDING_TODAY";
-          const isCompleted = (rawStatus === "COMPLETED_TODAY");
-
-          streakState = {
-            streak: Number(data.streak) || 0,
-            status: rawStatus,
-            streakStatus: rawStatus,
-            missedDays: Number(data.missedDays) || 0,
-            qotdCompletedToday: isCompleted,
-            lastActiveDate: data.lastActiveDate || null,
-            highestStreak: Math.max(Number(data.streak) || 0, streakState.highestStreak),
-            canRestore: data.canRestore === true,
-            restorableStreak: Number(data.restorableStreak) || 0,
-            restoreDaysLeft: Number(data.restoreDaysLeft) || 0
-          };
-
-          // Save fresh state to user-scoped cache
-          saveLocalStreakCache();
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="./subject-quizzes.js?v=1"></script>
+  <script src="./api.js?v=1"></script>
+  <script src="./streaks.js?v=9"></script>
+  <script src="./offline-sync.js?v=8" defer></script>
+  <title>Hithadhoo School - Studyspace</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
         }
       }
-    } catch (err) {
-      console.warn("Could not sync streaks with server, using fallback mode.", err);
-      loadLocalStreakCache();
     }
-  }
+  </script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    
+    .card-shadow { 
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); 
+    }
+    .dark .card-shadow { 
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5); 
+    }
+    .card-shadow:hover { 
+      box-shadow: 0 10px 25px -3px rgba(16, 185, 129, 0.18); 
+    }
 
-  function loadLocalStreakCache() {
-    if (!userConfig || !userConfig.email) return;
-    const cacheKey = `lhs_streak_${userConfig.email.toLowerCase()}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
+    @keyframes flyInAndAway {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, 25px) scale(0.9);
+      }
+      18% {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1.02);
+      }
+      25% {
+        transform: translate(-50%, 0) scale(1);
+      }
+      75% {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -35px) scale(0.95);
+      }
+    }
+    .animate-fly-popup {
+      animation: flyInAndAway 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes floatInUp {
+      0% {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-float-in {
+      animation: floatInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen antialiased flex flex-col transition-colors duration-200">
+
+  <!-- TOP NAVBAR -->
+  <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img 
+          src="logo.png" 
+          alt="Hithadhoo School Logo" 
+          class="h-10 w-10 object-contain rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-0.5"
+          onerror="this.onerror=null; this.outerHTML='<div class=\'h-10 w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm\'>HS</div>';"
+        />
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-slate-900 dark:text-white text-lg sm:text-xl tracking-tight">Hithadhoo School</span>
+          </div>
+          <p class="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hidden sm:block">Studyspace</p>
+        </div>
+      </div>
+
+      <!-- TOP BANNER RIGHT SIDE -->
+      <div id="navUserSection" class="flex items-center gap-3">
+        <div id="userProfileTag" class="text-right"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- LOGIN MODAL -->
+  <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div class="bg-gradient-to-r from-emerald-700 to-teal-800 p-6 text-white text-center border-b border-emerald-600/30">
+        <div class="inline-flex h-14 w-14 rounded-2xl bg-white p-2 items-center justify-center mb-3 shadow-lg">
+          <img 
+            src="logo.png" 
+            alt="Hithadhoo School Logo" 
+            class="h-full w-full object-contain"
+            onerror="this.onerror=null; this.outerHTML='<span class=\'text-2xl\'>🎓</span>';"
+          />
+        </div>
+        <h2 class="text-2xl font-extrabold tracking-tight text-white">Hithadhoo School</h2>
+        <p class="text-xs font-semibold text-emerald-200 mt-1">Studyspace</p>
+      </div>
+
+      <form id="loginForm" class="p-6 space-y-4" onsubmit="handleLoginSubmit(event)">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">School Email Address</label>
+          <input 
+            type="email" 
+            id="emailInput" 
+            required 
+            placeholder="name@hithadhooschool.edu.mv"
+            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Password</label>
+          <input 
+            type="password" 
+            id="passwordInput" 
+            required 
+            placeholder="••••••••"
+            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 outline-none"
+          />
+        </div>
+
+        <button 
+          type="submit" 
+          id="loginBtn"
+          class="w-full py-2.5 rounded-xl font-bold text-xs text-slate-950 bg-emerald-400 hover:bg-emerald-300 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+        >
+          Authenticate &amp; sign in &rarr;
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 space-y-8">
+
+    <!-- WELCOME BOARD -->
+    <div id="welcomeBoard" class="bg-gradient-to-r from-emerald-100 via-white to-emerald-50 dark:from-emerald-950/80 dark:via-slate-900 dark:to-slate-900 p-6 rounded-2xl border border-emerald-300 dark:border-emerald-800/40 card-shadow flex flex-col gap-5">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 id="welcomeTitle" class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Welcome!</h2>
+          <p id="motivationalQuote" class="text-xs font-medium text-emerald-700 dark:text-emerald-400/90 mt-1 italic">"Success is the sum of small efforts, repeated day in and day out."</p>
+        </div>
+        <div class="px-3 py-1.5 rounded-xl bg-emerald-200/60 dark:bg-emerald-900/40 border border-emerald-400 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold w-max">
+          🚀 Beat your personal best!
+        </div>
+      </div>
+
+      <!-- TODAY'S MINI QUIZ TAB -->
+      <div id="miniQuizBanner" class="p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700">
+        <div class="flex items-center gap-3">
+          <div id="miniQuizIcon" class="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 dark:text-orange-400">
+            🔥
+          </div>
+          <div>
+            <h3 id="miniQuizTitle" class="text-sm font-bold text-slate-900 dark:text-white">
+              Today's Mini Quiz
+            </h3>
+            <p id="miniQuizDesc" class="text-xs text-slate-500 dark:text-slate-400">
+              Daily Challenge — keep your streak alive!
+            </p>
+          </div>
+        </div>
+
+        <button id="btnTakeMiniQuiz" onclick="startBusinessMiniQuiz()" class="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer">
+          Take Quiz &rarr;
+        </button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section id="dashboardSection" class="space-y-5">
+      <div id="teacherBanner" class="hidden p-4 rounded-2xl bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-600/50 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="h-9 w-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-sm">SMT</span>
+          <div>
+            <div class="text-xs font-bold text-amber-800 dark:text-amber-300">School View Active</div>
+            <div class="text-[11px] text-amber-700 dark:text-amber-200/80">Displaying aggregate student attempts and performance records. Click any student row to view detailed analytics.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Student Stats -->
+      <div id="studentStatsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow">
+          <div class="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">BEST SCORE</div>
+          <div id="statAvgScore" class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">0%</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow">
+          <div class="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">MEDALS</div>
+          <div id="statFirstTry" class="text-3xl font-extrabold text-slate-900 dark:text-white">0</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow">
+          <div class="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">TOTAL ATTEMPTS</div>
+          <div id="statAttempts" class="text-3xl font-extrabold text-slate-900 dark:text-white">0</div>
+        </div>
+
+        <!-- LEADERBOARD TAB -->
+        <div onclick="openLeaderboardModal()" class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow cursor-pointer hover:border-emerald-500 transition-all group">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold">LEADERBOARD</div>
+            <span class="text-xs text-emerald-500 font-bold group-hover:translate-x-1 transition-transform">View &rarr;</span>
+          </div>
+          <div id="statRank" class="text-3xl font-extrabold text-amber-500 dark:text-amber-400">#--</div>
+          <div class="text-[10px] text-slate-400 mt-1">Class Stream Standing</div>
+        </div>
+      </div>
+
+      <!-- Teacher Table -->
+      <div id="teacherTableContainer" class="hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 card-shadow">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">Student Performance Overview</h3>
+          <div id="teacherSubjectFilter" class="flex items-center gap-2"></div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400">
+                <th class="p-3">Rank</th>
+                <th class="p-3">Student Name</th>
+                <th class="p-3">Total Attempts</th>
+                <th class="p-3">Medals</th>
+                <th class="p-3 text-right">Highest Score</th>
+              </tr>
+            </thead>
+            <tbody id="teacherTableBody">
+              <tr><td colspan="5" class="p-3 text-slate-500">Loading student records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUIZ SELECTOR -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white">Let's Practice!</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Select any syllabus unit to take a quiz</p>
+        </div>
+        <button onclick="refreshUnits()" class="px-3 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5">
+          Refresh
+        </button>
+      </div>
+
+      <div id="quizCardsGrid" class="space-y-8 w-full">
+        <div class="text-xs text-slate-500">Loading units...</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FULL STREAM LEADERBOARD MODAL -->
+  <div id="leaderboardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
+        <div>
+          <span class="px-2.5 py-0.5 text-[10px] font-bold rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/50">Stream Rankings</span>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white mt-1">🏆 Class Leaderboard</h3>
+        </div>
+        <button onclick="closeLeaderboardModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <div class="p-5 overflow-y-auto flex-1">
+        <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400">
+                <th class="p-3 w-12 text-center">Rank</th>
+                <th class="p-3">Student</th>
+                <th class="p-3 text-center">Medals 🏅</th>
+                <th class="p-3 text-center">Attempts</th>
+                <th class="p-3 text-right">Best Score</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardModalTableBody">
+              <tr><td colspan="5" class="p-4 text-center text-slate-500">Loading leaderboard...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end">
+        <button onclick="closeLeaderboardModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STUDENT DETAILED ANALYTICS MODAL -->
+  <div id="analyticsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
+        <div>
+          <span class="px-2.5 py-0.5 text-[10px] font-bold rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/50">Student Analytics</span>
+          <h3 id="analyticsStudentName" class="text-base font-bold text-slate-900 dark:text-white mt-1">Student Progress Breakdown</h3>
+        </div>
+        <button onclick="closeAnalyticsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-4 flex-1">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-2">
+          <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div class="text-[10px] font-bold text-slate-500 uppercase">Best Score</div>
+            <div id="analyticsBestScore" class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">0%</div>
+          </div>
+          <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div class="text-[10px] font-bold text-slate-500 uppercase">Total Attempts</div>
+            <div id="analyticsTotalAttempts" class="text-xl font-extrabold text-slate-900 dark:text-white">0</div>
+          </div>
+          <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div class="text-[10px] font-bold text-slate-500 uppercase">Medals</div>
+            <div id="analyticsFirstTry100" class="text-xl font-extrabold text-amber-600 dark:text-amber-300">0</div>
+          </div>
+        </div>
+
+        <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Unit Attempt History</h4>
+        
+        <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400">
+                <th class="p-3">Quiz ID / Unit</th>
+                <th class="p-3 text-center">Attempts Made</th>
+                <th class="p-3 text-center">Medals</th>
+                <th class="p-3 text-right">Highest Score</th>
+              </tr>
+            </thead>
+            <tbody id="analyticsTableBody">
+              <tr><td colspan="4" class="p-3 text-slate-500">Loading student activity...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end">
+        <button onclick="closeAnalyticsModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer">
+          Close Window
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ MODAL -->
+  <div id="quizModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
+        <div>
+          <span id="quizSubjectTag" class="px-2.5 py-0.5 text-[10px] font-bold rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/50">Subject</span>
+          <h3 id="quizModalTitle" class="text-base font-bold text-slate-900 dark:text-white mt-1">Quiz</h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <div id="timerContainer" class="hidden px-3 py-1 rounded-xl bg-amber-100 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-700/60 text-amber-800 dark:text-amber-300 text-xs font-extrabold flex items-center gap-1.5">
+            ⏱ <span id="timerCountdown">90</span>s
+          </div>
+          <button onclick="closeQuizModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl font-bold">&times;</button>
+        </div>
+      </div>
+
+      <div id="quizQuestionBody" class="p-6 overflow-y-auto space-y-4 flex-1 relative min-h-[220px]">
+        <!-- Questions rendered dynamically -->
+      </div>
+
+      <div id="quizModalFooter" class="hidden px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end items-center">
+        <button id="nextBtn" onclick="nextQuestion()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer">
+          Next Question &rarr;
+        </button>
+        <button id="submitBtn" onclick="submitQuiz()" class="hidden px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer">
+          Submit Final Quiz Score
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER WITH THEME TOGGLE & SIGNOUT BUTTON -->
+  <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500 dark:text-slate-500 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>Hithadhoo School - Studyspace &copy; 2026</div>
+
+      <div class="flex items-center gap-3">
+        <button 
+          onclick="forceClearCacheAndRefresh()" 
+          id="forceRefreshBtn"
+          title="Clear Cache & Sync Fresh Data"
+          class="px-3.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-xs rounded-xl border border-amber-500/20 transition cursor-pointer flex items-center gap-1.5"
+        >
+          🔄
+        </button>
+        
+        <button 
+          onclick="toggleTheme()" 
+          id="themeToggleBtn"
+          aria-label="Toggle Theme"
+          class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+        >
+          <span id="themeIcon">☀️</span>
+        </button>
+
+        <button 
+          onclick="logoutUser()" 
+          class="px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs rounded-xl border border-rose-500/20 transition cursor-pointer"
+        >
+          Sign Out
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxp8krlvEmXQGeNp96G2ybXV9KjecxpCu61LuT34lMil2z4fklRAB9ge_K23FcOh1qFbg/exec";
+
+    const PRAISE_MESSAGES = ["Good job! 🌟", "You're so smart! 💡", "You're great at this! ✨", "Let's get them all! 🚀", "Wonderful! 🎈", "Amazing! 🎉", "That's right! 🙌", "Historic W", "You're cooking", "Iconic!", "You're farming aura", "Main character energy", "Slay", "Based", "Wow, you're locked in"];
+    const ENCOURAGEMENT_MESSAGES = ["You can get the next one! 💪", "That's okay! 🌱", "Don't worry! 😊", "You can get this next time! 🎯", "Mistakes make perfect! ✨", "No worries", "Just a little setback", "Trust the process", "It's giving learning curve", "We love a redemption arc", "That's valid, shake it off"];
+
+    const MOTIVATIONAL_QUOTES = [
+      "Read: In the name of your Lord who created... — Surah Al-Alaq (96:1).",
+      "And say, 'My Lord, increase me in knowledge.' — Surah Ta-Ha (20:114)",
+      "God will raise those who have believed among you and those who were given knowledge, by degrees. — Surah Al-Mujadila (58:11)",
+      "Are those who know equal to those who do not know? — Surah Az-Zumar (39:9)",
+      "And He taught Adam all the names... — Surah Al-Baqarah (2:31)"
+    ];
+
+    let currentUser = "";
+    let userRole = "";
+    let userTitle = "";
+    let userName = "";
+    let commonName = "";
+    let userGradeStream = "9B";
+    let userStreakData = { streak: 0, streakStatus: "ACTIVE", missedDays: 0, qotdCompletedToday: false };
+    let activeQuiz = null;
+    let activeQuestions = [];
+    let userAnswers = {};
+    let lockedQuestions = {};
+    let currentQuestionIndex = 0;
+    let cachedLeaderboardData = [];
+    let filteredLeaderboardList = [];
+    let midnightTimer = null;
+
+    const cardPaperSelections = {};
+
+    let questionTimer = null;
+    let timeLeft = 45;
+
+    async function syncServerTimeAndScheduleReset() {
       try {
-        const parsed = JSON.parse(cached);
-        streakState = { ...streakState, ...parsed };
+        const serverInfo = await API.call("getServerTime");
+
+        console.log(`[Server Clock] Today: ${serverInfo.today} | Time: ${serverInfo.time}`);
+
+        if (midnightTimer) clearTimeout(midnightTimer);
+
+        midnightTimer = setTimeout(() => {
+          console.log("🌙 Midnight reached! Auto-refreshing daily mini quiz...");
+          if (typeof loadQuizIndex === "function") loadQuizIndex();
+          if (userRole === "teacher") {
+            if (typeof loadTeacherData === "function") loadTeacherData();
+          } else {
+            if (typeof loadStudentStats === "function") loadStudentStats();
+          }
+        }, serverInfo.msUntilMidnight + 1000);
+
+      } catch (err) {
+        console.error("Server time sync failed:", err);
+      }
+    }
+
+    function launchMiniQuizModal(data) {
+      activeQuiz = { sheetId: "", subject: data.subject || "Daily Quiz", title: data.title || "Daily Mini Quiz", quizId: "BUS_MINI_QOTD" };
+      activeQuestions = data.questions;
+      userAnswers = {};
+      lockedQuestions = {};
+      currentQuestionIndex = 0;
+
+      document.getElementById("quizSubjectTag").innerText = data.subject || "Daily Quiz";
+      document.getElementById("quizModalTitle").innerText = data.title || "Daily Mini Quiz";
+      
+      const footer = document.getElementById("quizModalFooter");
+      if (footer) footer.classList.remove("hidden");
+      document.getElementById("quizModal").classList.remove("hidden");
+      
+      renderQuizQuestions();
+    }
+
+    function launchRestoreQuizModal(data) {
+      activeQuiz = { sheetId: "", subject: data.subject || "Economics", title: data.title || "Streak Restoration Challenge", quizId: "STREAK_RESTORE", isRestore: true, challengeId: data.challengeId };
+      activeQuestions = data.questions;
+      userAnswers = {};
+      lockedQuestions = {};
+      currentQuestionIndex = 0;
+
+      document.getElementById("quizSubjectTag").innerText = data.subject || "Economics";
+      document.getElementById("quizModalTitle").innerText = data.title || "Streak Restoration Challenge";
+
+      const footer = document.getElementById("quizModalFooter");
+      if (footer) footer.classList.remove("hidden");
+      document.getElementById("quizModal").classList.remove("hidden");
+
+      renderQuizQuestions();
+    }
+
+    function startQuestionTimer() {
+      stopQuestionTimer();
+
+      const isAccounting = activeQuiz && activeQuiz.subject && activeQuiz.subject.toLowerCase().includes("account");
+
+      if (isAccounting) {
+        timeLeft = 90;
+      } else {
+        const currentQ = activeQuestions[currentQuestionIndex];
+        const hasImage = currentQ && currentQ.imageUrl && currentQ.imageUrl.trim().length > 0;
+        timeLeft = hasImage ? 90 : 60;
+      }
+
+      const timerBox = document.getElementById("timerContainer");
+      const timerDisplay = document.getElementById("timerCountdown");
+      if (timerBox) timerBox.classList.remove("hidden");
+      if (timerDisplay) timerDisplay.innerText = timeLeft;
+
+      questionTimer = setInterval(() => {
+        timeLeft--;
+        if (timerDisplay) timerDisplay.innerText = timeLeft;
+
+        if (timeLeft <= 0) {
+          stopQuestionTimer();
+          handleTimeExpired();
+        }
+      }, 1000);
+    }
+
+    function stopQuestionTimer() {
+      if (questionTimer) {
+        clearInterval(questionTimer);
+        questionTimer = null;
+      }
+    }
+
+    function handleTimeExpired() {
+      const idx = currentQuestionIndex;
+      if (lockedQuestions[idx]) return;
+
+      userAnswers[idx] = { 
+        selected: null, 
+        feedbackMsg: "⏰ Time's up!" 
+      };
+      lockedQuestions[idx] = true;
+
+      renderQuizQuestions();
+      loadQuizIndex();
+    }
+
+    function initTheme() {
+      const savedTheme = localStorage.getItem("lhs_theme");
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+      if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+        document.documentElement.classList.add("dark");
+        updateThemeIcon(true);
+      } else {
+        document.documentElement.classList.remove("dark");
+        updateThemeIcon(false);
+      }
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle("dark");
+      localStorage.setItem("lhs_theme", isDark ? "dark" : "light");
+      updateThemeIcon(isDark);
+    }
+
+    function updateThemeIcon(isDark) {
+      const icon = document.getElementById("themeIcon");
+      if (icon) {
+        icon.innerText = isDark ? "☀️" : "🌙";
+      }
+    }
+
+    initTheme();
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    /**
+     * READS UNIT PROGRESS DIRECTLY FROM GOOGLE SHEET DATABASE (cachedLeaderboardData)
+     * Matches quizId and paperMode (P1 or P2) against student's recorded scores.
+     */
+    function getSavedUnitProgress(quizId, paperMode = "P1") {
+      if (!cachedLeaderboardData || cachedLeaderboardData.length === 0 || !currentUser) {
+        return { answered: 0, total: 100, percent: 0 };
+      }
+
+      const student = cachedLeaderboardData.find(
+        s => s.email && s.email.toLowerCase() === currentUser.toLowerCase()
+      );
+
+      if (!student) return { answered: 0, total: 100, percent: 0 };
+
+      const breakdown = student.quizBreakdown || student.quizzes || student.units || [];
+      const targetId = paperMode === "P2" ? `${quizId}_P2` : quizId;
+
+      const match = breakdown.find(
+        q => (q.quizId || q.unit || "").toString().toLowerCase() === targetId.toLowerCase()
+      );
+
+      if (match) {
+        const score = Number(match.bestScore !== undefined ? match.bestScore : match.score) || 0;
+        return { answered: score > 0 ? 1 : 0, total: 1, percent: score };
+      }
+
+      return { answered: 0, total: 100, percent: 0 };
+    }
+
+    function handlePaperToggle(checkbox, quizId) {
+      const activePaper = checkbox.checked ? "P2" : "P1";
+      cardPaperSelections[quizId] = activePaper;
+
+      const p1Label = document.getElementById(`p1-lbl-${quizId}`);
+      const p2Label = document.getElementById(`p2-lbl-${quizId}`);
+      const quizBtn = document.getElementById(`quiz-btn-${quizId}`);
+      const progText = document.getElementById(`prog-text-${quizId}`);
+      const progBar = document.getElementById(`prog-bar-${quizId}`);
+
+      const prog = getSavedUnitProgress(quizId, activePaper);
+
+      if (activePaper === "P2") {
+        if (p1Label) p1Label.className = "text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors";
+        if (p2Label) p2Label.className = "text-[10px] font-extrabold text-amber-600 dark:text-amber-400 transition-colors";
+        
+        if (progText) {
+          progText.className = "text-amber-600 dark:text-amber-400 font-bold";
+          progText.innerText = `${prog.percent}%`;
+        }
+        if (progBar) {
+          progBar.className = "h-full bg-amber-500 transition-all duration-300";
+          progBar.style.width = `${prog.percent}%`;
+        }
+
+        if (quizBtn) {
+          quizBtn.className = "w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all cursor-pointer";
+          quizBtn.innerText = prog.percent > 0 ? "Continue Paper 2 Quiz \u2192" : "Start Paper 2 Quiz \u2192";
+        }
+      } else {
+        if (p1Label) p1Label.className = "text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 transition-colors";
+        if (p2Label) p2Label.className = "text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors";
+
+        if (progText) {
+          progText.className = "text-emerald-600 dark:text-emerald-400 font-bold";
+          progText.innerText = `${prog.percent}%`;
+        }
+        if (progBar) {
+          progBar.className = "h-full bg-emerald-500 transition-all duration-300";
+          progBar.style.width = `${prog.percent}%`;
+        }
+
+        if (quizBtn) {
+          quizBtn.className = "w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all cursor-pointer";
+          quizBtn.innerText = prog.percent > 0 ? "Continue Paper 1 Quiz \u2192" : "Start Paper 1 Quiz \u2192";
+        }
+      }
+    }
+
+    function handleStartQuizClick(sheetId, paper2SheetId, subject, title, quizId) {
+      const selectedPaper = cardPaperSelections[quizId] || "P1";
+      const targetSheetId = (selectedPaper === "P2" && paper2SheetId) ? paper2SheetId : sheetId;
+      startQuiz(targetSheetId, subject, title, quizId);
+    }
+
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById("emailInput").value.trim().toLowerCase();
+      const password = document.getElementById("passwordInput").value.trim();
+      const loginBtn = document.getElementById("loginBtn");
+
+      if (!email || !password) {
+        alert("Please enter both your email and password.");
+        return;
+      }
+
+      loginBtn.innerText = "Verifying credentials...";
+      loginBtn.disabled = true;
+
+      try {
+        const data = await API.call("login", { email: email, password: password });
+
+        if (!data.authenticated) {
+          alert(data.error || "Authentication failed. Please check your credentials.");
+          loginBtn.innerText = "Authenticate & Enter Portal →";
+          loginBtn.disabled = false;
+          return;
+        }
+
+        if (!data.token) {
+          alert("Could not start a secure session. Please try again, or tell your teacher.");
+          loginBtn.innerText = "Authenticate & Enter Portal →";
+          loginBtn.disabled = false;
+          return;
+        }
+        API.setToken(data.token);
+
+        currentUser = email;
+        userRole = data.role;     
+        userTitle = data.title;   
+        userName = data.name || "";
+        userGradeStream = data.grade || data.gradeStream || "9B";
+
+        if (data.commonName) {
+          commonName = data.commonName;
+        } else if (data.name) {
+          const nameParts = data.name.trim().split(" ");
+          commonName = nameParts.length > 1 ? nameParts[1] : nameParts[0];
+        } else {
+          commonName = "Student";
+        }
+
+        userStreakData = {
+          streak: data.streak || 0,
+          streakStatus: data.streakStatus || "ACTIVE",
+          missedDays: data.missedDays || 0,
+          qotdCompletedToday: data.qotdCompletedToday || false,
+          canRestore: data.canRestore === true,
+          restorableStreak: data.restorableStreak || 0,
+          restoreDaysLeft: data.restoreDaysLeft || 0
+        };
+
+        localStorage.setItem("lhs_user_session", JSON.stringify({
+          email: currentUser,
+          role: userRole,
+          title: userTitle,
+          name: userName,
+          commonName: commonName,
+          gradeStream: userGradeStream,
+          streakData: userStreakData
+        }));
+
+        await initPortalSession();
+
+      } catch (err) {
+        alert("Error connecting to Google Apps Script backend.");
+        loginBtn.innerText = "Authenticate & Enter Portal →";
+        loginBtn.disabled = false;
+      }
+    }
+
+    async function initPortalSession() {
+      document.getElementById("loginModal").classList.add("hidden");
+      updateUserUI(userStreakData);
+
+      if (typeof initStreakModule === 'function') {
+        initStreakModule({
+          email: currentUser,
+          role: userRole,
+          title: userTitle,
+          name: userName,
+          commonName: commonName
+        });
+      }
+
+      const miniBanner = document.getElementById("miniQuizBanner");
+      if (miniBanner) miniBanner.classList.remove("hidden");
+
+      if (userRole === "teacher") {
+        document.getElementById("teacherBanner").classList.remove("hidden");
+        document.getElementById("teacherTableContainer").classList.remove("hidden");
+        document.getElementById("studentStatsGrid").classList.add("hidden");
+        await loadTeacherData();
+      } else {
+        document.getElementById("teacherBanner").classList.add("hidden");
+        document.getElementById("teacherTableContainer").classList.add("hidden");
+        document.getElementById("studentStatsGrid").classList.remove("hidden");
+        await loadStudentStats(); 
+      }
+
+      syncServerTimeAndScheduleReset();
+      loadQuizIndex();
+    }
+
+    function updateUserUI(streakData) {
+      const tag = document.getElementById("userProfileTag");
+      const displayName = commonName || userName || currentUser;
+      
+      tag.innerHTML = `
+        <div class="text-xs font-bold text-slate-900 dark:text-white flex items-center justify-end">
+          <span id="inlineStreakTarget"></span>
+          <span>${displayName}</span>
+        </div>
+        <div class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">${userTitle || userRole}</div>
+      `;
+
+      document.getElementById("welcomeTitle").innerText = `Welcome ${commonName}!`;
+      const randomQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
+      document.getElementById("motivationalQuote").innerText = randomQuote;
+
+      if (typeof renderInlineStreak === "function") {
+        renderInlineStreak();
+      }
+
+      if (typeof updateMiniQuizBanner === "function") {
+        updateMiniQuizBanner(streakData || userStreakData);
+      }
+    }
+
+    function logoutUser() {
+      const savedTheme = localStorage.getItem("lhs_theme");
+      localStorage.clear();
+      if (savedTheme) localStorage.setItem("lhs_theme", savedTheme);
+      location.reload();
+    }
+
+    function isStudentInStream(studentGradeStream, targetStream) {
+      if (!studentGradeStream || !targetStream) return false;
+      const cleanStudent = String(studentGradeStream).trim().toUpperCase();
+      const cleanTarget = String(targetStream).trim().toUpperCase();
+
+      if (cleanTarget.includes("SCIENCE") || cleanTarget.includes("9S") || cleanTarget.includes("10S")) {
+        return cleanStudent.includes("9S") || cleanStudent.includes("10S");
+      }
+      if (cleanTarget.includes("BUSINESS") || cleanTarget.includes("9B") || cleanTarget.includes("10B")) {
+        return cleanStudent.includes("9B") || cleanStudent.includes("10B");
+      }
+      return cleanStudent === cleanTarget;
+    }
+
+    function sortRankings(list) {
+      return [...list].sort((a, b) => {
+        const scoreA = Number(a.bestScore || 0);
+        const scoreB = Number(b.bestScore || 0);
+        
+        if (scoreB !== scoreA) {
+          return scoreB - scoreA;
+        }
+        
+        const medalsA = Number(a.firstTry100s || 0);
+        const medalsB = Number(b.firstTry100s || 0);
+        return medalsB - medalsA;
+      });
+    }
+
+    async function loadStudentStats() {
+      try {
+        const data = await API.call("getLeaderboard");
+        cachedLeaderboardData = Array.isArray(data) ? data : [];
+
+        filteredLeaderboardList = cachedLeaderboardData.filter(s => {
+          if (!s.gradeStream && !s.grade) return true;
+          return isStudentInStream(s.gradeStream || s.grade, userGradeStream);
+        });
+
+        const rankedList = sortRankings(filteredLeaderboardList);
+
+        const studentIndex = rankedList.findIndex(s => s.email && s.email.toLowerCase() === currentUser.toLowerCase());
+        const studentStat = studentIndex !== -1 ? rankedList[studentIndex] : null;
+
+        if (studentStat) {
+          document.getElementById("statAvgScore").innerText = (studentStat.bestScore || 0) + "%";
+          document.getElementById("statFirstTry").innerText = studentStat.firstTry100s || 0;
+          document.getElementById("statAttempts").innerText = studentStat.attemptsCount || 0;
+          document.getElementById("statRank").innerText = `#${studentIndex + 1}`;
+
+          if (typeof renderInlineStreak === "function") renderInlineStreak();
+          
+        } else {
+          document.getElementById("statRank").innerText = "#--";
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    function openLeaderboardModal() {
+      const tbody = document.getElementById("leaderboardModalTableBody");
+      tbody.innerHTML = "";
+
+      const rankedList = sortRankings(filteredLeaderboardList.length > 0 ? filteredLeaderboardList : cachedLeaderboardData);
+
+      if (!rankedList || rankedList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No leaderboard entries found for your stream.</td></tr>`;
+      } else {
+        rankedList.forEach((r, idx) => {
+          let displayName = r.commonName || r.name;
+          if (!displayName && r.commonName) {
+            displayName = r.email;
+          } else if (displayName && !r.commonName) {
+            const parts = displayName.trim().split(" ");
+            displayName = parts.length > 1 ? parts[1] : parts[0];
+          }
+
+          const streakVal = r.streak || r.streakCount || 0;
+          const nameWithStreak = `${displayName} ${streakVal > 0 ? `🔥${streakVal}` : ''}`;
+          const isCurrent = r.email && r.email.toLowerCase() === currentUser.toLowerCase();
+
+          tbody.innerHTML += `
+            <tr class="border-b border-slate-200 dark:border-slate-800/60 ${isCurrent ? 'bg-emerald-500/10 font-bold' : ''}">
+              <td class="p-3 text-center font-bold ${idx === 0 ? 'text-amber-500 text-sm' : idx === 1 ? 'text-slate-400' : idx === 2 ? 'text-amber-700' : 'text-slate-500'}">
+                ${idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `#${idx + 1}`}
+              </td>
+              <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${nameWithStreak}</td>
+              <td class="p-3 text-center text-amber-600 dark:text-amber-300 font-bold">${r.firstTry100s || 0}</td>
+              <td class="p-3 text-center text-slate-600 dark:text-slate-300">${r.attemptsCount || 0}</td>
+              <td class="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${r.bestScore || 0}%</td>
+            </tr>
+          `;
+        });
+      }
+
+      document.getElementById("leaderboardModal").classList.remove("hidden");
+    }
+
+    function closeLeaderboardModal() {
+      document.getElementById("leaderboardModal").classList.add("hidden");
+    }
+
+    async function loadTeacherData() {
+      try {
+        const data = await API.call("getLeaderboard");
+        cachedLeaderboardData = Array.isArray(data) ? data : [];
+        
+        const teacherTitleClean = String(userTitle || "").toLowerCase();
+
+        let teacherFiltered = cachedLeaderboardData;
+
+        if (teacherTitleClean.includes("english")) {
+          teacherFiltered = cachedLeaderboardData;
+        } else if (teacherTitleClean.includes("travel") || teacherTitleClean.includes("tourism")) {
+          teacherFiltered = cachedLeaderboardData.filter(s => {
+            const st = String(s.gradeStream || s.grade || "").toUpperCase();
+            return st.includes("9B") || st.includes("9S");
+          });
+        } else if (teacherTitleClean.includes("science") || teacherTitleClean.includes("physics") || teacherTitleClean.includes("chem") || teacherTitleClean.includes("bio")) {
+          teacherFiltered = cachedLeaderboardData.filter(s => isStudentInStream(s.gradeStream || s.grade, "SCIENCE"));
+        } else if (teacherTitleClean.includes("business") || teacherTitleClean.includes("eco") || teacherTitleClean.includes("account")) {
+          teacherFiltered = cachedLeaderboardData.filter(s => isStudentInStream(s.gradeStream || s.grade, "BUSINESS"));
+        }
+
+        const rankedList = sortRankings(teacherFiltered);
+        const tbody = document.getElementById("teacherTableBody");
+        tbody.innerHTML = "";
+
+        if (!rankedList || rankedList.length === 0) {
+          tbody.innerHTML = "<tr><td colspan='5' class='p-3 text-slate-500'>No student records found for your subject stream.</td></tr>";
+          return;
+        }
+
+        rankedList.forEach((r, idx) => {
+          let displayName = r.commonName || r.name;
+          if (!displayName && r.commonName) {
+            displayName = r.email;
+          } else if (displayName && !r.commonName) {
+            const parts = displayName.trim().split(" ");
+            displayName = parts.length > 1 ? parts[1] : parts[0];
+          }
+
+          const streakVal = r.streak || r.streakCount || 0;
+          const nameWithStreak = `${displayName} ${streakVal > 0 ? `🔥${streakVal}` : ''}`;
+
+          tbody.innerHTML += `
+            <tr onclick="openStudentAnalytics('${r.email}')" class="border-b border-slate-200 dark:border-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
+              <td class="p-3 font-bold text-slate-500">#${idx + 1}</td>
+              <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${nameWithStreak}</td>
+              <td class="p-3 text-slate-600 dark:text-slate-300">${r.attemptsCount || 0}</td>
+              <td class="p-3 text-amber-600 dark:text-amber-300">🏅 ${r.firstTry100s || 0}</td>
+              <td class="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${r.bestScore || 0}%</td>
+            </tr>
+          `;
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    function openStudentAnalytics(studentEmail) {
+      const student = cachedLeaderboardData.find(s => s.email && s.email.toLowerCase() === studentEmail.toLowerCase());
+      if (!student) {
+        alert("Student analytics record not found.");
+        return;
+      }
+
+      let displayName = student.commonName || student.name;
+      if (!displayName) {
+        displayName = student.email;
+      } else if (!student.commonName && student.name) {
+        const parts = student.name.trim().split(" ");
+        displayName = parts.length > 1 ? parts[1] : parts[0];
+      }
+
+      document.getElementById("analyticsStudentName").innerText = `${displayName}'s Analytics`;
+      document.getElementById("analyticsBestScore").innerText = (student.bestScore || 0) + "%";
+      document.getElementById("analyticsTotalAttempts").innerText = student.attemptsCount || 0;
+      document.getElementById("analyticsFirstTry100").innerText = student.firstTry100s || 0;
+
+      const tbody = document.getElementById("analyticsTableBody");
+      tbody.innerHTML = "";
+
+      const quizDetails = student.quizBreakdown || student.quizzes || student.units || [];
+
+      if (!quizDetails || quizDetails.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">No unit breakdown details recorded for this student yet.</td></tr>`;
+      } else {
+        quizDetails.forEach(q => {
+          tbody.innerHTML += `
+            <tr class="border-b border-slate-200 dark:border-slate-800/60">
+              <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${q.quizId || q.unit || 'Quiz'}</td>
+              <td class="p-3 text-center text-slate-600 dark:text-slate-300">${q.attempts || q.attemptsCount || 1}</td>
+              <td class="p-3 text-center">${q.isFirstTry100 || q.firstTry100 ? '🏅 Yes' : '❌ No'}</td>
+              <td class="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${q.bestScore !== undefined ? q.bestScore : (q.score || 0)}%</td>
+            </tr>
+          `;
+        });
+      }
+
+      document.getElementById("analyticsModal").classList.remove("hidden");
+    }
+
+    function closeAnalyticsModal() {
+      document.getElementById("analyticsModal").classList.add("hidden");
+    }
+
+    async function refreshUnits() {
+      const grid = document.getElementById("quizCardsGrid");
+      grid.innerHTML = "<div class='text-xs text-slate-500'>Refreshing units list...</div>";
+      if (userRole === "teacher") {
+        await loadTeacherData();
+      } else {
+        await loadStudentStats();
+      }
+      await loadQuizIndex();
+    }
+
+    async function loadQuizIndex() {
+      const grid = document.getElementById("quizCardsGrid");
+      try {
+        const list = await API.call("getQuizIndex");
+        grid.innerHTML = "";
+
+        if (!list || list.length === 0) {
+          grid.innerHTML = "<div class='text-xs text-slate-500'>No published quizzes found in Quiz_Index.</div>";
+          return;
+        }
+
+        const subjectsMap = {};
+        list.forEach(q => {
+          const subjectName = q.subject || "General";
+          if (!subjectsMap[subjectName]) {
+            subjectsMap[subjectName] = [];
+          }
+          subjectsMap[subjectName].push(q);
+        });
+
+        grid.className = "space-y-8 w-full";
+
+        Object.keys(subjectsMap).forEach(subject => {
+          const quizzes = subjectsMap[subject];
+
+          const subjectSection = document.createElement("div");
+          subjectSection.className = "space-y-3";
+
+          subjectSection.innerHTML = `
+            <div class="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+              <h3 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight">${subject}</h3>
+              <span class="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                ${quizzes.some(u => u.locked) ? quizzes.filter(u => !u.locked).length + ' of ' + quizzes.length + ' Units open' : quizzes.length + ' ' + (quizzes.length === 1 ? 'Unit' : 'Units')}
+              </span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="cards-for-${subject.replace(/\s+/g, '-')}"></div>
+          `;
+
+          grid.appendChild(subjectSection);
+
+          const cardsContainer = subjectSection.querySelector(`#cards-for-${subject.replace(/\s+/g, '-')}`);
+
+          quizzes.forEach(q => {
+            // A unit the class has not reached yet (set in Syllabus_Config): show it, but keep it closed
+            if (q.locked) {
+              cardsContainer.innerHTML += `
+                <div class="bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-5 flex flex-col justify-between opacity-80">
+                  <div>
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                      <h3 class="font-bold text-slate-500 dark:text-slate-400 text-base leading-tight">${q.unit}</h3>
+                      <span class="text-base" aria-hidden="true">🔒</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-500 mb-3">${q.title}</p>
+                  </div>
+                  <button disabled class="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-900/50 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-800/50 cursor-not-allowed mt-2">Opens when your class reaches it</button>
+                </div>
+              `;
+              return;
+            }
+
+            const currentSelectedPaper = cardPaperSelections[q.quizId] || "P1";
+            const isP2 = currentSelectedPaper === "P2";
+            const prog = getSavedUnitProgress(q.quizId, currentSelectedPaper);
+
+            const studyBtn = q.notesUrl 
+              ? `<a href="${q.notesUrl}" target="_blank" class="w-full text-center block py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer">Study</a>`
+              : `<button disabled class="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-900/50 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-800/50 cursor-not-allowed">Notes Unavailable</button>`;
+
+            const p1P2ToggleHtml = (q.paper2SheetId && q.paper2SheetId.trim().length > 0) ? `
+              <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0 select-none">
+                <span id="p1-lbl-${q.quizId}" class="${!isP2 ? 'text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 transition-colors' : 'text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors'}">P1</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" ${isP2 ? 'checked' : ''} onchange="handlePaperToggle(this, '${q.quizId}')" class="sr-only peer">
+                  <div class="w-7 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+                <span id="p2-lbl-${q.quizId}" class="${isP2 ? 'text-[10px] font-extrabold text-amber-600 dark:text-amber-400 transition-colors' : 'text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors'}">P2</span>
+              </div>
+            ` : '';
+
+            cardsContainer.innerHTML += `
+              <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 card-shadow flex flex-col justify-between">
+                <div>
+                  <div class="flex items-start justify-between gap-2 mb-1">
+                    <h3 class="font-bold text-slate-900 dark:text-white text-base leading-tight">${q.unit}</h3>
+                    ${p1P2ToggleHtml}
+                  </div>
+
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">${q.title}</p>
+                  
+                  <div class="mb-4">
+                    <div class="flex justify-between items-center text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                      <span>Progress</span>
+                      <span id="prog-text-${q.quizId}" class="${isP2 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-emerald-600 dark:text-emerald-400 font-bold'}">${prog.percent}%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800">
+                      <div id="prog-bar-${q.quizId}" class="h-full ${isP2 ? 'bg-amber-500' : 'bg-emerald-500'} transition-all duration-300" style="width: ${prog.percent}%"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-2 mt-2">
+                  ${studyBtn}
+                  <button id="quiz-btn-${q.quizId}" onclick="handleStartQuizClick('${q.sheetId}', '${q.paper2SheetId || ''}', '${q.subject}', '${q.title}', '${q.quizId}')" class="w-full py-2.5 px-3 rounded-xl text-xs font-bold ${isP2 ? 'bg-amber-500 hover:bg-amber-400' : 'bg-emerald-500 hover:bg-emerald-400'} text-slate-950 transition-all cursor-pointer">
+                    ${prog.percent > 0 ? `Continue Paper ${isP2 ? '2' : '1'} Quiz &rarr;` : `Start Paper ${isP2 ? '2' : '1'} Quiz &rarr;`}
+                  </button>
+                </div>
+              </div>
+            `;
+          });
+        });
+
       } catch (e) {
-        console.warn("Error parsing cached streak data", e);
+        grid.innerHTML = "<div class='text-xs text-rose-400'>Error loading quiz index.</div>";
       }
     }
-  }
 
-  function saveLocalStreakCache() {
-    if (!userConfig || !userConfig.email) return;
-    const cacheKey = `lhs_streak_${userConfig.email.toLowerCase()}`;
-    localStorage.setItem(cacheKey, JSON.stringify(streakState));
-  }
+    async function startQuiz(sheetId, subject, title, quizId) {
+      activeQuiz = { sheetId, subject, title, quizId };
+      userAnswers = {};
+      lockedQuestions = {};
+      currentQuestionIndex = 0;
 
-  /**
-   * Renders the streak inline to the LEFT of the user name: [Number][Icon]
-   */
-  function renderInlineStreak() {
-    const inlineContainer = document.getElementById("inlineStreakTarget");
-    if (!inlineContainer) return;
+      document.getElementById("quizSubjectTag").innerText = subject;
+      document.getElementById("quizModalTitle").innerText = title;
+      
+      const modalBody = document.getElementById("quizQuestionBody");
+      const modalFooter = document.getElementById("quizModalFooter");
+      if (modalFooter) modalFooter.classList.add("hidden");
 
-    const count = streakState.streak || 0;
-    const currentStatus = streakState.status || streakState.streakStatus || "PENDING_TODAY";
-    const isLost = currentStatus === "STREAK_LOST" || streakState.missedDays > 0;
-    const icon = isLost ? "💔" : "🔥";
+      modalBody.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-16 gap-3 text-center">
+          <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-2">Fetching questions...</p>
+        </div>
+      `;
+      document.getElementById("quizModal").classList.remove("hidden");
 
-    inlineContainer.innerHTML = `<span class="mr-1.5 font-bold">${count}${icon}</span>`;
-  }
+      try {
+        const fetchedQuestions = await API.call("getQuiz", { sheetId: sheetId });
 
-  /**
-   * Updates the UI Banner for Today's Mini Quiz based on real backend state
-   */
-  function updateMiniQuizBanner(stateData) {
-    const banner = document.getElementById("miniQuizBanner");
-    if (!banner) return;
+        if (Array.isArray(fetchedQuestions) && fetchedQuestions.length > 0) {
+          // Process question sets using the centralized Subject Quiz Registry
+          activeQuestions = SubjectQuizRegistry.processQuizQuestions(subject, fetchedQuestions);
 
-    banner.style.display = "flex";
+          if (modalFooter) modalFooter.classList.remove("hidden");
+          renderQuizQuestions();
 
-    const currentData = stateData || streakState;
-    const titleEl = document.getElementById("miniQuizTitle");
-    const descEl = document.getElementById("miniQuizDesc");
-    const quizBtn = document.getElementById("btnTakeMiniQuiz");
-    const iconEl = document.getElementById("miniQuizIcon");
-
-    if (!titleEl || !descEl || !quizBtn || !iconEl) return;
-
-    const currentStatus = currentData.status || currentData.streakStatus || "PENDING_TODAY";
-    const isLost = currentStatus === 'STREAK_LOST' || currentData.missedDays > 0;
-    const isCompletedToday = currentData.qotdCompletedToday === true || currentStatus === "COMPLETED_TODAY";
-    const canRestore = currentData.canRestore === true;
-    const restoreLen = Number(currentData.restorableStreak) || 0;
-    const restoreLeft = Number(currentData.restoreDaysLeft) || 0;
-    const restoreLabel = `Restore ${restoreLen}-day streak`;
-
-    // The extra "restore" button is only needed when the main button is doing something else
-    let showExtraRestoreButton = false;
-
-    if (isLost && canRestore) {
-      banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-rose-500/10 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/40";
-      titleEl.innerText = `Restore your ${restoreLen}-day streak!`;
-      titleEl.className = "text-sm font-bold text-rose-700 dark:text-rose-400";
-      descEl.innerText = `Pass a short challenge to get it back. ${restoreLeft} day${restoreLeft === 1 ? "" : "s"} left to restore.`;
-      iconEl.innerText = "💔";
-      iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400";
-
-      quizBtn.innerText = "Restore Streak →";
-      quizBtn.disabled = false;
-      quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-500/20 transition flex items-center justify-center gap-2 cursor-pointer";
-      quizBtn.onclick = () => startRestoreChallenge();
-    } else if (isLost) {
-      banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700";
-      titleEl.innerText = "Start a new streak";
-      titleEl.className = "text-sm font-bold text-slate-900 dark:text-white";
-      descEl.innerText = "Your last streak has ended. Take today's quiz to start a new one!";
-      iconEl.innerText = "🔥";
-      iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 dark:text-orange-400";
-
-      quizBtn.innerText = "Take Quiz →";
-      quizBtn.disabled = false;
-      quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer";
-      quizBtn.onclick = () => startBusinessMiniQuiz(false);
-    } else if (isCompletedToday) {
-      banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-emerald-500/10 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-500/30";
-      titleEl.innerText = "Today's Mini Quiz Completed!";
-      titleEl.className = "text-sm font-bold text-emerald-700 dark:text-emerald-400";
-      descEl.innerText = canRestore
-        ? `Great job! You can still restore your ${restoreLen}-day streak (${restoreLeft} day${restoreLeft === 1 ? "" : "s"} left).`
-        : "Great job! Your streak is secured for today.";
-      iconEl.innerText = "✅";
-      iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 dark:text-emerald-400";
-
-      quizBtn.innerText = "Completed ✅";
-      quizBtn.disabled = true;
-      quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-medium text-xs rounded-xl cursor-not-allowed";
-      showExtraRestoreButton = canRestore;
-    } else {
-      banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700";
-      titleEl.innerText = "Today's Mini Quiz";
-      titleEl.className = "text-sm font-bold text-slate-900 dark:text-white";
-      descEl.innerText = canRestore
-        ? `Daily Challenge — and you can still restore your ${restoreLen}-day streak (${restoreLeft} day${restoreLeft === 1 ? "" : "s"} left).`
-        : "Daily Challenge — keep your streak alive!";
-      iconEl.innerText = "🔥";
-      iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 dark:text-orange-400";
-
-      quizBtn.innerText = "Take Quiz →";
-      quizBtn.disabled = false;
-      quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer";
-      quizBtn.onclick = () => startBusinessMiniQuiz(false);
-      showExtraRestoreButton = canRestore;
-    }
-
-    setExtraRestoreButton(banner, showExtraRestoreButton, restoreLabel);
-  }
-
-  /**
-   * Adds or removes the second (amber) "Restore streak" button next to the main banner button
-   */
-  function setExtraRestoreButton(banner, show, label) {
-    let btn = document.getElementById("btnRestoreStreak");
-
-    if (!show) {
-      if (btn) btn.remove();
-      return;
-    }
-
-    if (!btn) {
-      btn = document.createElement("button");
-      btn.id = "btnRestoreStreak";
-      banner.appendChild(btn);
-    }
-
-    btn.className = "w-full sm:w-auto px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2 cursor-pointer";
-    btn.innerText = label;
-    btn.disabled = false;
-    btn.onclick = () => startRestoreChallenge();
-  }
-
-  /**
-   * Asks the server for a streak restoration challenge and opens it as a quiz
-   */
-  async function startRestoreChallenge() {
-    ["btnTakeMiniQuiz", "btnRestoreStreak"].forEach(id => {
-      const b = document.getElementById(id);
-      if (b) {
-        b.disabled = true;
-        b.innerText = "Loading Challenge...";
+        } else {
+          modalBody.innerHTML = `<div class="p-8 text-center text-xs text-slate-500">No questions found for this unit.</div>`;
+        }
+      } catch (err) {
+        console.error(err);
+        modalBody.innerHTML = `<div class="p-8 text-center text-xs text-rose-500 font-bold">Error loading quiz. Please try again.</div>`;
       }
+    }
+
+    function renderQuizQuestions() {
+      const container = document.getElementById("quizQuestionBody");
+      container.innerHTML = "";
+
+      if (!activeQuestions || activeQuestions.length === 0) return;
+
+      const idx = currentQuestionIndex;
+      const q = activeQuestions[idx];
+      const isWritten = !q.options || q.options.length === 0 || !q.options[0].text;
+
+      if (!isWritten && !lockedQuestions[idx]) {
+        startQuestionTimer();
+      } else {
+        stopQuestionTimer();
+        const timerBox = document.getElementById("timerContainer");
+        if (timerBox) timerBox.classList.add("hidden");
+      }
+
+      let correctAnswersCount = 0;
+      let totalMarksEarned = 0;
+      let totalPossibleMarks = 0;
+
+      Object.keys(lockedQuestions).forEach(qKey => {
+        const item = activeQuestions[qKey];
+        if (item.options && item.options.length > 0 && item.options[0].text) {
+          if (userAnswers[qKey]?.selected === item.correctOption) correctAnswersCount++;
+        } else {
+          totalMarksEarned += (userAnswers[qKey]?.marksAwarded || 0);
+          totalPossibleMarks += (item.maxMarks || 4);
+        }
+      });
+
+      const progressPercent = isWritten
+        ? (totalPossibleMarks > 0 ? Math.round((totalMarksEarned / totalPossibleMarks) * 100) : 0)
+        : Math.round((correctAnswersCount / activeQuestions.length) * 100);
+
+      const qCard = document.createElement("div");
+      qCard.className = "p-4 border border-slate-200 dark:border-slate-800 rounded-xl space-y-3 bg-slate-50 dark:bg-slate-950 relative";
+      
+      const qHeader = document.createElement("div");
+      qHeader.className = "flex flex-col gap-2 mb-2";
+      qHeader.innerHTML = `
+        <div class="flex justify-between items-center text-[11px] font-bold">
+          <span class="text-emerald-600 dark:text-emerald-400">Question ${idx + 1} of ${activeQuestions.length}</span>
+          <span class="text-slate-500 dark:text-slate-400">${isWritten ? `Earned Marks: ${totalMarksEarned}/${totalPossibleMarks}` : `Score Progress: ${correctAnswersCount}/${activeQuestions.length}`} (${progressPercent}%)</span>
+        </div>
+        <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-900 rounded-full overflow-hidden border border-slate-300 dark:border-slate-800">
+          <div class="h-full bg-emerald-500 transition-all duration-300" style="width: ${progressPercent}%"></div>
+        </div>
+      `;
+      qCard.appendChild(qHeader);
+
+      if (q.caseStudy) {
+        const caseBox = document.createElement("div");
+        caseBox.className = "p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-xs text-amber-900 dark:text-amber-200 leading-relaxed";
+        caseBox.innerHTML = `<strong class="text-amber-700 dark:text-amber-400 block mb-1">Case Study:</strong>${q.caseStudy}`;
+        qCard.appendChild(caseBox);
+      }
+
+      const activeSubjectClean = activeQuiz && activeQuiz.subject ? activeQuiz.subject.toLowerCase() : "";
+      const isAccounting = activeSubjectClean.includes("account");
+      const isEconomics = activeSubjectClean.includes("eco");
+      const hideMarks = (isAccounting || isEconomics) && !isWritten;
+
+      const qTitle = document.createElement("h4");
+      qTitle.className = "text-sm font-bold text-slate-900 dark:text-white";
+      qTitle.innerText = `Q${idx + 1}. ${q.question}${(!hideMarks && q.maxMarks) ? ` [${q.maxMarks} marks]` : ''}`;
+      qCard.appendChild(qTitle);
+
+      if (q.imageUrl) {
+        qCard.innerHTML += `<img src="${q.imageUrl}" class="max-w-full rounded-lg my-2 border border-slate-200 dark:border-slate-800" />`;
+      }
+
+      if (isWritten) {
+        const savedData = userAnswers[idx] || {};
+        const isLocked = !!lockedQuestions[idx];
+
+        const writtenContainer = document.createElement("div");
+        writtenContainer.className = "space-y-3 mt-2";
+
+        writtenContainer.innerHTML = `
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Your Written Answer:</label>
+            <textarea 
+              id="writtenInput_${idx}" 
+              rows="4" 
+              ${isLocked ? 'disabled' : ''} 
+              placeholder="Type your structured answer here (include knowledge, application, and reasoning)..."
+              class="w-full p-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 outline-none leading-relaxed"
+            >${savedData.text || ''}</textarea>
+          </div>
+
+          ${!isLocked ? `
+            <button 
+              id="evalBtn_${idx}" 
+              onclick="submitWrittenAnswer(${idx})"
+              class="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <span>✨ Check your answer</span>
+            </button>
+          ` : ''}
+        `;
+
+        qCard.appendChild(writtenContainer);
+
+        // DYNAMIC SUBJECT FEEDBACK ROUTING (subject-quizzes.js)
+        if (isLocked && savedData.eval) {
+          const evalRes = savedData.eval;
+          const currentSubject = (activeQuiz && activeQuiz.subject) ? activeQuiz.subject : "Business";
+
+          const evalBoxHtml = SubjectQuizRegistry.getEvaluationHTML(currentSubject, evalRes, q);
+
+          const evalWrapper = document.createElement("div");
+          evalWrapper.innerHTML = evalBoxHtml;
+          qCard.appendChild(evalWrapper);
+        }
+
+      } else {
+        const optsContainer = document.createElement("div");
+        optsContainer.className = "space-y-1.5 mt-2";
+
+        q.options.forEach(opt => {
+          const btn = document.createElement("button");
+          btn.className = "w-full text-left p-3 rounded-xl border text-xs font-medium transition-all bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-white cursor-pointer";
+          btn.innerText = `${opt.id}. ${opt.text}`;
+
+          if (lockedQuestions[idx]) {
+            btn.disabled = true;
+            btn.classList.remove("cursor-pointer");
+            if (opt.id === q.correctOption) {
+              btn.className = "w-full text-left p-3 rounded-xl border text-xs font-bold bg-emerald-100 dark:bg-emerald-950/80 border-emerald-500 text-emerald-800 dark:text-emerald-300";
+            }
+            if (userAnswers[idx]?.selected === opt.id && opt.id !== q.correctOption) {
+              btn.className = "w-full text-left p-3 rounded-xl border text-xs font-bold bg-rose-100 dark:bg-rose-950/80 border-rose-500 text-rose-800 dark:text-rose-300";
+            }
+          } else {
+            btn.onclick = () => chooseAnswer(idx, opt.id, q.correctOption);
+          }
+
+          optsContainer.appendChild(btn);
+        });
+
+        qCard.appendChild(optsContainer);
+
+        if (lockedQuestions[idx]) {
+          const feedback = document.createElement("div");
+          feedback.className = "absolute left-1/2 bottom-12 z-20 pointer-events-none transform -translate-x-1/2 px-4 py-2 bg-emerald-900 dark:bg-emerald-950/95 border border-emerald-500 text-emerald-100 dark:text-emerald-200 text-xs font-extrabold rounded-full shadow-2xl backdrop-blur-md animate-fly-popup flex items-center gap-1.5 whitespace-nowrap";
+          feedback.innerText = userAnswers[idx].feedbackMsg;
+          qCard.appendChild(feedback);
+
+          if (q.explanation) {
+            const exp = document.createElement("div");
+            exp.className = "p-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs rounded-lg border border-slate-200 dark:border-slate-800 mt-2 animate-float-in";
+            exp.innerHTML = `<strong class="text-emerald-600 dark:text-emerald-400">Explanation:</strong> ${q.explanation}`;
+            qCard.appendChild(exp);
+          }
+        }
+      }
+
+      container.appendChild(qCard);
+
+      const nextBtn = document.getElementById("nextBtn");
+      const submitBtn = document.getElementById("submitBtn");
+      const isAnswered = !!lockedQuestions[idx];
+
+      if (idx === activeQuestions.length - 1) {
+        nextBtn.classList.add("hidden");
+        submitBtn.classList.remove("hidden");
+        submitBtn.disabled = !isAnswered;
+        if (isAnswered) {
+          submitBtn.className = "px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer";
+        } else {
+          submitBtn.className = "px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-extrabold text-xs rounded-xl transition-all opacity-50 cursor-not-allowed";
+        }
+      } else {
+        nextBtn.classList.remove("hidden");
+        submitBtn.classList.add("hidden");
+        nextBtn.disabled = !isAnswered;
+        if (isAnswered) {
+          nextBtn.className = "px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer";
+        } else {
+          nextBtn.className = "px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-extrabold text-xs rounded-xl transition-all opacity-50 cursor-not-allowed";
+        }
+      }
+    }
+
+    async function submitWrittenAnswer(qIdx) {
+      const input = document.getElementById(`writtenInput_${qIdx}`);
+      const btn = document.getElementById(`evalBtn_${qIdx}`);
+
+      if (!input || !input.value.trim()) {
+        alert("Please write your answer before submitting for evaluation.");
+        return;
+      }
+
+      const text = input.value.trim();
+      const q = activeQuestions[qIdx];
+
+      btn.disabled = true;
+      btn.innerHTML = `<span>Checking</span>`;
+
+      try {
+        const payload = {
+          action: "evaluateWrittenAnswer",
+          subject: activeQuiz ? activeQuiz.subject : "",
+          questionType: q.questionType || "",
+          questionPrompt: q.question,
+          dataContext: q.dataContext || "",
+          caseStudy: q.caseStudy || "",
+          markScheme: q.markScheme || "",
+          studentAnswer: text,
+          maxMarks: q.maxMarks || 4
+        };
+
+        const evalRes = await API.call("evaluateWrittenAnswer", payload);
+
+        if (evalRes.error) {
+          alert("Evaluation Error: " + evalRes.error);
+          btn.disabled = false;
+          btn.innerHTML = `<span>✨ Check with AI Examiner</span>`;
+          return;
+        }
+
+        userAnswers[qIdx] = {
+          text: text,
+          marksAwarded: evalRes.marksAwarded || 0,
+          maxMarks: evalRes.maxMarks || q.maxMarks || 4,
+          eval: evalRes
+        };
+
+        lockedQuestions[qIdx] = true;
+
+        renderQuizQuestions();
+        loadQuizIndex();
+
+      } catch (err) {
+        console.error(err);
+        alert("Evaluation error. Please try again.");
+        btn.disabled = false;
+        btn.innerHTML = `<span>✨ Check your answer</span>`;
+      }
+    }
+
+    function nextQuestion() {
+      if (currentQuestionIndex < activeQuestions.length - 1 && lockedQuestions[currentQuestionIndex]) {
+        currentQuestionIndex++;
+        renderQuizQuestions();
+      }
+    }
+
+    function chooseAnswer(qIdx, selectedOptId, correctOptId) {
+      if (lockedQuestions[qIdx]) return;
+
+      stopQuestionTimer();
+
+      const isCorrect = selectedOptId === correctOptId;
+      const msgList = isCorrect ? PRAISE_MESSAGES : ENCOURAGEMENT_MESSAGES;
+      const feedbackMsg = msgList[Math.floor(Math.random() * msgList.length)];
+
+      userAnswers[qIdx] = { selected: selectedOptId, feedbackMsg };
+      lockedQuestions[qIdx] = true;
+
+      renderQuizQuestions();
+      loadQuizIndex();
+    }
+
+    async function submitQuiz() {
+      if (!lockedQuestions[currentQuestionIndex]) return;
+
+      stopQuestionTimer();
+
+      // Streak restoration challenge: the SERVER marks the answers and decides
+      if (activeQuiz && activeQuiz.isRestore) {
+        if (activeQuiz.submitting) return;
+        activeQuiz.submitting = true;
+
+        const pickedAnswers = activeQuestions.map((q, i) => (userAnswers[i] && userAnswers[i].selected) || "");
+        let outcome;
+        try {
+          outcome = await window.submitRestoreChallenge(activeQuiz.challengeId, pickedAnswers);
+        } catch (err) {
+          console.error(err);
+          activeQuiz.submitting = false;
+          alert("Could not reach the server. Your answers were not submitted. Please try again.");
+          return;
+        }
+
+        alert(outcome && outcome.message ? outcome.message : "Something went wrong. Please try again.");
+        closeQuizModal();
+
+        if (userRole === "teacher") {
+          await loadTeacherData();
+        } else {
+          await loadStudentStats();
+        }
+        loadQuizIndex();
+        return;
+      }
+
+      let percent = 0;
+      let scoreDetails = "";
+
+      const firstQ = activeQuestions[0];
+      const isWritten = !firstQ.options || firstQ.options.length === 0 || !firstQ.options[0].text;
+
+      if (isWritten) {
+        let earned = 0;
+        let possible = 0;
+        activeQuestions.forEach((q, idx) => {
+          earned += (userAnswers[idx]?.marksAwarded || 0);
+          possible += (q.maxMarks || 4);
+        });
+        percent = possible > 0 ? Math.round((earned / possible) * 100) : 0;
+        scoreDetails = `${earned}/${possible} marks (${percent}%)`;
+      } else {
+        let scoreCount = 0;
+        activeQuestions.forEach((q, idx) => {
+          if (userAnswers[idx]?.selected === q.correctOption) scoreCount++;
+        });
+        percent = Math.round((scoreCount / activeQuestions.length) * 100);
+        scoreDetails = `${scoreCount}/${activeQuestions.length} correct (${percent}%)`;
+      }
+
+      alert(`Quiz Completed!\nOverall Score: ${scoreDetails}`);
+
+      const isMini = activeQuiz && activeQuiz.quizId === "BUS_MINI_QOTD";
+      const selectedPaper = cardPaperSelections[activeQuiz?.quizId] || "P1";
+      const targetQuizId = (selectedPaper === "P2" && activeQuiz?.quizId) ? `${activeQuiz.quizId}_P2` : (activeQuiz ? activeQuiz.quizId : "QUIZ");
+
+      if (isMini && typeof recordStreakActivity === "function") {
+        await recordStreakActivity({ quizId: "BUS_MINI_QOTD", score: percent });
+      } else {
+        const saved = await API.call("submitResult", {
+          quizId: targetQuizId,
+          score: percent,
+          isQOTD: false,
+          type: "regular"
+        });
+        if (saved && saved.error) console.warn("Result was not saved:", saved.error);
+      }
+
+      closeQuizModal();
+
+      if (userRole === "teacher") {
+        await loadTeacherData();
+      } else {
+        await loadStudentStats();
+      }
+      loadQuizIndex();
+    }
+
+    function closeQuizModal() {
+      stopQuestionTimer();
+      document.getElementById("quizModal").classList.add("hidden");
+    }
+
+    // If the server says the session has ended, sign out (once) and go back to the login screen
+    API.setExpiredHandler(() => {
+      alert("Your session has ended. Please sign in again.");
+      logoutUser();
     });
 
-    try {
-      const data = await API.call("getRedemptionQuiz");
+    // Asks the server who this person really is, so the role and details never depend on what is stored in the browser
+    async function refreshProfileFromServer() {
+      try {
+        const data = await API.call("whoami");
+        if (!data || !data.authenticated) return;
 
-      if (data && data.challengeId && data.questions && data.questions.length > 0) {
-        if (typeof window.launchRestoreQuizModal === "function") {
-          window.launchRestoreQuizModal(data);
-        } else {
-          alert("Quiz modal launcher is missing.");
+        const roleChanged = data.role !== userRole;
+        userRole = data.role;
+        userTitle = data.title;
+        userName = data.name || "";
+        userGradeStream = data.grade || userGradeStream;
+        if (data.commonName) commonName = data.commonName;
+
+        const saved = JSON.parse(localStorage.getItem("lhs_user_session") || "{}");
+        saved.role = userRole;
+        saved.title = userTitle;
+        saved.name = userName;
+        saved.commonName = commonName;
+        saved.gradeStream = userGradeStream;
+        localStorage.setItem("lhs_user_session", JSON.stringify(saved));
+
+        if (roleChanged) location.reload();
+      } catch (e) {
+        // Offline, or the session ended (the handler above deals with that): keep what we have
+      }
+    }
+
+    window.onload = () => {
+      const savedSession = localStorage.getItem("lhs_user_session");
+      if (savedSession && API.getToken()) {
+        try {
+          const user = JSON.parse(savedSession);
+          if (!user || !user.email) throw new Error("Invalid session data");
+          currentUser = user.email;
+          userRole = user.role;
+          userTitle = user.title;
+          userName = user.name;
+          commonName = user.commonName;
+          userGradeStream = user.gradeStream || user.grade || "9B";
+          if (user.streakData) {
+            userStreakData = user.streakData;
+          }
+          initPortalSession();
+          refreshProfileFromServer();
+        } catch (e) {
+          localStorage.removeItem("lhs_user_session");
+          document.getElementById("loginModal").classList.remove("hidden");
         }
       } else {
-        alert((data && data.error) || "The restoration challenge is currently unavailable.");
+        // First visit, or signed in before secure sessions existed: sign in (once) to get a session
+        localStorage.removeItem("lhs_user_session");
+        document.getElementById("loginModal").classList.remove("hidden");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Error fetching the restoration challenge.");
-    } finally {
-      updateMiniQuizBanner(streakState);   // puts the buttons back in the right state
-    }
-  }
+    };
+  </script>
+  
+  <script>
+    if ('serviceWorker' in navigator) {
+      let refreshing = false;
 
-  /**
-   * Sends the picked answers to the server, which marks them and restores the streak if passed.
-   * Resolves with the server's answer ({ success, restored, message, ... }).
-   */
-  async function submitRestoreChallenge(challengeId, answers) {
-    const outcome = await API.call("submitRecoveryResult", { challengeId: challengeId, answers: answers });
-
-    await fetchStreakStatusFromBackend();
-    renderInlineStreak();
-    updateMiniQuizBanner(streakState);
-
-    return outcome;
-  }
-
-  async function startBusinessMiniQuiz(isRecovery = false) {
-    const btn = document.getElementById("btnTakeMiniQuiz");
-    if (btn) {
-      btn.disabled = true;
-      btn.innerText = "Loading Quiz...";
-    }
-
-    try {
-      const data = await API.call("getDailyMiniQuiz");
-
-      if (data && data.questions && data.questions.length > 0) {
-        if (typeof window.launchMiniQuizModal === "function") {
-          window.launchMiniQuizModal(data);
-        } else {
-          alert("Quiz modal launcher is missing.");
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          console.log('[App] New service worker took control. Reloading for fresh cache...');
+          window.location.reload();
         }
-      } else {
-        alert(data.error || "Mini quiz is currently unavailable.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error fetching daily mini quiz.");
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerText = "Take Quiz →";
-      }
-    }
-  }
-
-  /**
-   * Called when a quiz is submitted to trigger backend streak update and re-sync
-   */
-  async function recordStreakActivity(payload = {}) {
-    try {
-      const saved = await API.call("submitResult", {
-        quizId: payload.quizId || "BUS_MINI_QOTD",
-        score: (payload.score !== undefined ? payload.score : 100),
-        isQOTD: true,
-        type: "qotd"
       });
-      if (saved && saved.error) console.warn("Result was not saved:", saved.error);
 
-      // Refresh status directly from server to get true server-calculated streak
-      await fetchStreakStatusFromBackend();
-      renderInlineStreak();
-      updateMiniQuizBanner(streakState);
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then((reg) => {
+          console.log('Service Worker registered with scope:', reg.scope);
+          reg.update();
 
-    } catch (e) {
-      console.warn("Failed to push streak update to server.", e);
+          reg.onupdatefound = () => {
+            const installingWorker = reg.installing;
+            if (installingWorker) {
+              installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('New update installed! Triggering controller change...');
+                }
+              };
+            }
+          };
+        }).catch((err) => {
+          console.log('Service Worker registration failed:', err);
+        });
+      });
     }
-  }
-
-  function getStreakState() {
-    return { ...streakState };
-  }
-
-  window.initStreakModule = initStreakModule;
-  window.renderInlineStreak = renderInlineStreak;
-  window.updateMiniQuizBanner = updateMiniQuizBanner;
-  window.startBusinessMiniQuiz = startBusinessMiniQuiz;
-  window.startRestoreChallenge = startRestoreChallenge;
-  window.submitRestoreChallenge = submitRestoreChallenge;
-  window.recordStreakActivity = recordStreakActivity;
-  window.getStreakState = getStreakState;
-
-})(window);
+  </script>
+</body>
+</html>
