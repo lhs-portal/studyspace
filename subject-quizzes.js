@@ -1,6 +1,7 @@
 /**
  * Studyspace - Unified Subject Quizzes & AI Feedback Registry
- * Cambridge IGCSE Subjects (Business Studies 0450, Economics 0455, Accounting 0452, etc.)
+ * Cambridge IGCSE Subjects (Business Studies 0450, Economics 0455, Accounting 0452, Travel & Tourism 0471,
+ * Biology 0610, Chemistry 0620, Physics 0625)
  */
 
 const SubjectQuizRegistry = {
@@ -22,6 +23,10 @@ const SubjectQuizRegistry = {
     name: "Business Studies",
     defaultTimerSec: 60,
     hasP2: true,
+
+    getTimer: function (hasImage) {
+      return hasImage ? 90 : 60;
+    },
 
     /**
      * Builds and samples Business Studies question sets.
@@ -324,6 +329,10 @@ const SubjectQuizRegistry = {
     defaultTimerSec: 90,
     hasP2: true,
 
+    getTimer: function () {
+      return 90;
+    },
+
     /**
      * ACCOUNTING: PAPER 1 MCQ LOGIC (CAPPED AT 15 MCQs)
      */
@@ -529,6 +538,10 @@ const SubjectQuizRegistry = {
     defaultTimerSec: 90,
     hasP2: true,
 
+    getTimer: function (hasImage) {
+      return hasImage ? 120 : 90;
+    },
+
     /**
      * Biology: PAPER 1 MCQ LOGIC (CAPPED AT 15 MCQs)
      */
@@ -543,52 +556,7 @@ const SubjectQuizRegistry = {
     },
 
     renderEvaluationHTML: function (evalRes, q) {
-      const maxM = evalRes.maxMarks || q.maxMarks || 4;
-      const marksAwarded = evalRes.marksAwarded !== undefined ? evalRes.marksAwarded : 0;
-      const marksLost = evalRes.marksLost !== undefined ? evalRes.marksLost : (maxM - marksAwarded);
-
-      return `
-        <div class="p-4 bg-slate-900 dark:bg-slate-950 border border-sky-500/40 rounded-xl text-xs space-y-3 mt-3 animate-float-in text-slate-200">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-            <span class="font-bold text-sky-400 text-sm">Cambridge AI Examiner Result (0452 Accounting)</span>
-            <div class="flex items-center gap-2">
-              <span class="px-2.5 py-1 bg-sky-500/20 text-sky-300 font-extrabold rounded-lg border border-sky-500/30">
-                Earned: ${marksAwarded} / ${maxM}
-              </span>
-              ${marksLost > 0 ? `
-                <span class="px-2.5 py-1 bg-rose-500/20 text-rose-300 font-extrabold rounded-lg border border-rose-500/30">
-                  Lost: ${marksLost}
-                </span>
-              ` : `
-                <span class="px-2.5 py-1 bg-sky-500/20 text-sky-300 font-extrabold rounded-lg border border-sky-500/30">
-                  Full Marks! 🎉
-                </span>
-              `}
-            </div>
-          </div>
-
-          ${evalRes.lostMarksReason ? `
-            <div class="p-3 bg-rose-950/30 border border-rose-800/40 rounded-lg">
-              <strong class="text-rose-400 block mb-1">❌ Accounting/Working Errors:</strong>
-              <p class="text-slate-300 leading-relaxed">${evalRes.lostMarksReason}</p>
-            </div>
-          ` : ''}
-
-          ${evalRes.howToImprove ? `
-            <div class="p-3 bg-sky-950/40 border border-sky-800/50 rounded-lg">
-              <strong class="text-sky-400 block mb-1">💡 Step-by-Step Ledger/Calculation Guide:</strong>
-              <p class="text-slate-300 leading-relaxed">${evalRes.howToImprove}</p>
-            </div>
-          ` : ''}
-
-          ${evalRes.modelAnswer ? `
-            <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-lg">
-              <strong class="text-amber-300 block mb-1">📝 Correct Entry / Model Solution:</strong>
-              <p class="text-slate-300 italic font-mono leading-relaxed">${evalRes.modelAnswer}</p>
-            </div>
-          ` : ''}
-        </div>
-      `;
+      return SubjectQuizRegistry.renderScienceEvaluationHTML(evalRes, q, "0610", "Biology");
     }
   },
 
@@ -600,6 +568,10 @@ const SubjectQuizRegistry = {
     name: "Chemistry",
     defaultTimerSec: 90,
     hasP2: true,
+
+    getTimer: function (hasImage) {
+      return hasImage ? 120 : 90;
+    },
 
     /**
      * Chemistry: PAPER 1 MCQ LOGIC (CAPPED AT 15 MCQs)
@@ -615,52 +587,7 @@ const SubjectQuizRegistry = {
     },
 
     renderEvaluationHTML: function (evalRes, q) {
-      const maxM = evalRes.maxMarks || q.maxMarks || 4;
-      const marksAwarded = evalRes.marksAwarded !== undefined ? evalRes.marksAwarded : 0;
-      const marksLost = evalRes.marksLost !== undefined ? evalRes.marksLost : (maxM - marksAwarded);
-
-      return `
-        <div class="p-4 bg-slate-900 dark:bg-slate-950 border border-sky-500/40 rounded-xl text-xs space-y-3 mt-3 animate-float-in text-slate-200">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-            <span class="font-bold text-sky-400 text-sm">Cambridge AI Examiner Result (0452 Accounting)</span>
-            <div class="flex items-center gap-2">
-              <span class="px-2.5 py-1 bg-sky-500/20 text-sky-300 font-extrabold rounded-lg border border-sky-500/30">
-                Earned: ${marksAwarded} / ${maxM}
-              </span>
-              ${marksLost > 0 ? `
-                <span class="px-2.5 py-1 bg-rose-500/20 text-rose-300 font-extrabold rounded-lg border border-rose-500/30">
-                  Lost: ${marksLost}
-                </span>
-              ` : `
-                <span class="px-2.5 py-1 bg-sky-500/20 text-sky-300 font-extrabold rounded-lg border border-sky-500/30">
-                  Full Marks! 🎉
-                </span>
-              `}
-            </div>
-          </div>
-
-          ${evalRes.lostMarksReason ? `
-            <div class="p-3 bg-rose-950/30 border border-rose-800/40 rounded-lg">
-              <strong class="text-rose-400 block mb-1">❌ Accounting/Working Errors:</strong>
-              <p class="text-slate-300 leading-relaxed">${evalRes.lostMarksReason}</p>
-            </div>
-          ` : ''}
-
-          ${evalRes.howToImprove ? `
-            <div class="p-3 bg-sky-950/40 border border-sky-800/50 rounded-lg">
-              <strong class="text-sky-400 block mb-1">💡 Step-by-Step Ledger/Calculation Guide:</strong>
-              <p class="text-slate-300 leading-relaxed">${evalRes.howToImprove}</p>
-            </div>
-          ` : ''}
-
-          ${evalRes.modelAnswer ? `
-            <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-lg">
-              <strong class="text-amber-300 block mb-1">📝 Correct Entry / Model Solution:</strong>
-              <p class="text-slate-300 italic font-mono leading-relaxed">${evalRes.modelAnswer}</p>
-            </div>
-          ` : ''}
-        </div>
-      `;
+      return SubjectQuizRegistry.renderScienceEvaluationHTML(evalRes, q, "0620", "Chemistry");
     }
   },
 
@@ -672,6 +599,10 @@ const SubjectQuizRegistry = {
     name: "Physics",
     defaultTimerSec: 90,
     hasP2: true,
+
+    getTimer: function (hasImage) {
+      return hasImage ? 120 : 90;
+    },
 
     /**
      * Physics: PAPER 1 MCQ LOGIC (CAPPED AT 15 MCQs)
@@ -687,56 +618,65 @@ const SubjectQuizRegistry = {
     },
 
     renderEvaluationHTML: function (evalRes, q) {
-      const maxM = evalRes.maxMarks || q.maxMarks || 4;
-      const marksAwarded = evalRes.marksAwarded !== undefined ? evalRes.marksAwarded : 0;
-      const marksLost = evalRes.marksLost !== undefined ? evalRes.marksLost : (maxM - marksAwarded);
-
-      return `
-        <div class="p-4 bg-slate-900 dark:bg-slate-950 border border-sky-500/40 rounded-xl text-xs space-y-3 mt-3 animate-float-in text-slate-200">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-            <span class="font-bold text-sky-400 text-sm">Cambridge AI Examiner Result (0452 Accounting)</span>
-            <div class="flex items-center gap-2">
-              <span class="px-2.5 py-1 bg-sky-500/20 text-sky-300 font-extrabold rounded-lg border border-sky-500/30">
-                Earned: ${marksAwarded} / ${maxM}
-              </span>
-              ${marksLost > 0 ? `
-                <span class="px-2.5 py-1 bg-rose-500/20 text-rose-300 font-extrabold rounded-lg border border-rose-500/30">
-                  Lost: ${marksLost}
-                </span>
-              ` : `
-                <span class="px-2.5 py-1 bg-sky-500/20 text-sky-300 font-extrabold rounded-lg border border-sky-500/30">
-                  Full Marks! 🎉
-                </span>
-              `}
-            </div>
-          </div>
-
-          ${evalRes.lostMarksReason ? `
-            <div class="p-3 bg-rose-950/30 border border-rose-800/40 rounded-lg">
-              <strong class="text-rose-400 block mb-1">❌ Accounting/Working Errors:</strong>
-              <p class="text-slate-300 leading-relaxed">${evalRes.lostMarksReason}</p>
-            </div>
-          ` : ''}
-
-          ${evalRes.howToImprove ? `
-            <div class="p-3 bg-sky-950/40 border border-sky-800/50 rounded-lg">
-              <strong class="text-sky-400 block mb-1">💡 Step-by-Step Ledger/Calculation Guide:</strong>
-              <p class="text-slate-300 leading-relaxed">${evalRes.howToImprove}</p>
-            </div>
-          ` : ''}
-
-          ${evalRes.modelAnswer ? `
-            <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-lg">
-              <strong class="text-amber-300 block mb-1">📝 Correct Entry / Model Solution:</strong>
-              <p class="text-slate-300 italic font-mono leading-relaxed">${evalRes.modelAnswer}</p>
-            </div>
-          ` : ''}
-        </div>
-      `;
+      return SubjectQuizRegistry.renderScienceEvaluationHTML(evalRes, q, "0625", "Physics");
     }
   },
   
-// =========================================================================
+  // =========================================================================
+  // SHARED FEEDBACK BOX FOR THE SCIENCE SUBJECTS (Biology, Chemistry, Physics)
+  // =========================================================================
+  renderScienceEvaluationHTML: function (evalRes, q, code, name) {
+    const esc = (v) => String(v == null ? "" : v)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const maxM = evalRes.maxMarks || q.maxMarks || 4;
+    const marksAwarded = evalRes.marksAwarded !== undefined ? evalRes.marksAwarded : 0;
+    const marksLost = evalRes.marksLost !== undefined ? evalRes.marksLost : (maxM - marksAwarded);
+
+    return `
+      <div class="p-4 bg-slate-900 dark:bg-slate-950 border border-cyan-500/40 rounded-xl text-xs space-y-3 mt-3 animate-float-in text-slate-200">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <span class="font-bold text-cyan-400 text-sm">Cambridge AI Examiner Result (${esc(code)} ${esc(name)})</span>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 bg-cyan-500/20 text-cyan-300 font-extrabold rounded-lg border border-cyan-500/30">
+              Earned: ${esc(marksAwarded)} / ${esc(maxM)}
+            </span>
+            ${marksLost > 0 ? `
+              <span class="px-2.5 py-1 bg-rose-500/20 text-rose-300 font-extrabold rounded-lg border border-rose-500/30">
+                Lost: ${esc(marksLost)}
+              </span>
+            ` : `
+              <span class="px-2.5 py-1 bg-cyan-500/20 text-cyan-300 font-extrabold rounded-lg border border-cyan-500/30">
+                Full Marks! 🎉
+              </span>
+            `}
+          </div>
+        </div>
+
+        ${evalRes.lostMarksReason ? `
+          <div class="p-3 bg-rose-950/30 border border-rose-800/40 rounded-lg">
+            <strong class="text-rose-400 block mb-1">❌ Why marks were lost:</strong>
+            <p class="text-slate-300 leading-relaxed whitespace-pre-line">${esc(evalRes.lostMarksReason)}</p>
+          </div>
+        ` : ''}
+
+        ${evalRes.howToImprove ? `
+          <div class="p-3 bg-cyan-950/40 border border-cyan-800/50 rounded-lg">
+            <strong class="text-cyan-400 block mb-1">💡 How to get full marks:</strong>
+            <p class="text-slate-300 leading-relaxed whitespace-pre-line">${esc(evalRes.howToImprove)}</p>
+          </div>
+        ` : ''}
+
+        ${evalRes.modelAnswer ? `
+          <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-lg">
+            <strong class="text-amber-300 block mb-1">📝 Model answer:</strong>
+            <p class="text-slate-300 italic leading-relaxed whitespace-pre-line">${esc(evalRes.modelAnswer)}</p>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  },
+
+  // =========================================================================
   // GLOBAL ROUTER METHODS
   // =========================================================================
 
@@ -753,6 +693,15 @@ const SubjectQuizRegistry = {
     }
     if (cleanSubj.includes("business") || cleanSubj.includes("0450")) {
       return this.business.getTimer(hasImage);
+    }
+    if (cleanSubj.includes("bio") || cleanSubj.includes("0610")) {
+      return this.biology.getTimer(hasImage);
+    }
+    if (cleanSubj.includes("chem") || cleanSubj.includes("0620")) {
+      return this.chemistry.getTimer(hasImage);
+    }
+    if (cleanSubj.includes("phys") || cleanSubj.includes("0625")) {
+      return this.physics.getTimer(hasImage);
     }
     // Default Fallback
     return hasImage ? 90 : 60;
@@ -774,6 +723,15 @@ const SubjectQuizRegistry = {
       return this.travel_tourism.processQuestions(fetchedQuestions);
     }
 
+    if (cleanSubj.includes("bio") || cleanSubj.includes("0610")) {
+      return this.biology.processQuestions(fetchedQuestions);
+    }
+    if (cleanSubj.includes("chem") || cleanSubj.includes("0620")) {
+      return this.chemistry.processQuestions(fetchedQuestions);
+    }
+    if (cleanSubj.includes("phys") || cleanSubj.includes("0625")) {
+      return this.physics.processQuestions(fetchedQuestions);
+    }
     // Default Fallback
     const shuffled = this.shuffleArray(fetchedQuestions).map(q => {
       if (q.options && Array.isArray(q.options)) {
@@ -800,6 +758,15 @@ const SubjectQuizRegistry = {
       return this.travel_tourism.renderEvaluationHTML(evalRes, questionObj);
     }
 
+    if (cleanSubj.includes("bio") || cleanSubj.includes("0610")) {
+      return this.biology.renderEvaluationHTML(evalRes, questionObj);
+    }
+    if (cleanSubj.includes("chem") || cleanSubj.includes("0620")) {
+      return this.chemistry.renderEvaluationHTML(evalRes, questionObj);
+    }
+    if (cleanSubj.includes("phys") || cleanSubj.includes("0625")) {
+      return this.physics.renderEvaluationHTML(evalRes, questionObj);
+    }
     // Default Fallback
     return this.business.renderEvaluationHTML(evalRes, questionObj);
   }
