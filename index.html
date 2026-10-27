@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="./subject-quizzes.js?v=1"></script>
+  <script src="./subject-quizzes.js?v=2"></script>
   <script src="./api.js?v=1"></script>
   <script src="./streaks.js?v=9"></script>
   <script src="./offline-sync.js?v=8" defer></script>
@@ -191,6 +191,24 @@
           Take Quiz &rarr;
         </button>
       </div>
+    </div>
+
+    <!-- REVIEW MISSED QUESTIONS (students only) -->
+    <div id="missedCard" class="hidden bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-sky-500/10 border border-sky-500/20">📚</div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Review Missed Questions</h3>
+            <p id="missedCardDesc" class="text-xs text-slate-500 dark:text-slate-400">Loading...</p>
+          </div>
+        </div>
+        <button id="missedStartBtn" onclick="startMissedReview()" class="hidden w-full sm:w-auto px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-sky-500/20 transition cursor-pointer">
+          Start Review &rarr;
+        </button>
+      </div>
+      <div id="missedSubjectChips" class="hidden flex flex-wrap gap-2 mt-4"></div>
+      <p id="missedWrittenNote" class="hidden text-[11px] text-slate-500 dark:text-slate-400 mt-3"></p>
     </div>
 
     <!-- DASHBOARD -->
@@ -793,11 +811,13 @@
         document.getElementById("teacherBanner").classList.remove("hidden");
         document.getElementById("teacherTableContainer").classList.remove("hidden");
         document.getElementById("studentStatsGrid").classList.add("hidden");
+        document.getElementById("missedCard").classList.add("hidden");
         await loadTeacherData();
       } else {
         document.getElementById("teacherBanner").classList.add("hidden");
         document.getElementById("teacherTableContainer").classList.add("hidden");
         document.getElementById("studentStatsGrid").classList.remove("hidden");
+        loadMissedSummary();
         await loadStudentStats(); 
       }
 
@@ -1270,7 +1290,7 @@
       const activeSubjectClean = activeQuiz && activeQuiz.subject ? activeQuiz.subject.toLowerCase() : "";
       const isAccounting = activeSubjectClean.includes("account");
       const isEconomics = activeSubjectClean.includes("eco");
-      const hideMarks = (isAccounting || isEconomics) && !isWritten;
+      const hideMarks = !isWritten;   // multiple-choice questions carry no marks label (this also covers the science subjects)
 
       const qTitle = document.createElement("h4");
       qTitle.className = "text-sm font-bold text-slate-900 dark:text-white";
@@ -1479,6 +1499,37 @@
 
       stopQuestionTimer();
 
+      // Practice round from "Review Missed Questions": no result row, no medal, no streak
+      if (activeQuiz && activeQuiz.isReview) {
+        if (activeQuiz.submitting) return;
+        activeQuiz.submitting = true;
+
+        const results = activeQuestions.map((q, i) => ({
+          quizId: q.reviewQuizId,
+          key: q.reviewKey,
+          correct: !!(userAnswers[i] && userAnswers[i].selected === q.correctOption)
+        }));
+        const rightCount = results.filter(r => r.correct).length;
+
+        let out;
+        try {
+          out = await API.call("submitMissedReview", { results: results });
+        } catch (err) {
+          console.error(err);
+          activeQuiz.submitting = false;
+          alert("Could not reach the server. Your review was not saved. Please try again.");
+          return;
+        }
+
+        const cleared = out && typeof out.cleared === "number" ? out.cleared : rightCount;
+        alert(`Review finished!\n${rightCount} of ${results.length} correct.` + (cleared > 0
+          ? `\n${cleared} question${cleared === 1 ? "" : "s"} cleared from your list.`
+          : `\nThese stay on your list until you get them right. Keep going!`));
+        closeQuizModal();
+        loadMissedSummary();
+        return;
+      }
+
       // Streak restoration challenge: the SERVER marks the answers and decides
       if (activeQuiz && activeQuiz.isRestore) {
         if (activeQuiz.submitting) return;
@@ -1540,12 +1591,12 @@
       if (isMini && typeof recordStreakActivity === "function") {
         await recordStreakActivity({ quizId: "BUS_MINI_QOTD", score: percent });
       } else {
-        const saved = await API.call("submitResult", {
+        const saved = await API.call("submitResult", Object.assign({
           quizId: targetQuizId,
           score: percent,
           isQOTD: false,
           type: "regular"
-        });
+        }, collectMissedAndRight()));
         if (saved && saved.error) console.warn("Result was not saved:", saved.error);
       }
 
@@ -1557,6 +1608,146 @@
         await loadStudentStats();
       }
       loadQuizIndex();
+      loadMissedSummary();
+    }
+
+    // =====================================================================
+    // REVIEW MISSED QUESTIONS
+    // =====================================================================
+    const WRITTEN_MISSED_BELOW = 0.6;   // a written answer under 60% of its marks counts as missed
+    let missedSummary = null;
+    let missedBusy = false;
+
+    function escapeMissed(text) {
+      return String(text == null ? "" : text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // Which questions of the quiz just finished were missed and which were right (the server checks them against the real quiz)
+    function collectMissedAndRight() {
+      const missed = [];
+      const right = [];
+      (activeQuestions || []).forEach((q, idx) => {
+        if (!lockedQuestions[idx]) return;
+        const a = userAnswers[idx] || {};
+        const isMcq = q.options && q.options.length > 0 && q.options[0].text;
+        let ok;
+        if (isMcq) {
+          ok = a.selected === q.correctOption;
+        } else {
+          const max = Number(a.maxMarks || q.maxMarks || 4);
+          ok = max > 0 && (Number(a.marksAwarded) || 0) / max >= WRITTEN_MISSED_BELOW;
+        }
+        (ok ? right : missed).push(q.question);
+      });
+      return { missed: missed, right: right };
+    }
+
+    async function loadMissedSummary() {
+      const card = document.getElementById("missedCard");
+      if (!card || userRole === "teacher") return;
+      try {
+        const data = await API.call("getMissedSummary");
+        if (data && !data.error) {
+          missedSummary = data;
+          renderMissedCard();
+        }
+      } catch (err) {
+        console.warn("Could not load missed questions:", err);
+      }
+    }
+
+    function renderMissedCard() {
+      const card = document.getElementById("missedCard");
+      const desc = document.getElementById("missedCardDesc");
+      const btn = document.getElementById("missedStartBtn");
+      const chips = document.getElementById("missedSubjectChips");
+      const note = document.getElementById("missedWrittenNote");
+      if (!card || !missedSummary) return;
+
+      const mcq = missedSummary.mcq || 0;
+      const written = missedSummary.written || 0;
+      card.classList.remove("hidden");
+
+      if (mcq > 0) {
+        desc.innerText = `${mcq} question${mcq === 1 ? "" : "s"} waiting for you. Get one right and it leaves your list.`;
+        btn.classList.remove("hidden");
+        btn.disabled = missedBusy;
+        btn.innerText = missedBusy ? "Loading..." : `Start Review (${Math.min(mcq, 10)}) →`;
+      } else {
+        desc.innerText = written > 0
+          ? "No multiple-choice questions to review right now."
+          : "Nothing to review yet. Questions you get wrong in a quiz will appear here so you can practise them again.";
+        btn.classList.add("hidden");
+      }
+
+      const subjects = (missedSummary.bySubject || []).filter(s => s.mcq > 0);
+      if (mcq > 0 && subjects.length > 1) {
+        chips.classList.remove("hidden");
+        chips.innerHTML = subjects.map((s, i) => `
+          <button onclick="startMissedReview(${i})" ${missedBusy ? "disabled" : ""} class="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-sky-500 transition cursor-pointer">
+            ${escapeMissed(s.subject)} (${s.mcq})
+          </button>`).join("");
+      } else {
+        chips.classList.add("hidden");
+        chips.innerHTML = "";
+      }
+
+      if (written > 0) {
+        note.classList.remove("hidden");
+        note.innerText = `${written} written question${written === 1 ? " is" : "s are"} saved too. Rewriting them after feedback is coming soon.`;
+      } else {
+        note.classList.add("hidden");
+      }
+    }
+
+    // subjectIndex: position in the list of chips (leave out to review everything)
+    async function startMissedReview(subjectIndex) {
+      if (missedBusy || !missedSummary) return;
+
+      let subject = "";
+      if (typeof subjectIndex === "number") {
+        const withMcq = (missedSummary.bySubject || []).filter(s => s.mcq > 0);
+        subject = withMcq[subjectIndex] ? withMcq[subjectIndex].subject : "";
+      }
+
+      missedBusy = true;
+      renderMissedCard();
+      try {
+        const data = await API.call("startMissedReview", { subject: subject, count: 10 });
+        if (!data || data.error || !Array.isArray(data.questions) || data.questions.length === 0) {
+          alert(data && data.error ? data.error : "There are no questions ready to review right now.");
+          return;
+        }
+        launchReviewQuizModal(data);
+      } catch (err) {
+        console.error(err);
+        alert("Could not load your review questions. Please try again.");
+      } finally {
+        missedBusy = false;
+        await loadMissedSummary();
+        renderMissedCard();
+      }
+    }
+
+    function launchReviewQuizModal(data) {
+      const subjects = Array.from(new Set(data.questions.map(q => q.reviewSubject).filter(Boolean)));
+      const subject = subjects.length === 1 ? subjects[0] : "Mixed review";
+      const title = "Review Missed Questions";
+
+      activeQuiz = { sheetId: "", subject: subject, title: title, quizId: "REVIEW", isReview: true };
+      activeQuestions = SubjectQuizRegistry.processQuizQuestions("", data.questions);
+      userAnswers = {};
+      lockedQuestions = {};
+      currentQuestionIndex = 0;
+
+      document.getElementById("quizSubjectTag").innerText = subject;
+      document.getElementById("quizModalTitle").innerText = title;
+
+      const footer = document.getElementById("quizModalFooter");
+      if (footer) footer.classList.remove("hidden");
+      document.getElementById("quizModal").classList.remove("hidden");
+
+      renderQuizQuestions();
     }
 
     function closeQuizModal() {
