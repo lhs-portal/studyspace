@@ -406,6 +406,37 @@
     </div>
   </div>
 
+<!-- FULL-SCREEN STUDY HUB MODAL -->
+  <div id="studyHubModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-7xl h-[92vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-lg">📖</div>
+          <div>
+            <span class="px-2.5 py-0.5 text-[10px] font-bold rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/50">LHS Notes Engine</span>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white mt-0.5">Study Hub &amp; Syllabus Notes</h3>
+          </div>
+        </div>
+        <button onclick="closeStudyHubModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-2xl font-bold transition">&times;</button>
+      </div>
+
+      <!-- Modal Body Container for study-engine.js -->
+      <div class="p-6 overflow-y-auto flex-1 bg-slate-50/50 dark:bg-slate-950/50">
+        <div id="studyHubContainer"></div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end shrink-0">
+        <button onclick="closeStudyHubModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl transition cursor-pointer">
+          Close Window
+        </button>
+      </div>
+
+    </div>
+  </div>
+  
   <!-- QUIZ MODAL -->
   <div id="quizModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
     <div class="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
@@ -1774,6 +1805,17 @@
       stopQuestionTimer();
       document.getElementById("quizModal").classList.add("hidden");
     }
+
+    function openStudyHubModal() {
+  document.getElementById("studyHubModal").classList.remove("hidden");
+  if (typeof loadStudyHub === "function") {
+    loadStudyHub("studyHubContainer");
+  }
+}
+
+function closeStudyHubModal() {
+  document.getElementById("studyHubModal").classList.add("hidden");
+}
 
     // If the server says the session has ended, sign out (once) and go back to the login screen
     API.setExpiredHandler(() => {
