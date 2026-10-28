@@ -7,6 +7,7 @@
   <script src="./api.js?v=1"></script>
   <script src="./streaks.js?v=9"></script>
   <script src="./offline-sync.js?v=8" defer></script>
+  <script src="./study-engine.js?v=1" defer></script>
   <title>Hithadhoo School - Studyspace</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="logo.png" />
@@ -193,24 +194,43 @@
       </div>
     </div>
 
-    <!-- REVIEW MISSED QUESTIONS (students only) -->
-    <div id="missedCard" class="hidden bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<!-- REVIEW MISSED QUESTIONS & STUDY HUB BANNER GRID -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      
+      <!-- REVIEW MISSED QUESTIONS (students only) -->
+      <div id="missedCard" class="hidden bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow flex-col justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-sky-500/10 border border-sky-500/20">📚</div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white">Review Missed Questions</h3>
+              <p id="missedCardDesc" class="text-xs text-slate-500 dark:text-slate-400">Loading...</p>
+            </div>
+          </div>
+          <button id="missedStartBtn" onclick="startMissedReview()" class="hidden w-full sm:w-auto px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-sky-500/20 transition cursor-pointer whitespace-nowrap">
+            Start Review &rarr;
+          </button>
+        </div>
+        <div id="missedSubjectChips" class="hidden flex flex-wrap gap-2 mt-4"></div>
+        <p id="missedWrittenNote" class="hidden text-[11px] text-slate-500 dark:text-slate-400 mt-3"></p>
+      </div>
+
+      <!-- STUDY HUB NAVIGATION CARD -->
+      <div id="studyHubCard" class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-sky-500/10 border border-sky-500/20">📚</div>
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">📖</div>
           <div>
-            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Review Missed Questions</h3>
-            <p id="missedCardDesc" class="text-xs text-slate-500 dark:text-slate-400">Loading...</p>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Study Hub &amp; Notes</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Search revision notes, syllabus topics, and unit guides</p>
           </div>
         </div>
-        <button id="missedStartBtn" onclick="startMissedReview()" class="hidden w-full sm:w-auto px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-sky-500/20 transition cursor-pointer">
-          Start Review &rarr;
+        <button onclick="openStudyHubModal()" class="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition cursor-pointer whitespace-nowrap">
+          Open Study Hub &rarr;
         </button>
       </div>
-      <div id="missedSubjectChips" class="hidden flex flex-wrap gap-2 mt-4"></div>
-      <p id="missedWrittenNote" class="hidden text-[11px] text-slate-500 dark:text-slate-400 mt-3"></p>
-    </div>
 
+    </div>
+    
     <!-- DASHBOARD -->
     <section id="dashboardSection" class="space-y-5">
       <div id="teacherBanner" class="hidden p-4 rounded-2xl bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-600/50 flex items-center justify-between">
