@@ -297,23 +297,44 @@
    * Called when a quiz is submitted to trigger backend streak update and re-sync
    */
   async function recordStreakActivity(payload = {}) {
+    const body = {
+      quizId: payload.quizId || "BUS_MINI_QOTD",
+      score: (payload.score !== undefined ? payload.score : 100),
+      isQOTD: true,
+      type: "qotd"
+    };
+
     try {
-      const saved = await API.call("submitResult", {
-        quizId: payload.quizId || "BUS_MINI_QOTD",
-        score: (payload.score !== undefined ? payload.score : 100),
-        isQOTD: true,
-        type: "qotd"
-      });
-      if (saved && saved.error) console.warn("Result was not saved:", saved.error);
+      if (window.OfflineQueue && userConfig && userConfig.email) {
+        // If there is no connection the result waits on this device and is sent later (with the streak credit)
+        const outcome = await window.OfflineQueue.submit(userConfig.email, body);
+
+        if (outcome.status === "queued") {
+          streakState.qotdCompletedToday = true;      // show today's quiz as done; the server confirms once it is sent
+          renderInlineStreak();
+          updateMiniQuizBanner(streakState);
+          alert("There is no connection right now.\nYour quiz is saved on this device. Your streak will update automatically when you are back online.");
+          return;
+        }
+        if (outcome.status === "rejected") console.warn("Result was not saved:", outcome.response && outcome.response.error);
+      } else {
+        const saved = await API.call("submitResult", body);
+        if (saved && saved.error) console.warn("Result was not saved:", saved.error);
+      }
 
       // Refresh status directly from server to get true server-calculated streak
-      await fetchStreakStatusFromBackend();
-      renderInlineStreak();
-      updateMiniQuizBanner(streakState);
+      await refreshStreakStatus();
 
     } catch (e) {
       console.warn("Failed to push streak update to server.", e);
     }
+  }
+
+  /** Asks the server for the streak and redraws it (also used after waiting results have been sent). */
+  async function refreshStreakStatus() {
+    await fetchStreakStatusFromBackend();
+    renderInlineStreak();
+    updateMiniQuizBanner(streakState);
   }
 
   function getStreakState() {
@@ -327,6 +348,7 @@
   window.startRestoreChallenge = startRestoreChallenge;
   window.submitRestoreChallenge = submitRestoreChallenge;
   window.recordStreakActivity = recordStreakActivity;
+  window.refreshStreakStatus = refreshStreakStatus;
   window.getStreakState = getStreakState;
 
 })(window);
