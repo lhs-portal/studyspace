@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="./subject-quizzes.js?v=2"></script>
   <script src="./api.js?v=1"></script>
-  <script src="./streaks.js?v=9"></script>
-  <script src="./offline-sync.js?v=8" defer></script>
+  <script src="./streaks.js?v=10"></script>
+  <script src="./offline-sync.js?v=9" defer></script>
   <script src="./study-engine.js?v=1" defer></script>
   <title>Hithadhoo School - Studyspace</title>
   <link rel="manifest" href="./manifest.json" />
@@ -869,7 +869,20 @@
 
       syncServerTimeAndScheduleReset();
       loadQuizIndex();
+      if (window.OfflineQueue) window.OfflineQueue.flush(currentUser);   // results saved earlier while offline
     }
+
+    // Called after results that were waiting on this device have been sent: refresh what is on screen
+    window.onQueueSynced = async function () {
+      try { if (typeof window.refreshStreakStatus === "function") await window.refreshStreakStatus(); } catch (e) { /* ignore */ }
+      if (userRole === "teacher") {
+        await loadTeacherData();
+      } else {
+        await loadStudentStats();
+        loadMissedSummary();
+      }
+      loadQuizIndex();
+    };
 
     function updateUserUI(streakData) {
       const tag = document.getElementById("userProfileTag");
@@ -898,8 +911,10 @@
 
     function logoutUser() {
       const savedTheme = localStorage.getItem("lhs_theme");
+      const waitingResults = localStorage.getItem("lhs_pending_v2");   // results not sent yet must survive signing out
       localStorage.clear();
       if (savedTheme) localStorage.setItem("lhs_theme", savedTheme);
+      if (waitingResults) localStorage.setItem("lhs_pending_v2", waitingResults);
       location.reload();
     }
 
@@ -1488,7 +1503,26 @@
           maxMarks: q.maxMarks || 4
         };
 
-        const evalRes = await API.call("evaluateWrittenAnswer", payload);
+        // The server waits for the AI for at most about 25 seconds, then says "busy". We then ask again by
+        // ourselves, telling the student what is happening, instead of leaving them staring at a frozen button.
+        const startedQuiz = activeQuiz;
+        let evalRes = null;
+        for (let attempt = 1; attempt <= MARKING_MAX_TRIES; attempt++) {
+          evalRes = await API.call("evaluateWrittenAnswer", payload);
+          if (!evalRes || !evalRes.busy || attempt === MARKING_MAX_TRIES) break;
+          btn.innerHTML = `<span>The AI examiner is busy. Trying again (${attempt + 1} of ${MARKING_MAX_TRIES})...</span>`;
+          await new Promise(resolve => setTimeout(resolve, Math.max(0, (evalRes.retryAfterSec || 4) * 1000 * (window.MARKING_RETRY_SCALE || 1))));
+        }
+
+        // The student closed this quiz while we were waiting: drop the answer rather than showing it in the wrong place
+        if (activeQuiz !== startedQuiz || document.getElementById("quizModal").classList.contains("hidden")) return;
+
+        if (evalRes && evalRes.busy) {
+          alert("The AI examiner is very busy right now. Your answer is still in the box. Please try again in a minute.");
+          btn.disabled = false;
+          btn.innerHTML = `<span>✨ Check your answer</span>`;
+          return;
+        }
 
         if (evalRes.error) {
           alert("Evaluation Error: " + evalRes.error);
@@ -1637,13 +1671,25 @@
       if (isMini && typeof recordStreakActivity === "function") {
         await recordStreakActivity({ quizId: "BUS_MINI_QOTD", score: percent });
       } else {
-        const saved = await API.call("submitResult", Object.assign({
+        const resultBody = Object.assign({
           quizId: targetQuizId,
           score: percent,
           isQOTD: false,
           type: "regular"
-        }, collectMissedAndRight()));
-        if (saved && saved.error) console.warn("Result was not saved:", saved.error);
+        }, collectMissedAndRight());
+
+        if (window.OfflineQueue) {
+          // If there is no connection the result waits on this device and is sent later
+          const outcome = await window.OfflineQueue.submit(currentUser, resultBody);
+          if (outcome.status === "queued") {
+            alert("There is no connection right now.\nYour result is saved on this device and will be sent automatically when you are back online.");
+          } else if (outcome.status === "rejected") {
+            console.warn("Result was not saved:", outcome.response && outcome.response.error);
+          }
+        } else {
+          const saved = await API.call("submitResult", resultBody);
+          if (saved && saved.error) console.warn("Result was not saved:", saved.error);
+        }
       }
 
       closeQuizModal();
@@ -1660,6 +1706,7 @@
     // =====================================================================
     // REVIEW MISSED QUESTIONS
     // =====================================================================
+    const MARKING_MAX_TRIES = 6;        // times the page asks the AI examiner before giving up for now
     const WRITTEN_MISSED_BELOW = 0.6;   // a written answer under 60% of its marks counts as missed
     let missedSummary = null;
     let missedBusy = false;
