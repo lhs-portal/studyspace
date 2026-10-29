@@ -1,6 +1,6 @@
 // sw.js - Service Worker for offline capability and immediate cache purging
 
-const CACHE_NAME = 'studyspace-v18'; // Bumped so every phone and laptop picks up the new files
+const CACHE_NAME = 'studyspace-v17'; // Bumped so every phone and laptop picks up the new files
 
 const ASSETS_TO_CACHE = [
   './',
@@ -9,7 +9,7 @@ const ASSETS_TO_CACHE = [
   './logo.png',
   './offline-sync.js',
   './api.js?v=1',
-  './streaks.js?v=9',
+  './streaks.js?v=10',
   './cache-reset.js?v=8'
 ];
 
