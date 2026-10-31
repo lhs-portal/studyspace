@@ -297,12 +297,14 @@
    * Called when a quiz is submitted to trigger backend streak update and re-sync
    */
   async function recordStreakActivity(payload = {}) {
-    const body = {
+    const body = Object.assign({
       quizId: payload.quizId || "BUS_MINI_QOTD",
       score: (payload.score !== undefined ? payload.score : 100),
       isQOTD: true,
       type: "qotd"
-    };
+    }, payload.extra || {});
+
+    let savedResponse = null;
 
     try {
       if (window.OfflineQueue && userConfig && userConfig.email) {
@@ -314,19 +316,30 @@
           renderInlineStreak();
           updateMiniQuizBanner(streakState);
           alert("There is no connection right now.\nYour quiz is saved on this device. Your streak will update automatically when you are back online.");
-          return;
+          return null;
         }
-        if (outcome.status === "rejected") console.warn("Result was not saved:", outcome.response && outcome.response.error);
+        if (outcome.status === "rejected") {
+          console.warn("Result was not saved:", outcome.response && outcome.response.error);
+          return null;
+        }
+        savedResponse = outcome.response || null;
       } else {
         const saved = await API.call("submitResult", body);
-        if (saved && saved.error) console.warn("Result was not saved:", saved.error);
+        if (saved && saved.error) {
+          console.warn("Result was not saved:", saved.error);
+          return null;
+        }
+        savedResponse = saved || null;
       }
 
       // Refresh status directly from server to get true server-calculated streak
       await refreshStreakStatus();
 
+      return savedResponse;
+
     } catch (e) {
       console.warn("Failed to push streak update to server.", e);
+      return null;
     }
   }
 
