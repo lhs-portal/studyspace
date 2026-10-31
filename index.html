@@ -7,7 +7,7 @@
   <script src="./api.js?v=1"></script>
   <script src="./streaks.js?v=10"></script>
   <script src="./offline-sync.js?v=9" defer></script>
-  <script src="./study-engine.js?v=1" defer></script>
+  <script src="./study-engine.js?v=2" defer></script>
   <title>Hithadhoo School - Studyspace</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="logo.png" />
@@ -203,12 +203,12 @@
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-sky-500/10 border border-sky-500/20">📚</div>
             <div>
-              <h3 class="text-sm font-bold text-slate-900 dark:text-white">Missed Questions</h3>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white">Review Missed Questions</h3>
               <p id="missedCardDesc" class="text-xs text-slate-500 dark:text-slate-400">Loading...</p>
             </div>
           </div>
           <button id="missedStartBtn" onclick="startMissedReview()" class="hidden w-full sm:w-auto px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-sky-500/20 transition cursor-pointer whitespace-nowrap">
-            Start &rarr;
+            Start Review &rarr;
           </button>
         </div>
         <div id="missedSubjectChips" class="hidden flex flex-wrap gap-2 mt-4"></div>
@@ -220,12 +220,12 @@
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">📖</div>
           <div>
-            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Studyroom</h3>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Study Hub &amp; Notes</h3>
             <p class="text-xs text-slate-500 dark:text-slate-400">Search revision notes, syllabus topics, and unit guides</p>
           </div>
         </div>
         <button onclick="openStudyHubModal()" class="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition cursor-pointer whitespace-nowrap">
-          Open &rarr;
+          Open Study Hub &rarr;
         </button>
       </div>
 
@@ -406,32 +406,11 @@
     </div>
   </div>
 
-<!-- FULL-SCREEN STUDY HUB MODAL -->
-<div id="studyHubModal" class="hidden fixed inset-0 z-[100] w-screen h-screen bg-slate-950/95 backdrop-blur-md overflow-hidden flex flex-col">
-  <div class="w-full h-full bg-slate-50 dark:bg-slate-950 overflow-hidden flex flex-col">
-    
-    <!-- Modal Header -->
-    <div class="px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-base">📖</div>
-        <div>
-          <span class="px-2 py-0.5 text-[9px] font-bold rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/50">LHS Notes Engine</span>
-          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Study Hub &amp; Syllabus Notes</h3>
-        </div>
-      </div>
-      <button onclick="closeStudyHubModal()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition cursor-pointer">
-        Close Window ✕
-      </button>
-    </div>
-
-    <!-- Modal Body Container for study-engine.js -->
-    <div class="p-4 sm:p-6 flex-1 overflow-hidden">
-      <div id="studyHubContainer" class="h-full flex flex-col"></div>
-    </div>
-
-  </div>
+<!-- FULL-SCREEN STUDY HUB (drawn entirely by study-engine.js) -->
+<div id="studyHubModal" class="hidden fixed inset-0 z-[100] w-screen h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+  <div id="studyHubContainer" class="w-full h-full"></div>
 </div>
-  
+
   <!-- QUIZ MODAL -->
   <div id="quizModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
     <div class="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
@@ -1849,15 +1828,17 @@
     }
 
     function openStudyHubModal() {
-  document.getElementById("studyHubModal").classList.remove("hidden");
-  if (typeof loadStudyHub === "function") {
-    loadStudyHub("studyHubContainer");
-  }
-}
+      document.getElementById("studyHubModal").classList.remove("hidden");
+      document.body.style.overflow = "hidden";          // the page behind stays still while reading
+      if (typeof loadStudyHub === "function") {
+        loadStudyHub("studyHubContainer");
+      }
+    }
 
-function closeStudyHubModal() {
-  document.getElementById("studyHubModal").classList.add("hidden");
-}
+    function closeStudyHubModal() {
+      document.getElementById("studyHubModal").classList.add("hidden");
+      document.body.style.overflow = "";
+    }
 
     // If the server says the session has ended, sign out (once) and go back to the login screen
     API.setExpiredHandler(() => {
