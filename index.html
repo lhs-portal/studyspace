@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="./subject-quizzes.js?v=2"></script>
   <script src="./api.js?v=1"></script>
-  <script src="./streaks.js?v=10"></script>
+  <script src="./streaks.js?v=11"></script>
   <script src="./offline-sync.js?v=9" defer></script>
   <script src="./study-engine.js?v=2" defer></script>
   <title>Hithadhoo School - Studyspace</title>
@@ -172,6 +172,30 @@
         </div>
       </div>
 
+      <!-- RANK / XP CARD (students only; hidden until the server answers) -->
+      <div id="rankCard" class="hidden p-3.5 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-amber-500/10 border border-amber-500/20">🏅</div>
+            <div>
+              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Your Rank</div>
+              <div class="text-sm font-extrabold text-slate-900 dark:text-white">
+                <span id="rankName">Beginner</span>
+                <span id="rankXp" class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 ml-1">0 XP</span>
+              </div>
+            </div>
+          </div>
+          <div id="rankNext" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">60 XP to Novice</div>
+        </div>
+        <div class="mt-2.5 w-full h-2 bg-slate-200 dark:bg-slate-900 rounded-full overflow-hidden border border-slate-300 dark:border-slate-800">
+          <div id="rankProgressBar" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <div class="mt-1 flex items-center justify-between gap-2 text-[10px] text-slate-400 dark:text-slate-500">
+          <span id="rankToday">0 / 300 XP today</span>
+          <span>Every question counts.</span>
+        </div>
+      </div>
+
       <!-- TODAY'S MINI QUIZ TAB -->
       <div id="miniQuizBanner" class="p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700">
         <div class="flex items-center gap-3">
@@ -283,13 +307,14 @@
               <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400">
                 <th class="p-3">Rank</th>
                 <th class="p-3">Student Name</th>
+                <th class="p-3">XP / Rank</th>
                 <th class="p-3">Total Attempts</th>
                 <th class="p-3">Medals</th>
                 <th class="p-3 text-right">Highest Score</th>
               </tr>
             </thead>
             <tbody id="teacherTableBody">
-              <tr><td colspan="5" class="p-3 text-slate-500">Loading student records...</td></tr>
+              <tr><td colspan="6" class="p-3 text-slate-500">Loading student records...</td></tr>
             </tbody>
           </table>
         </div>
@@ -332,13 +357,14 @@
               <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400">
                 <th class="p-3 w-12 text-center">Rank</th>
                 <th class="p-3">Student</th>
+                <th class="p-3 text-center">XP / Rank</th>
                 <th class="p-3 text-center">Medals 🏅</th>
                 <th class="p-3 text-center">Attempts</th>
                 <th class="p-3 text-right">Best Score</th>
               </tr>
             </thead>
             <tbody id="leaderboardModalTableBody">
-              <tr><td colspan="5" class="p-4 text-center text-slate-500">Loading leaderboard...</td></tr>
+              <tr><td colspan="6" class="p-4 text-center text-slate-500">Loading leaderboard...</td></tr>
             </tbody>
           </table>
         </div>
@@ -442,6 +468,12 @@
     </div>
   </div>
 
+  <!-- XP TOAST (small, temporary; it never blocks the page) -->
+  <div id="xpToast" class="hidden fixed bottom-5 right-4 z-[60] max-w-[280px] px-4 py-3 rounded-2xl bg-emerald-900 dark:bg-emerald-950 border border-emerald-400/60 text-emerald-50 shadow-2xl backdrop-blur-md animate-float-in">
+    <div class="text-xs font-extrabold" id="xpToastTitle">+0 XP</div>
+    <div class="text-[11px] font-semibold text-emerald-200/90 mt-0.5" id="xpToastSub"></div>
+  </div>
+
   <!-- FOOTER WITH THEME TOGGLE & SIGNOUT BUTTON -->
   <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500 dark:text-slate-500 mt-auto">
     <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -510,6 +542,110 @@
 
     let questionTimer = null;
     let timeLeft = 45;
+
+    /* ------------------------------------------------------------------ */
+    /* RANK / XP CARD                                                      */
+    /* ------------------------------------------------------------------ */
+
+    let myProgress = null;
+    let xpToastTimer = null;
+
+    const RETRY_HINTS = {
+      business: "Find the key business term in the question. Eliminate one option that does not fit the case, then choose the best match.",
+      economics: "Name the economic concept first. Eliminate the option that confuses cause and effect.",
+      accounting: "Check the double-entry effect and the direction (debit or credit) before choosing.",
+      travel: "Think about the customer, the destination and the reason for travel. Which option fits the case best?",
+      tourism: "Think about the customer, the destination and the reason for travel. Which option fits the case best?",
+      biology: "Recall the exact biological process. Eliminate one option that describes a different process.",
+      chemistry: "Check the reaction, the particles and the conditions. Eliminate one option that cannot happen.",
+      physics: "Write down the quantity the question asks for, then check the units and the direction."
+    };
+
+    function getRetryHint(q) {
+      const fromSheet = String((q && (q.hint || q.hint2)) || "").trim();
+      if (fromSheet) return fromSheet;
+
+      const subject = String((activeQuiz && activeQuiz.subject) || "").toLowerCase();
+      const keys = Object.keys(RETRY_HINTS);
+      for (let i = 0; i < keys.length; i++) {
+        if (subject.includes(keys[i])) return RETRY_HINTS[keys[i]];
+      }
+      return "Read the question again and underline the key word. Eliminate one option you know is wrong, then choose the best match.";
+    }
+
+    function renderRankCard(progress) {
+      const card = document.getElementById("rankCard");
+      if (!card) return;
+
+      if (!progress || progress.error || progress.role === "teacher") {
+        card.classList.add("hidden");
+        return;
+      }
+
+      myProgress = progress;
+
+      const rank = progress.rank || { name: "Beginner" };
+      const next = progress.nextRank;
+      const totalXp = Number(progress.totalXp) || 0;
+      const xpInto = Number(progress.xpIntoRank) || 0;
+      const xpFor = Number(progress.xpForNextRank) || 0;
+      const percent = Math.max(0, Math.min(100, Number(progress.progressPercent) || 0));
+      const today = Math.max(0, Number(progress.xpToday) || 0);
+      const cap = Math.max(1, Number(progress.dailyCap) || 300);
+
+      document.getElementById("rankName").innerText = rank.name;
+      document.getElementById("rankXp").innerText = totalXp + " XP";
+      document.getElementById("rankNext").innerText = next
+        ? Math.max(0, xpFor - xpInto) + " XP to " + next.name
+        : "Top rank reached 🎉";
+      document.getElementById("rankProgressBar").style.width = percent + "%";
+      document.getElementById("rankToday").innerText = today + " / " + cap + " XP today";
+
+      card.classList.remove("hidden");
+    }
+
+    async function loadMyProgress() {
+      if (userRole === "teacher") {
+        const card = document.getElementById("rankCard");
+        if (card) card.classList.add("hidden");
+        return;
+      }
+
+      try {
+        const data = await API.call("getMyProgress");
+        renderRankCard(data);
+      } catch (err) {
+        console.warn("Could not load rank progress:", err);
+      }
+    }
+
+    function showXpToast(progress, isMedal) {
+      const toast = document.getElementById("xpToast");
+      if (!toast) return;
+
+      const title = document.getElementById("xpToastTitle");
+      const sub = document.getElementById("xpToastSub");
+      if (!title || !sub) return;
+
+      const amount = progress ? (Number(progress.awarded) || 0) : 0;
+      const rankName = progress && progress.rank ? progress.rank.name : "";
+
+      if (amount > 0) {
+        title.innerText = "+" + amount + " XP" + (rankName ? " · " + rankName : "");
+        sub.innerText = isMedal
+          ? "🏅 Perfect first try — medal earned!"
+          : "Nice work. Every question counts.";
+      } else {
+        title.innerText = isMedal ? "🏅 Medal earned!" : "Practice saved";
+        sub.innerText = isMedal
+          ? "Every answer was right on the first try."
+          : "Repeating a question you already mastered earns less. Try another unit.";
+      }
+
+      toast.classList.remove("hidden");
+      if (xpToastTimer) clearTimeout(xpToastTimer);
+      xpToastTimer = setTimeout(function () { toast.classList.add("hidden"); }, 5000);
+    }
 
     async function syncServerTimeAndScheduleReset() {
       try {
@@ -608,9 +744,12 @@
       const idx = currentQuestionIndex;
       if (lockedQuestions[idx]) return;
 
-      userAnswers[idx] = { 
-        selected: null, 
-        feedbackMsg: "⏰ Time's up!" 
+      userAnswers[idx] = {
+        selected: null,
+        feedbackMsg: "⏰ Time's up!",
+        attempts: 1,
+        firstTryCorrect: false,
+        retried: false
       };
       lockedQuestions[idx] = true;
 
@@ -818,6 +957,7 @@
     async function initPortalSession() {
       document.getElementById("loginModal").classList.add("hidden");
       updateUserUI(userStreakData);
+      loadMyProgress();
 
       if (typeof initStreakModule === 'function') {
         initStreakModule({
@@ -859,6 +999,7 @@
       } else {
         await loadStudentStats();
         loadMissedSummary();
+        loadMyProgress();
       }
       loadQuizIndex();
     };
@@ -922,7 +1063,12 @@
         
         const medalsA = Number(a.firstTry100s || 0);
         const medalsB = Number(b.firstTry100s || 0);
-        return medalsB - medalsA;
+        if (medalsB !== medalsA) {
+          return medalsB - medalsA;
+        }
+
+        // Same score and same medals: the student who kept practising sits higher.
+        return (Number(b.xp || 0)) - (Number(a.xp || 0));
       });
     }
 
@@ -962,7 +1108,7 @@
       const rankedList = sortRankings(filteredLeaderboardList.length > 0 ? filteredLeaderboardList : cachedLeaderboardData);
 
       if (!rankedList || rankedList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No leaderboard entries found for your stream.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No leaderboard entries found for your stream.</td></tr>`;
       } else {
         rankedList.forEach((r, idx) => {
           let displayName = r.commonName || r.name;
@@ -976,6 +1122,8 @@
           const streakVal = r.streak || r.streakCount || 0;
           const nameWithStreak = `${displayName} ${streakVal > 0 ? `🔥${streakVal}` : ''}`;
           const isCurrent = r.email && r.email.toLowerCase() === currentUser.toLowerCase();
+          const xp = Number(r.xp) || 0;
+          const rankName = r.rankName || "Beginner";
 
           tbody.innerHTML += `
             <tr class="border-b border-slate-200 dark:border-slate-800/60 ${isCurrent ? 'bg-emerald-500/10 font-bold' : ''}">
@@ -983,6 +1131,7 @@
                 ${idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `#${idx + 1}`}
               </td>
               <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${nameWithStreak}</td>
+              <td class="p-3 text-center text-slate-600 dark:text-slate-300"><span class="font-bold text-amber-600 dark:text-amber-300">${xp}</span> <span class="text-[10px]">${rankName}</span></td>
               <td class="p-3 text-center text-amber-600 dark:text-amber-300 font-bold">${r.firstTry100s || 0}</td>
               <td class="p-3 text-center text-slate-600 dark:text-slate-300">${r.attemptsCount || 0}</td>
               <td class="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${r.bestScore || 0}%</td>
@@ -1025,7 +1174,7 @@
         tbody.innerHTML = "";
 
         if (!rankedList || rankedList.length === 0) {
-          tbody.innerHTML = "<tr><td colspan='5' class='p-3 text-slate-500'>No student records found for your subject stream.</td></tr>";
+          tbody.innerHTML = "<tr><td colspan='6' class='p-3 text-slate-500'>No student records found for your subject stream.</td></tr>";
           return;
         }
 
@@ -1040,11 +1189,14 @@
 
           const streakVal = r.streak || r.streakCount || 0;
           const nameWithStreak = `${displayName} ${streakVal > 0 ? `🔥${streakVal}` : ''}`;
+          const xp = Number(r.xp) || 0;
+          const rankName = r.rankName || "Beginner";
 
           tbody.innerHTML += `
             <tr onclick="openStudentAnalytics('${r.email}')" class="border-b border-slate-200 dark:border-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
               <td class="p-3 font-bold text-slate-500">#${idx + 1}</td>
               <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${nameWithStreak}</td>
+              <td class="p-3 text-slate-600 dark:text-slate-300"><span class="font-bold text-amber-600 dark:text-amber-300">${xp}</span> <span class="text-[10px]">${rankName}</span></td>
               <td class="p-3 text-slate-600 dark:text-slate-300">${r.attemptsCount || 0}</td>
               <td class="p-3 text-amber-600 dark:text-amber-300">🏅 ${r.firstTry100s || 0}</td>
               <td class="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${r.bestScore || 0}%</td>
@@ -1278,7 +1430,10 @@
       const q = activeQuestions[idx];
       const isWritten = !q.options || q.options.length === 0 || !q.options[0].text;
 
-      if (!isWritten && !lockedQuestions[idx]) {
+      const currentAnswer = userAnswers[idx] || {};
+      const questionStarted = Number(currentAnswer.attempts) > 0;
+
+      if (!isWritten && !lockedQuestions[idx] && !questionStarted) {
         startQuestionTimer();
       } else {
         stopQuestionTimer();
@@ -1344,11 +1499,21 @@
       if (isWritten) {
         const savedData = userAnswers[idx] || {};
         const isLocked = !!lockedQuestions[idx];
+        const canRetry = isLocked &&
+          savedData.firstTryCorrect !== true &&
+          (Number(savedData.attempts) || 1) < 2;
+
+        const retryNote = (!isLocked && Number(savedData.attempts) > 0)
+          ? `<div class="p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg text-[11px] text-amber-900 dark:text-amber-200 leading-relaxed">
+               <strong>Second attempt:</strong> read the feedback below, then improve your answer. Your first try still decides medals, so there is no pressure here.
+             </div>`
+          : "";
 
         const writtenContainer = document.createElement("div");
         writtenContainer.className = "space-y-3 mt-2";
 
         writtenContainer.innerHTML = `
+          ${retryNote}
           <div>
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Your Written Answer:</label>
             <textarea 
@@ -1366,15 +1531,25 @@
               onclick="submitWrittenAnswer(${idx})"
               class="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
             >
-              <span>✨ Check your answer</span>
+              <span>${Number(savedData.attempts) > 0 ? "✨ Check again" : "✨ Check your answer"}</span>
             </button>
+          ` : ''}
+
+          ${canRetry ? `
+            <button
+              onclick="startWrittenRetry(${idx})"
+              class="w-full py-2.5 px-4 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <span>🔄 Let's try that again</span>
+            </button>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 text-center">Use the feedback above. A retry earns XP, but a medal needs a perfect first try.</p>
           ` : ''}
         `;
 
         qCard.appendChild(writtenContainer);
 
         // DYNAMIC SUBJECT FEEDBACK ROUTING (subject-quizzes.js)
-        if (isLocked && savedData.eval) {
+        if (savedData.eval) {
           const evalRes = savedData.eval;
           const currentSubject = (activeQuiz && activeQuiz.subject) ? activeQuiz.subject : "Business";
 
@@ -1386,6 +1561,16 @@
         }
 
       } else {
+        const answerState = userAnswers[idx] || {};
+        const awaitingRetry = !lockedQuestions[idx] && answerState.awaitingRetry === true;
+
+        if (!lockedQuestions[idx] && !awaitingRetry && Number(answerState.attempts) > 0) {
+          const secondTryNote = document.createElement("div");
+          secondTryNote.className = "p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg text-[11px] text-amber-900 dark:text-amber-200 leading-relaxed";
+          secondTryNote.innerText = "Second attempt: take your time. Your first try still decides medals.";
+          qCard.appendChild(secondTryNote);
+        }
+
         const optsContainer = document.createElement("div");
         optsContainer.className = "space-y-1.5 mt-2";
 
@@ -1400,7 +1585,13 @@
             if (opt.id === q.correctOption) {
               btn.className = "w-full text-left p-3 rounded-xl border text-xs font-bold bg-emerald-100 dark:bg-emerald-950/80 border-emerald-500 text-emerald-800 dark:text-emerald-300";
             }
-            if (userAnswers[idx]?.selected === opt.id && opt.id !== q.correctOption) {
+            if (answerState.selected === opt.id && opt.id !== q.correctOption) {
+              btn.className = "w-full text-left p-3 rounded-xl border text-xs font-bold bg-rose-100 dark:bg-rose-950/80 border-rose-500 text-rose-800 dark:text-rose-300";
+            }
+          } else if (awaitingRetry) {
+            btn.disabled = true;
+            btn.classList.remove("cursor-pointer");
+            if (answerState.selected === opt.id) {
               btn.className = "w-full text-left p-3 rounded-xl border text-xs font-bold bg-rose-100 dark:bg-rose-950/80 border-rose-500 text-rose-800 dark:text-rose-300";
             }
           } else {
@@ -1412,16 +1603,42 @@
 
         qCard.appendChild(optsContainer);
 
+        if (awaitingRetry) {
+          const hintBox = document.createElement("div");
+          hintBox.className = "p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700/60 rounded-xl text-xs text-amber-900 dark:text-amber-200 leading-relaxed animate-float-in";
+
+          const hintTitle = document.createElement("strong");
+          hintTitle.className = "block text-amber-700 dark:text-amber-400 mb-1";
+          hintTitle.innerText = "Not quite — let's try that again.";
+
+          const hintText = document.createElement("p");
+          hintText.innerText = getRetryHint(q);
+
+          const hintBtn = document.createElement("button");
+          hintBtn.className = "mt-2.5 w-full py-2 px-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-[11px] rounded-lg transition-all cursor-pointer";
+          hintBtn.innerText = "🔄 Let's try that again →";
+          hintBtn.onclick = () => startRetry(idx);
+
+          hintBox.appendChild(hintTitle);
+          hintBox.appendChild(hintText);
+          hintBox.appendChild(hintBtn);
+          qCard.appendChild(hintBox);
+        }
+
         if (lockedQuestions[idx]) {
+          const wasRight = answerState.correct === true;
+
           const feedback = document.createElement("div");
-          feedback.className = "absolute left-1/2 bottom-12 z-20 pointer-events-none transform -translate-x-1/2 px-4 py-2 bg-emerald-900 dark:bg-emerald-950/95 border border-emerald-500 text-emerald-100 dark:text-emerald-200 text-xs font-extrabold rounded-full shadow-2xl backdrop-blur-md animate-fly-popup flex items-center gap-1.5 whitespace-nowrap";
-          feedback.innerText = userAnswers[idx].feedbackMsg;
+          feedback.className = wasRight
+            ? "absolute left-1/2 bottom-12 z-20 pointer-events-none transform -translate-x-1/2 px-4 py-2 bg-emerald-900 dark:bg-emerald-950/95 border border-emerald-500 text-emerald-100 dark:text-emerald-200 text-xs font-extrabold rounded-full shadow-2xl backdrop-blur-md animate-fly-popup flex items-center gap-1.5 whitespace-nowrap"
+            : "absolute left-1/2 bottom-12 z-20 pointer-events-none transform -translate-x-1/2 px-4 py-2 bg-rose-900 dark:bg-rose-950/95 border border-rose-500 text-rose-100 dark:text-rose-200 text-xs font-extrabold rounded-full shadow-2xl backdrop-blur-md animate-fly-popup flex items-center gap-1.5 whitespace-nowrap";
+          feedback.innerText = answerState.feedbackMsg || (wasRight ? "Correct!" : "Keep going!");
           qCard.appendChild(feedback);
 
           if (q.explanation) {
             const exp = document.createElement("div");
             exp.className = "p-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs rounded-lg border border-slate-200 dark:border-slate-800 mt-2 animate-float-in";
-            exp.innerHTML = `<strong class="text-emerald-600 dark:text-emerald-400">Explanation:</strong> ${q.explanation}`;
+            exp.innerHTML = `<strong class="${wasRight ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">Explanation:</strong> ${q.explanation}`;
             qCard.appendChild(exp);
           }
         }
@@ -1465,6 +1682,9 @@
 
       const text = input.value.trim();
       const q = activeQuestions[qIdx];
+      const previous = userAnswers[qIdx] || {};
+      const attemptNumber = (Number(previous.attempts) || 0) + 1;
+      const isRetry = attemptNumber > 1;
 
       btn.disabled = true;
       btn.innerHTML = `<span>Checking</span>`;
@@ -1499,22 +1719,38 @@
         if (evalRes && evalRes.busy) {
           alert("The AI examiner is very busy right now. Your answer is still in the box. Please try again in a minute.");
           btn.disabled = false;
-          btn.innerHTML = `<span>✨ Check your answer</span>`;
+          btn.innerHTML = `<span>${isRetry ? "✨ Check again" : "✨ Check your answer"}</span>`;
           return;
         }
 
         if (evalRes.error) {
           alert("Evaluation Error: " + evalRes.error);
           btn.disabled = false;
-          btn.innerHTML = `<span>✨ Check with AI Examiner</span>`;
+          btn.innerHTML = `<span>${isRetry ? "✨ Check again" : "✨ Check with AI Examiner"}</span>`;
           return;
         }
 
+        const maxMarks = Number(evalRes.maxMarks || q.maxMarks || 4);
+        const marksAwarded = Number(evalRes.marksAwarded || 0);
+        const firstAttempt = !isRetry;
+        const firstAttemptMarks = firstAttempt
+          ? marksAwarded
+          : Number(previous.firstAttemptMarks) || 0;
+        const firstAttemptMax = firstAttempt
+          ? maxMarks
+          : Number(previous.firstAttemptMax) || maxMarks;
+
         userAnswers[qIdx] = {
           text: text,
-          marksAwarded: evalRes.marksAwarded || 0,
-          maxMarks: evalRes.maxMarks || q.maxMarks || 4,
-          eval: evalRes
+          marksAwarded: marksAwarded,
+          maxMarks: maxMarks,
+          eval: evalRes,
+          attempts: attemptNumber,
+          retried: isRetry,
+          awaitingRetry: false,
+          firstAttemptMarks: firstAttemptMarks,
+          firstAttemptMax: firstAttemptMax,
+          firstTryCorrect: firstAttempt ? (maxMarks > 0 && marksAwarded >= maxMarks) : (previous.firstTryCorrect === true)
         };
 
         lockedQuestions[qIdx] = true;
@@ -1540,14 +1776,77 @@
     function chooseAnswer(qIdx, selectedOptId, correctOptId) {
       if (lockedQuestions[qIdx]) return;
 
+      const previous = userAnswers[qIdx] || {};
+      if (previous.awaitingRetry) return;       // read the hint first, then press "Let's try that again"
+
       stopQuestionTimer();
 
+      const attempts = (Number(previous.attempts) || 0) + 1;
       const isCorrect = selectedOptId === correctOptId;
-      const msgList = isCorrect ? PRAISE_MESSAGES : ENCOURAGEMENT_MESSAGES;
-      const feedbackMsg = msgList[Math.floor(Math.random() * msgList.length)];
 
-      userAnswers[qIdx] = { selected: selectedOptId, feedbackMsg };
-      lockedQuestions[qIdx] = true;
+      if (isCorrect) {
+        const firstTryCorrect = attempts === 1;
+        userAnswers[qIdx] = {
+          selected: selectedOptId,
+          correct: true,
+          attempts: attempts,
+          firstTryCorrect: firstTryCorrect,
+          retried: attempts > 1,
+          feedbackMsg: firstTryCorrect
+            ? PRAISE_MESSAGES[Math.floor(Math.random() * PRAISE_MESSAGES.length)]
+            : "Got it on the second try! 💪"
+        };
+        lockedQuestions[qIdx] = true;
+      } else if (attempts === 1) {
+        // First miss: do not reveal the answer. Give a hint and let the student try once more.
+        userAnswers[qIdx] = {
+          selected: selectedOptId,
+          correct: false,
+          attempts: attempts,
+          firstTryCorrect: false,
+          retried: false,
+          awaitingRetry: true,
+          feedbackMsg: "Let's try that again"
+        };
+      } else {
+        // Second miss: show the answer and the explanation, then move on.
+        userAnswers[qIdx] = {
+          selected: selectedOptId,
+          correct: false,
+          attempts: attempts,
+          firstTryCorrect: false,
+          retried: true,
+          awaitingRetry: false,
+          feedbackMsg: ENCOURAGEMENT_MESSAGES[Math.floor(Math.random() * ENCOURAGEMENT_MESSAGES.length)]
+        };
+        lockedQuestions[qIdx] = true;
+      }
+
+      renderQuizQuestions();
+      loadQuizIndex();
+    }
+
+    function startRetry(qIdx) {
+      const previous = userAnswers[qIdx];
+      if (!previous || !previous.awaitingRetry) return;
+
+      userAnswers[qIdx] = Object.assign({}, previous, {
+        selected: null,
+        awaitingRetry: false
+      });
+
+      renderQuizQuestions();
+    }
+
+    function startWrittenRetry(qIdx) {
+      if (!lockedQuestions[qIdx]) return;
+
+      const previous = userAnswers[qIdx] || {};
+      lockedQuestions[qIdx] = false;
+      userAnswers[qIdx] = Object.assign({}, previous, {
+        retried: true,
+        awaitingRetry: false
+      });
 
       renderQuizQuestions();
       loadQuizIndex();
@@ -1584,6 +1883,12 @@
         alert(`Review finished!\n${rightCount} of ${results.length} correct.` + (cleared > 0
           ? `\n${cleared} question${cleared === 1 ? "" : "s"} cleared from your list.`
           : `\nThese stay on your list until you get them right. Keep going!`));
+
+        if (out && out.xp) {
+          renderRankCard(out.xp);
+          showXpToast(out.xp, false);
+        }
+
         closeQuizModal();
         loadMissedSummary();
         return;
@@ -1641,21 +1946,44 @@
         scoreDetails = `${scoreCount}/${activeQuestions.length} correct (${percent}%)`;
       }
 
-      alert(`Quiz Completed!\nOverall Score: ${scoreDetails}`);
-
+      const attemptSummary = collectAttemptSummary();
       const isMini = activeQuiz && activeQuiz.quizId === "BUS_MINI_QOTD";
+      const medalEligible = !isMini && percent === 100 && attemptSummary.firstTryPerfect;
+
+      const medalLine = medalEligible
+        ? "\n🏅 Perfect first try — medal earned!"
+        : (percent === 100
+          ? "\n💪 You reached 100%, but a medal needs every answer right on the first try."
+          : "");
+
+      alert(`Quiz Completed!\nOverall Score: ${scoreDetails}${medalLine}`);
+
       const selectedPaper = cardPaperSelections[activeQuiz?.quizId] || "P1";
       const targetQuizId = (selectedPaper === "P2" && activeQuiz?.quizId) ? `${activeQuiz.quizId}_P2` : (activeQuiz ? activeQuiz.quizId : "QUIZ");
 
+      const attemptFields = {
+        firstTryPerfect: attemptSummary.firstTryPerfect,
+        firstTryRight: attemptSummary.firstTryRight,
+        totalQuestions: attemptSummary.totalQuestions,
+        retriedCount: attemptSummary.retriedCount,
+        questionResults: attemptSummary.questionResults
+      };
+
+      let savedResponse = null;
+
       if (isMini && typeof recordStreakActivity === "function") {
-        await recordStreakActivity({ quizId: "BUS_MINI_QOTD", score: percent });
+        savedResponse = await recordStreakActivity({
+          quizId: "BUS_MINI_QOTD",
+          score: percent,
+          extra: Object.assign({}, attemptFields, collectMissedAndRight())
+        });
       } else {
         const resultBody = Object.assign({
           quizId: targetQuizId,
           score: percent,
           isQOTD: false,
           type: "regular"
-        }, collectMissedAndRight());
+        }, attemptFields, collectMissedAndRight());
 
         if (window.OfflineQueue) {
           // If there is no connection the result waits on this device and is sent later
@@ -1664,11 +1992,22 @@
             alert("There is no connection right now.\nYour result is saved on this device and will be sent automatically when you are back online.");
           } else if (outcome.status === "rejected") {
             console.warn("Result was not saved:", outcome.response && outcome.response.error);
+          } else if (outcome.status === "saved") {
+            savedResponse = outcome.response;
           }
         } else {
-          const saved = await API.call("submitResult", resultBody);
-          if (saved && saved.error) console.warn("Result was not saved:", saved.error);
+          savedResponse = await API.call("submitResult", resultBody);
+          if (savedResponse && savedResponse.error) {
+            console.warn("Result was not saved:", savedResponse.error);
+            savedResponse = null;
+          }
         }
+      }
+
+      // Show the effort reward straight away. The server has already saved it.
+      if (savedResponse && savedResponse.xp) {
+        renderRankCard(savedResponse.xp);
+        showXpToast(savedResponse.xp, savedResponse.isFirstTry100 === true || medalEligible);
       }
 
       closeQuizModal();
@@ -1677,6 +2016,7 @@
         await loadTeacherData();
       } else {
         await loadStudentStats();
+        loadMyProgress();
       }
       loadQuizIndex();
       loadMissedSummary();
@@ -1692,6 +2032,58 @@
 
     function escapeMissed(text) {
       return String(text == null ? "" : text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // A small summary of how the quiz went. It powers XP and the first-try-only medal.
+    function collectAttemptSummary() {
+      const results = [];
+      let firstTryRight = 0;
+      let retriedCount = 0;
+
+      (activeQuestions || []).forEach((q, idx) => {
+        const a = userAnswers[idx] || {};
+        const isMcq = q.options && q.options.length > 0 && q.options[0].text;
+        const locked = !!lockedQuestions[idx];
+
+        let correct = false;
+        let firstTry = false;
+        let marks = 0;
+        let maxMarks = 0;
+
+        if (isMcq) {
+          correct = locked && a.selected === q.correctOption;
+          firstTry = locked && a.firstTryCorrect === true;
+        } else {
+          maxMarks = Number(a.maxMarks || q.maxMarks || 4);
+          marks = Number(a.marksAwarded) || 0;
+          correct = locked && maxMarks > 0 && marks >= maxMarks;
+          firstTry = locked &&
+            Number(a.firstAttemptMax) > 0 &&
+            Number(a.firstAttemptMarks) >= Number(a.firstAttemptMax);
+        }
+
+        if (firstTry) firstTryRight++;
+        if (a.retried === true) retriedCount++;
+
+        results.push({
+          question: String(q.question || "").slice(0, 2000),
+          kind: isMcq ? "mcq" : "written",
+          correct: correct,
+          firstTry: firstTry,
+          retried: a.retried === true,
+          marks: isMcq ? 0 : marks,
+          maxMarks: isMcq ? 0 : maxMarks,
+          difficulty: q.difficulty || ""
+        });
+      });
+
+      return {
+        questionResults: results,
+        firstTryRight: firstTryRight,
+        totalQuestions: results.length,
+        retriedCount: retriedCount,
+        firstTryPerfect: results.length > 0 && results.every(function (r) { return r.firstTry === true; })
+      };
     }
 
     // Which questions of the quiz just finished were missed and which were right (the server checks them against the real quiz)
