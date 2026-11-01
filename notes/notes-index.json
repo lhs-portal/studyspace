@@ -1857,7 +1857,7 @@
   {
     "id": "economics-4-1-government-macroeconomic-intervention",
     "subject": "Economics",
-    "unit": "Government and the Macroeconomy",
+    "unit": "4. Government and the Macroeconomy",
     "title": "4.1 Government macroeconomic intervention",
     "keywords": [
       "government",
@@ -1898,7 +1898,7 @@
   {
     "id": "economics-4-2-fiscal-policy",
     "subject": "Economics",
-    "unit": "Government and the Macroeconomy",
+    "unit": "4. Government and the Macroeconomy",
     "title": "4.2 Fiscal policy",
     "keywords": [
       "fiscal",
@@ -1954,7 +1954,7 @@
   {
     "id": "economics-4-3-monetary-policy",
     "subject": "Economics",
-    "unit": "Government and the Macroeconomy",
+    "unit": "4. Government and the Macroeconomy",
     "title": "4.3 Monetary policy",
     "keywords": [
       "monetary",
@@ -1995,7 +1995,7 @@
   {
     "id": "economics-4-4-supply-side-policy",
     "subject": "Economics",
-    "unit": "Government and the Macroeconomy",
+    "unit": "4. Government and the Macroeconomy",
     "title": "4.4 Supply-side policy",
     "keywords": [
       "supply",
@@ -2036,7 +2036,7 @@
   {
     "id": "economics-4-5-economic-growth",
     "subject": "Economics",
-    "unit": "Government and the Macroeconomy",
+    "unit": "4. Government and the Macroeconomy",
     "title": "4.5 Economic growth",
     "keywords": [
       "economic",
@@ -2087,7 +2087,7 @@
   {
     "id": "economics-4-6-employment-and-unemployment",
     "subject": "Economics",
-    "unit": "Government and the Macroeconomy",
+    "unit": "4. Government and the Macroeconomy",
     "title": "4.6 Employment and unemployment",
     "keywords": [
       "employment",
@@ -2138,7 +2138,7 @@
   {
     "id": "economics-4-7-inflation",
     "subject": "Economics",
-    "unit": "Government and the Macroeconomy",
+    "unit": "4. Government and the Macroeconomy",
     "title": "4.7 Inflation",
     "keywords": [
       "inflation",
@@ -2185,62 +2185,6 @@
         "id": "h.mf3ifadt1p3v"
       }
     ]
-  },
-  {
-    "id": "travel-tourism-1-1-the-nature-of-the-economic-problem",
-    "subject": "Travel & Tourism",
-    "unit": "6 Sixth Unit",
-    "title": "1.1 The nature of the economic problem",
-    "keywords": [
-      "nature",
-      "economic",
-      "problem",
-      "economics",
-      "social",
-      "science",
-      "describes",
-      "factors",
-      "determine",
-      "production",
-      "distribution",
-      "consumption",
-      "goods",
-      "services",
-      "resources"
-    ],
-    "filePath": "notes/travel-tourism-1-1-the-nature-of-the-economic-problem.html",
-    "headings": [
-      {
-        "level": 2,
-        "text": "1. 1.1 jhgkutgvliujb;igl",
-        "id": "h.p9c7lsk5ax6j"
-      }
-    ]
-  },
-  {
-    "id": "travel-tourism-1-2-the-factors-of-production",
-    "subject": "Travel & Tourism",
-    "unit": "6 Sixth Unit",
-    "title": "1.2 The Factors of Production",
-    "keywords": [
-      "factors",
-      "production",
-      "resources",
-      "called",
-      "especially",
-      "business",
-      "land",
-      "natural",
-      "economy",
-      "includes",
-      "surface",
-      "earth",
-      "lakes",
-      "rivers",
-      "forests"
-    ],
-    "filePath": "notes/travel-tourism-1-2-the-factors-of-production.html",
-    "headings": []
   },
   {
     "id": "travel-tourism-introduction-to-the-main-travel-and-tourism-definitions-and-concepts",
