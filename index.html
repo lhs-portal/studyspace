@@ -78,6 +78,85 @@
     .animate-float-in {
       animation: floatInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
+
+    /* ------------------------------------------------------------------ */
+    /* XP ring, profile panel and after-quiz reward popup                  */
+    /* ------------------------------------------------------------------ */
+
+    .xp-ring {
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+    .xp-ring circle {
+      transition: stroke-dashoffset 1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .profile-panel {
+      top: 4.5rem;
+      right: 1rem;
+      width: 21.5rem;
+      max-height: calc(100vh - 5.5rem);
+      border-radius: 1rem;
+      overscroll-behavior: contain;
+      animation: profilePanelIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .profile-panel-handle { display: none; }
+
+    @keyframes profilePanelIn {
+      from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes profileSheetIn {
+      from { opacity: 0; transform: translateY(100%); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (min-width: 1024px) {
+      .profile-panel {
+        right: max(1.5rem, calc((100vw - 80rem) / 2 + 1.5rem));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .profile-panel {
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        max-height: 88vh;
+        border-radius: 1.5rem 1.5rem 0 0;
+        animation: profileSheetIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .profile-panel-handle { display: flex; }
+    }
+
+    @keyframes rewardCardIn {
+      0% { opacity: 0; transform: translateY(18px) scale(0.94); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .animate-reward-in { animation: rewardCardIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+    @keyframes xpPop {
+      0% { opacity: 0; transform: translateY(10px) scale(0.6); }
+      60% { opacity: 1; transform: translateY(-4px) scale(1.08); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .animate-xp-pop { animation: xpPop 0.5s 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+    @keyframes softSparkle {
+      0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+      45% { opacity: 0.9; transform: scale(1) rotate(20deg); }
+    }
+    .xp-sparkle { animation: softSparkle 2.4s ease-in-out infinite; }
+    .xp-sparkle-2 { animation-delay: 0.5s; }
+    .xp-sparkle-3 { animation-delay: 1s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .xp-ring circle { transition-duration: 0.001s; }
+      .profile-panel, .animate-reward-in, .animate-xp-pop, .xp-sparkle { animation-duration: 0.001s; animation-delay: 0s; }
+    }
   </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen antialiased flex flex-col transition-colors duration-200">
@@ -85,27 +164,135 @@
   <!-- TOP NAVBAR -->
   <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
         <img 
           src="logo.png" 
           alt="Hithadhoo School Logo" 
-          class="h-10 w-10 object-contain rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-0.5"
-          onerror="this.onerror=null; this.outerHTML='<div class=\'h-10 w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm\'>HS</div>';"
+          class="h-9 w-9 sm:h-10 sm:w-10 object-contain rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-0.5"
+          onerror="this.onerror=null; this.outerHTML='<div class=\'h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xs sm:text-sm\'>HS</div>';"
         />
         <div>
           <div class="flex items-center gap-2">
-            <span class="font-bold text-slate-900 dark:text-white text-lg sm:text-xl tracking-tight">Hithadhoo School</span>
+            <span class="font-bold text-slate-900 dark:text-white text-[13px] min-[370px]:text-[15px] sm:text-xl tracking-tight whitespace-nowrap">Hithadhoo School</span>
           </div>
           <p class="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hidden sm:block">Studyspace</p>
         </div>
       </div>
 
       <!-- TOP BANNER RIGHT SIDE -->
-      <div id="navUserSection" class="flex items-center gap-3">
-        <div id="userProfileTag" class="text-right"></div>
+      <div id="navUserSection" class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+        <div id="userProfileTag" class="text-right min-w-0"></div>
+
+        <!-- Profile icon with the XP ring around it -->
+        <button
+          id="profileBtn"
+          onclick="toggleProfilePanel(event)"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-label="Open my XP profile"
+          title="My XP profile"
+          class="hidden relative h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900"
+        >
+          <svg class="xp-ring absolute inset-0 h-full w-full" viewBox="0 0 44 44" aria-hidden="true">
+            <defs>
+              <linearGradient id="profileRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#34d399" />
+                <stop offset="100%" stop-color="#14b8a6" />
+              </linearGradient>
+            </defs>
+            <circle cx="22" cy="22" r="19" fill="none" stroke="currentColor" class="text-slate-200 dark:text-slate-800" stroke-width="3.5"></circle>
+            <circle id="headerRing" cx="22" cy="22" r="19" fill="none" stroke="url(#profileRingGrad)" stroke-width="3.5" stroke-linecap="round"
+              stroke-dasharray="119.38" stroke-dashoffset="119.38"></circle>
+          </svg>
+          <span id="profileInitials" class="absolute inset-[5px] rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center text-[12px] font-extrabold ring-2 ring-white dark:ring-slate-900">S</span>
+          <span id="profileLevelBadge" class="absolute -bottom-0.5 -right-0.5 h-[17px] w-[17px] sm:h-[18px] sm:w-[18px] rounded-full bg-amber-400 text-slate-950 text-[9px] font-extrabold items-center justify-center ring-2 ring-white dark:ring-slate-900 hidden" title="Rank">1</span>
+        </button>
       </div>
     </div>
   </header>
+
+  <!-- MY XP PROFILE PANEL (opens from the profile icon) -->
+  <div id="profileBackdrop" class="hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-[2px]" onclick="closeProfilePanel()"></div>
+
+  <div id="profilePanel" class="profile-panel hidden fixed z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="profilePanelName">
+    <div class="profile-panel-handle justify-center pt-2.5 pb-1">
+      <span class="h-1.5 w-10 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+    </div>
+
+    <div class="relative p-4 pb-3 bg-gradient-to-br from-emerald-50 via-white to-white dark:from-emerald-950/60 dark:via-slate-900 dark:to-slate-900 border-b border-slate-100 dark:border-slate-800">
+      <button onclick="closeProfilePanel()" class="absolute top-3 right-3 h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs" aria-label="Close profile">✕</button>
+
+      <div class="flex items-center gap-3">
+        <span class="relative block h-16 w-16 shrink-0">
+          <svg class="xp-ring absolute inset-0 h-16 w-16" viewBox="0 0 64 64" aria-hidden="true">
+            <defs>
+              <linearGradient id="panelRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#34d399" />
+                <stop offset="100%" stop-color="#14b8a6" />
+              </linearGradient>
+            </defs>
+            <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" class="text-slate-200 dark:text-slate-800" stroke-width="5"></circle>
+            <circle id="panelRing" cx="32" cy="32" r="28" fill="none" stroke="url(#panelRingGrad)" stroke-width="5" stroke-linecap="round"
+              stroke-dasharray="175.93" stroke-dashoffset="175.93"></circle>
+          </svg>
+          <span id="profilePanelAvatar" class="absolute inset-[7px] rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center text-lg font-extrabold ring-2 ring-white dark:ring-slate-900">S</span>
+          <span id="profilePanelBadge" class="absolute -bottom-0.5 -right-0.5 h-6 w-6 rounded-full bg-amber-400 text-slate-950 text-[10px] font-extrabold flex items-center justify-center ring-2 ring-white dark:ring-slate-900" title="Rank">1</span>
+        </span>
+
+        <div class="min-w-0">
+          <div id="profilePanelName" class="text-sm font-extrabold text-slate-900 dark:text-white truncate">Student</div>
+          <div class="mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300">
+            <span class="text-[10px]">🏅</span>
+            <span id="rankName" class="text-[10px] font-extrabold uppercase tracking-wider">Beginner</span>
+          </div>
+          <div class="mt-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            <span id="rankXp" class="text-base font-extrabold text-slate-900 dark:text-white">0 XP</span> total
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-4 space-y-3">
+      <div>
+        <div class="flex items-center justify-between gap-2 text-[11px] font-bold">
+          <span id="profileNextLabel" class="text-slate-700 dark:text-slate-200">Next: Novice</span>
+          <span id="rankNext" class="text-emerald-600 dark:text-emerald-400">60 XP to go</span>
+        </div>
+        <div class="mt-1.5 h-2.5 w-full rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+          <div id="rankProgressBar" class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-700" style="width: 0%"></div>
+        </div>
+        <div class="mt-1 flex items-center justify-between text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+          <span id="profileRankMin">0 XP</span>
+          <span id="profileRankMax">60 XP</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2">
+        <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-center">
+          <div class="text-sm font-extrabold text-slate-900 dark:text-white"><span id="profileToday">0</span><span class="text-[9px] text-slate-400 font-bold">/<span id="profileTodayCap">300</span></span></div>
+          <div class="text-[9px] font-bold uppercase tracking-wider text-slate-400">XP today</div>
+        </div>
+        <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-center">
+          <div class="text-sm font-extrabold text-slate-900 dark:text-white"><span id="profileStreak">0</span> <span class="text-xs">🔥</span></div>
+          <div class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Day streak</div>
+        </div>
+        <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-center">
+          <div id="profileMedals" class="text-sm font-extrabold text-slate-900 dark:text-white">0</div>
+          <div class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Medals</div>
+        </div>
+      </div>
+
+      <div class="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 px-3 py-2.5">
+        <p class="text-[10px] font-semibold text-emerald-800 dark:text-emerald-200/90 leading-relaxed">
+          Your rank grows with steady practice. Medals are only for a perfect score with every answer right on the <span class="font-extrabold">first try</span>.
+        </p>
+      </div>
+
+      <button onclick="closeProfilePanel(); openLeaderboardModal()" class="w-full py-2 rounded-xl text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+        View leaderboard →
+      </button>
+    </div>
+  </div>
 
   <!-- LOGIN MODAL -->
   <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -169,30 +356,6 @@
         </div>
         <div class="px-3 py-1.5 rounded-xl bg-emerald-200/60 dark:bg-emerald-900/40 border border-emerald-400 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold w-max">
           🚀 Beat your personal best!
-        </div>
-      </div>
-
-      <!-- RANK / XP CARD (students only; hidden until the server answers) -->
-      <div id="rankCard" class="hidden p-3.5 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-amber-500/10 border border-amber-500/20">🏅</div>
-            <div>
-              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Your Rank</div>
-              <div class="text-sm font-extrabold text-slate-900 dark:text-white">
-                <span id="rankName">Beginner</span>
-                <span id="rankXp" class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 ml-1">0 XP</span>
-              </div>
-            </div>
-          </div>
-          <div id="rankNext" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">60 XP to Novice</div>
-        </div>
-        <div class="mt-2.5 w-full h-2 bg-slate-200 dark:bg-slate-900 rounded-full overflow-hidden border border-slate-300 dark:border-slate-800">
-          <div id="rankProgressBar" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
-        </div>
-        <div class="mt-1 flex items-center justify-between gap-2 text-[10px] text-slate-400 dark:text-slate-500">
-          <span id="rankToday">0 / 300 XP today</span>
-          <span>Every question counts.</span>
         </div>
       </div>
 
@@ -474,6 +637,83 @@
     <div class="text-[11px] font-semibold text-emerald-200/90 mt-0.5" id="xpToastSub"></div>
   </div>
 
+  <!-- AFTER-QUIZ XP REWARD POPUP -->
+  <div id="xpRewardOverlay" class="hidden fixed inset-0 z-[80] bg-slate-950/70 backdrop-blur-sm items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="rewardTitle">
+    <div id="xpRewardCard" class="w-full max-w-[350px] max-h-[92vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl animate-reward-in">
+
+      <div class="relative px-5 pt-6 pb-5 text-center bg-gradient-to-b from-emerald-100 via-emerald-50 to-white dark:from-emerald-950/80 dark:via-emerald-950/40 dark:to-slate-900 border-b border-emerald-200/70 dark:border-emerald-900/40">
+        <button onclick="closeXpReward()" class="absolute top-3 right-3 h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-800 text-xs" aria-label="Close reward">✕</button>
+
+        <span class="xp-sparkle absolute top-5 left-7 text-amber-400 text-sm">✦</span>
+        <span class="xp-sparkle xp-sparkle-2 absolute top-9 right-9 text-emerald-400 text-xs">✦</span>
+        <span class="xp-sparkle xp-sparkle-3 absolute top-16 left-12 text-teal-400 text-[10px]">✦</span>
+
+        <p id="rewardKicker" class="text-[10px] font-extrabold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-300">Quiz complete</p>
+
+        <div class="relative mx-auto mt-4 h-[132px] w-[132px]">
+          <svg class="xp-ring absolute inset-0 h-full w-full" viewBox="0 0 132 132" aria-hidden="true">
+            <defs>
+              <linearGradient id="rewardRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#34d399" />
+                <stop offset="100%" stop-color="#14b8a6" />
+              </linearGradient>
+            </defs>
+            <circle cx="66" cy="66" r="58" fill="none" stroke="currentColor" class="text-emerald-900/10 dark:text-slate-800" stroke-width="9"></circle>
+            <circle id="rewardRing" cx="66" cy="66" r="58" fill="none" stroke="url(#rewardRingGrad)" stroke-width="9" stroke-linecap="round"
+              stroke-dasharray="364.42" stroke-dashoffset="364.42"></circle>
+          </svg>
+          <div class="absolute inset-[13px] rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex flex-col items-center justify-center ring-4 ring-white dark:ring-slate-900">
+            <span id="rewardRankName" class="text-[10px] font-bold uppercase tracking-wider text-emerald-100/90">Beginner</span>
+            <span id="rewardInitials" class="text-2xl font-extrabold leading-tight">S</span>
+          </div>
+
+          <div id="rewardXpChip" class="animate-xp-pop absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-sm font-extrabold shadow-lg shadow-amber-500/30">
+            +0 XP
+          </div>
+        </div>
+
+        <h3 id="rewardTitle" class="mt-5 text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">Great work!</h3>
+        <p id="rewardSub" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">Quiz finished.</p>
+
+        <div id="medalBanner" class="hidden mt-3 items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-800 dark:text-amber-300">
+          <span class="text-base">🏅</span>
+          <span class="text-[11px] font-extrabold">Perfect first try — medal earned!</span>
+        </div>
+      </div>
+
+      <div class="p-5 space-y-3">
+        <div class="flex items-end justify-between gap-2">
+          <div>
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Total XP</div>
+            <div class="text-xl font-extrabold text-slate-900 dark:text-white"><span id="rewardTotal">0</span> <span class="text-xs font-bold text-slate-400">XP</span></div>
+          </div>
+          <div class="text-right">
+            <div id="rewardRankNow" class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Beginner</div>
+            <div id="rewardToNext" class="text-[10px] font-semibold text-slate-400">60 XP to Novice</div>
+          </div>
+        </div>
+
+        <div class="h-3 w-full rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+          <div id="rewardBar" class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-700" style="width: 0%"></div>
+        </div>
+
+        <div class="flex items-center justify-between text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+          <span>Today: <span id="rewardToday" class="font-bold text-slate-600 dark:text-slate-300">0</span> / <span id="rewardTodayCap">300</span> XP</span>
+          <span id="rewardRankNote" class="text-emerald-600 dark:text-emerald-400 font-bold">+0 XP added</span>
+        </div>
+
+        <div id="rewardRetryNote" class="hidden rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 px-3 py-2 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+          Retries still earn XP, but medals need every answer right on the <span class="font-extrabold text-slate-700 dark:text-slate-200">first try</span>.
+        </div>
+
+        <div class="pt-1 space-y-2">
+          <button onclick="closeXpReward()" class="w-full py-2.5 rounded-xl text-xs font-extrabold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition">Back to quizzes</button>
+          <button onclick="closeXpReward(); openProfilePanel()" class="w-full py-2 rounded-xl text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">See my profile</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- FOOTER WITH THEME TOGGLE & SIGNOUT BUTTON -->
   <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500 dark:text-slate-500 mt-auto">
     <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -548,7 +788,10 @@
     /* ------------------------------------------------------------------ */
 
     let myProgress = null;
+    let myMedals = 0;
     let xpToastTimer = null;
+    let xpRewardTimer = null;
+    let xpRewardCountTimer = null;
 
     const RETRY_HINTS = {
       business: "Find the key business term in the question. Eliminate one option that does not fit the case, then choose the best match.",
@@ -573,41 +816,116 @@
       return "Read the question again and underline the key word. Eliminate one option you know is wrong, then choose the best match.";
     }
 
-    function renderRankCard(progress) {
-      const card = document.getElementById("rankCard");
-      if (!card) return;
+    function getInitials(name) {
+      const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) return "S";
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    }
 
-      if (!progress || progress.error || progress.role === "teacher") {
-        card.classList.add("hidden");
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = value;
+    }
+
+    function setRingPercent(id, circumference, percent) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const p = Math.max(0, Math.min(100, Number(percent) || 0));
+      el.setAttribute("stroke-dashoffset", String(circumference - (circumference * p / 100)));
+    }
+
+    function updateXpRings(percent) {
+      setRingPercent("headerRing", 119.38, percent);
+      setRingPercent("panelRing", 175.93, percent);
+    }
+
+    function setProfileUiVisible(show) {
+      const btn = document.getElementById("profileBtn");
+      if (btn) btn.classList.toggle("hidden", !show);
+      if (!show) closeProfilePanel();
+    }
+
+    function getCurrentStreak() {
+      try {
+        if (typeof getStreakState === "function") {
+          const live = getStreakState();
+          if (live && live.streak !== undefined) return Math.max(0, Number(live.streak) || 0);
+        }
+      } catch (err) {
+        // Fall back to the session copy below.
+      }
+      return Math.max(0, Number((userStreakData && userStreakData.streak) || 0));
+    }
+
+    function updateProfileExtras() {
+      setText("profileStreak", getCurrentStreak());
+      setText("profileMedals", Math.max(0, Number(myMedals) || 0));
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* RANK / XP CARD                                                      */
+    /* ------------------------------------------------------------------ */
+
+    function renderRankCard(progress) {
+      if (!progress || progress.error) return;
+      if (progress.role === "teacher") {
+        setProfileUiVisible(false);
         return;
       }
 
       myProgress = progress;
 
-      const rank = progress.rank || { name: "Beginner" };
+      const rank = progress.rank || { name: "Beginner", index: 0, minXp: 0 };
       const next = progress.nextRank;
       const totalXp = Number(progress.totalXp) || 0;
       const xpInto = Number(progress.xpIntoRank) || 0;
       const xpFor = Number(progress.xpForNextRank) || 0;
       const percent = Math.max(0, Math.min(100, Number(progress.progressPercent) || 0));
       const today = Math.max(0, Number(progress.xpToday) || 0);
-      const cap = Math.max(1, Number(progress.dailyCap) || 300);
+      const name = userName || commonName || currentUser || "Student";
+      const initials = getInitials(name);
 
-      document.getElementById("rankName").innerText = rank.name;
-      document.getElementById("rankXp").innerText = totalXp + " XP";
-      document.getElementById("rankNext").innerText = next
-        ? Math.max(0, xpFor - xpInto) + " XP to " + next.name
-        : "Top rank reached 🎉";
-      document.getElementById("rankProgressBar").style.width = percent + "%";
-      document.getElementById("rankToday").innerText = today + " / " + cap + " XP today";
+      const remaining = next ? Math.max(0, xpFor - xpInto) : 0;
 
-      card.classList.remove("hidden");
+      setText("rankName", rank.name || "Beginner");
+      setText("rankXp", totalXp + " XP");
+      setText("rankNext", next ? remaining + " XP to go" : "Top rank reached 🎉");
+      setText("profileNextLabel", next ? "Next: " + next.name : "Top rank reached 🎉");
+      setText("profileRankMin", (Number(rank.minXp) || 0) + " XP");
+      setText("profileRankMax", next ? next.minXp + " XP" : "Top");
+      setText("profileToday", today);
+      setText("profileTodayCap", Math.max(1, Number(progress.dailyCap) || 300));
+      setText("profilePanelName", name);
+      setText("profileInitials", initials);
+      setText("profilePanelAvatar", initials);
+      setText("rewardInitials", initials);
+
+      const bar = document.getElementById("rankProgressBar");
+      if (bar) bar.style.width = percent + "%";
+
+      updateXpRings(percent);
+      updateProfileExtras();
+
+      const level = (Number(rank.index) || 0) + 1;
+      const headerBadge = document.getElementById("profileLevelBadge");
+      if (headerBadge) {
+        headerBadge.innerText = level;
+        headerBadge.title = rank.name || "Rank";
+        headerBadge.style.display = "flex";
+      }
+      const panelBadge = document.getElementById("profilePanelBadge");
+      if (panelBadge) {
+        panelBadge.innerText = level;
+        panelBadge.title = rank.name || "Rank";
+      }
+
+      setProfileUiVisible(true);
     }
 
     async function loadMyProgress() {
       if (userRole === "teacher") {
-        const card = document.getElementById("rankCard");
-        if (card) card.classList.add("hidden");
+        setProfileUiVisible(false);
         return;
       }
 
@@ -616,6 +934,158 @@
         renderRankCard(data);
       } catch (err) {
         console.warn("Could not load rank progress:", err);
+      }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* PROFILE PANEL                                                       */
+    /* ------------------------------------------------------------------ */
+
+    function openProfilePanel() {
+      if (userRole === "teacher") return;
+
+      const panel = document.getElementById("profilePanel");
+      const backdrop = document.getElementById("profileBackdrop");
+      const btn = document.getElementById("profileBtn");
+      if (!panel) return;
+
+      panel.classList.remove("hidden");
+      if (backdrop) backdrop.classList.remove("hidden");
+      if (btn) btn.setAttribute("aria-expanded", "true");
+      updateProfileExtras();
+      updateXpRings(myProgress ? myProgress.progressPercent : 0);
+
+      // A quiet refresh keeps the number honest if the student practised on another device.
+      loadMyProgress();
+    }
+
+    function closeProfilePanel() {
+      const panel = document.getElementById("profilePanel");
+      const backdrop = document.getElementById("profileBackdrop");
+      const btn = document.getElementById("profileBtn");
+      if (panel) panel.classList.add("hidden");
+      if (backdrop) backdrop.classList.add("hidden");
+      if (btn) btn.setAttribute("aria-expanded", "false");
+    }
+
+    function toggleProfilePanel(event) {
+      if (event) event.stopPropagation();
+      const panel = document.getElementById("profilePanel");
+      if (!panel) return;
+      if (panel.classList.contains("hidden")) openProfilePanel();
+      else closeProfilePanel();
+    }
+
+    document.addEventListener("click", function (e) {
+      const panel = document.getElementById("profilePanel");
+      const btn = document.getElementById("profileBtn");
+      if (!panel || panel.classList.contains("hidden")) return;
+      if (panel.contains(e.target) || (btn && btn.contains(e.target))) return;
+      closeProfilePanel();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      closeProfilePanel();
+      closeXpReward();
+    });
+
+    /* ------------------------------------------------------------------ */
+    /* AFTER-QUIZ XP POPUP                                                 */
+    /* ------------------------------------------------------------------ */
+
+    function showXpReward(progress, isMedal, meta) {
+      const overlay = document.getElementById("xpRewardOverlay");
+      if (!overlay || !progress || progress.error) return;
+
+      const gained = Math.max(0, Number(progress.awarded) || 0);
+      const total = Math.max(0, Number(progress.totalXp) || 0);
+      const rank = progress.rank || { name: "Beginner" };
+      const next = progress.nextRank;
+      const percent = Math.max(0, Math.min(100, Number(progress.progressPercent) || 0));
+      const today = Math.max(0, Number(progress.xpToday) || 0);
+      const info = meta || {};
+      const before = info.before && info.before.rank && progress.rank && info.before.rank.key === progress.rank.key
+        ? info.before
+        : null;
+
+      const beforeTotal = before ? Math.max(0, Number(before.totalXp) || 0) : Math.max(0, total - gained);
+      const beforeToday = before ? Math.max(0, Number(before.xpToday) || 0) : Math.max(0, today - gained);
+      const beforePercent = before
+        ? Math.max(0, Math.min(100, Number(before.progressPercent) || 0))
+        : (gained > 0 ? Math.max(0, percent - 6) : percent);
+
+      const retried = Math.max(0, Number(info.retried) || 0);
+      // A retry can earn XP, never a medal, even if a caller says otherwise.
+      isMedal = isMedal === true && retried === 0;
+      const name = commonName || (userName ? userName.split(" ")[0] : "");
+      const toNext = next ? Math.max(0, (Number(progress.xpForNextRank) || 0) - (Number(progress.xpIntoRank) || 0)) : 0;
+
+      setText("rewardKicker", isMedal ? "Perfect quiz" : (gained > 0 ? "Quiz complete" : "Practice saved"));
+      setText("rewardTitle", name ? "Great work, " + name + "!" : "Great work!");
+      setText("rewardSub", (typeof info.score === "number" ? "You scored " + info.score + "%. " : "") +
+        (gained > 0 ? "Keep the streak going." : "No new XP this time. Try another unit to keep earning."));
+      setText("rewardXpChip", gained > 0 ? "+" + gained + " XP" : "Saved");
+      setText("rewardTotal", beforeTotal);
+      setText("rewardToday", beforeToday);
+      setText("rewardTodayCap", Math.max(1, Number(progress.dailyCap) || 300));
+      setText("rewardRankName", rank.name || "Beginner");
+      setText("rewardRankNow", rank.name || "Beginner");
+      setText("rewardInitials", getInitials(userName || commonName || "Student"));
+      setText("rewardToNext", next ? toNext + " XP to " + next.name : "Top rank reached 🎉");
+      setText("rewardRankNote", gained > 0 ? "+" + gained + " XP added" : "No new XP this time");
+
+      const medal = document.getElementById("medalBanner");
+      if (medal) medal.style.display = isMedal ? "flex" : "none";
+
+      const retryNote = document.getElementById("rewardRetryNote");
+      if (retryNote) retryNote.classList.toggle("hidden", retried === 0);
+
+      const ring = document.getElementById("rewardRing");
+      if (ring) ring.setAttribute("stroke-dashoffset", String(364.42 - (364.42 * beforePercent / 100)));
+      const bar = document.getElementById("rewardBar");
+      if (bar) bar.style.width = beforePercent + "%";
+
+      overlay.classList.remove("hidden");
+      overlay.classList.add("flex");
+
+      if (xpRewardTimer) clearTimeout(xpRewardTimer);
+      if (xpRewardCountTimer) clearInterval(xpRewardCountTimer);
+
+      // Let the card appear first, then let the ring and numbers move.
+      xpRewardTimer = setTimeout(function () {
+        if (ring) ring.setAttribute("stroke-dashoffset", String(364.42 - (364.42 * percent / 100)));
+        if (bar) bar.style.width = percent + "%";
+        setText("rewardToday", today);
+        setText("rewardToNext", next ? toNext + " XP to " + next.name : "Top rank reached 🎉");
+
+        let shown = beforeTotal;
+        const step = Math.max(1, Math.ceil(Math.max(1, total - beforeTotal) / 18));
+        xpRewardCountTimer = setInterval(function () {
+          shown += step;
+          if (shown >= total) {
+            shown = total;
+            clearInterval(xpRewardCountTimer);
+            xpRewardCountTimer = null;
+          }
+          setText("rewardTotal", shown);
+        }, 34);
+      }, 380);
+    }
+
+    function closeXpReward() {
+      const overlay = document.getElementById("xpRewardOverlay");
+      if (overlay) {
+        overlay.classList.add("hidden");
+        overlay.classList.remove("flex");
+      }
+      if (xpRewardTimer) {
+        clearTimeout(xpRewardTimer);
+        xpRewardTimer = null;
+      }
+      if (xpRewardCountTimer) {
+        clearInterval(xpRewardCountTimer);
+        xpRewardCountTimer = null;
       }
     }
 
@@ -1010,11 +1480,22 @@
       
       tag.innerHTML = `
         <div class="text-xs font-bold text-slate-900 dark:text-white flex items-center justify-end">
-          <span id="inlineStreakTarget"></span>
-          <span>${displayName}</span>
+          <span id="inlineStreakTarget" class="shrink-0"></span>
+          <span class="truncate max-w-[56px] min-[370px]:max-w-[90px] sm:max-w-none" title="${displayName}">${displayName}</span>
         </div>
         <div class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">${userTitle || userRole}</div>
       `;
+
+      const profileBtn = document.getElementById("profileBtn");
+      if (profileBtn) {
+        const showProfile = userRole !== "teacher";
+        profileBtn.classList.toggle("hidden", !showProfile);
+        const initials = getInitials(userName || commonName || "");
+        setText("profileInitials", initials);
+        setText("profilePanelAvatar", initials);
+        setText("profilePanelName", userName || displayName);
+        if (!showProfile) closeProfilePanel();
+      }
 
       document.getElementById("welcomeTitle").innerText = `Welcome ${commonName}!`;
       const randomQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
@@ -1093,10 +1574,15 @@
           document.getElementById("statAttempts").innerText = studentStat.attemptsCount || 0;
           document.getElementById("statRank").innerText = `#${studentIndex + 1}`;
 
+          myMedals = Math.max(0, Number(studentStat.firstTry100s) || 0);
+          updateProfileExtras();
+
           if (typeof renderInlineStreak === "function") renderInlineStreak();
           
         } else {
           document.getElementById("statRank").innerText = "#--";
+          myMedals = 0;
+          updateProfileExtras();
         }
       } catch (e) { console.error(e); }
     }
@@ -1956,7 +2442,9 @@
           ? "\n💪 You reached 100%, but a medal needs every answer right on the first try."
           : "");
 
-      alert(`Quiz Completed!\nOverall Score: ${scoreDetails}${medalLine}`);
+      // Remember where the student was before this quiz, so the reward popup
+      // can show the bar moving forward.
+      const beforeProgress = myProgress;
 
       const selectedPaper = cardPaperSelections[activeQuiz?.quizId] || "P1";
       const targetQuizId = (selectedPaper === "P2" && activeQuiz?.quizId) ? `${activeQuiz.quizId}_P2` : (activeQuiz ? activeQuiz.quizId : "QUIZ");
@@ -2004,13 +2492,22 @@
         }
       }
 
+      // Close the quiz first so the reward popup has the screen to itself.
+      closeQuizModal();
+
       // Show the effort reward straight away. The server has already saved it.
       if (savedResponse && savedResponse.xp) {
+        const isMedal = (savedResponse.isFirstTry100 === true || medalEligible) && attemptSummary.retriedCount === 0;
         renderRankCard(savedResponse.xp);
-        showXpToast(savedResponse.xp, savedResponse.isFirstTry100 === true || medalEligible);
+        showXpReward(savedResponse.xp, isMedal, {
+          score: percent,
+          retried: attemptSummary.retriedCount,
+          before: beforeProgress
+        });
+      } else {
+        // Older server or an offline save: keep the plain summary.
+        alert(`Quiz Completed!\nOverall Score: ${scoreDetails}${medalLine}`);
       }
-
-      closeQuizModal();
 
       if (userRole === "teacher") {
         await loadTeacherData();
