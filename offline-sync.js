@@ -97,11 +97,18 @@
    *   "rejected" - the server answered with a refusal (response.error says why); it is not kept
    */
   async function submit(email, payload) {
+    // The quiz page makes one id per attempt. Reusing it means a repeated send of the
+    // same attempt is recognised by the server instead of being saved a second time.
+    const attemptId = typeof payload.submissionId === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(payload.submissionId)
+      ? payload.submissionId
+      : '';
+
     const item = {
       id: newId(),
       email: normalise(email),
       action: 'submitResult',
       payload: Object.assign({}, payload),
+      submissionId: attemptId || null,
       queuedAt: Date.now(),
       attempts: 0
     };
@@ -110,7 +117,7 @@
     try { await flush(item.email); } catch (e) { /* ignore */ }
 
     try {
-      const res = await API.call(item.action, Object.assign({}, item.payload, { submissionId: item.id }));
+      const res = await API.call(item.action, Object.assign({}, item.payload, { submissionId: attemptId || item.id }));
       if (res && res.error) return { status: 'rejected', response: res };
       return { status: 'saved', response: res };
     } catch (err) {
@@ -137,7 +144,12 @@
 
         let res;
         try {
-          res = await API.call(it.action, Object.assign({}, it.payload, { submissionId: it.id, retry: true }));
+          // Keep the attempt id, so a result that was already saved (but whose reply
+          // was lost) is not saved a second time when the queue is flushed.
+          res = await API.call(it.action, Object.assign({}, it.payload, {
+            submissionId: it.submissionId || it.id,
+            retry: true
+          }));
         } catch (err) {
           break;                                   // still offline, or the sign-in has ended: leave the rest for later
         }
