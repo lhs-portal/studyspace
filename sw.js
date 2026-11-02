@@ -1,6 +1,6 @@
 // sw.js - Service Worker for offline capability and immediate cache purging
 
-const CACHE_NAME = 'studyspace-v24'; // Bumped so every phone and laptop picks up the new files
+const CACHE_NAME = 'studyspace-v25'; // Bumped so every phone and laptop picks up the new files
 
 const ASSETS_TO_CACHE = [
   './',
@@ -18,7 +18,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching core assets for v8');
+      console.log('[Service Worker] Caching core assets for v9');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
