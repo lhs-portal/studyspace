@@ -822,6 +822,51 @@
 
     const cardPaperSelections = {};
 
+    /* ------------------------------------------------------------------ */
+    /* SUBJECT CARD COLOURS                                                */
+    /* ------------------------------------------------------------------ */
+    /* Each subject gets two hex colours: [light corner, dark corner].
+       The subject name must match the "subject" column in Quiz_Index.
+       Matching ignores capitals, so "business studies" also works.
+       Add a new line to give a subject its own colour. */
+    const SUBJECT_ICON_COLORS = {
+      "Business": ["#34d399", "#0f766e"],
+      "Economics": ["#fbbf24", "#b45309"],
+      "Accounting": ["#60a5fa", "#1d4ed8"],
+      "Travel and Tourism": ["#22d3ee", "#0e7490"],
+      "Biology": ["#4ade80", "#15803d"],
+      "Chemistry": ["#a78bfa", "#6d28d9"],
+      "Physics": ["#f472b6", "#be185d"],
+      "English": ["#f87171", "#b91c1c"],
+      "Mathematics": ["#818cf8", "#4338ca"],
+      "Dhivehi": ["#2dd4bf", "#0f766e"],
+      "Islam": ["#34d399", "#047857"]
+    };
+
+    // Subjects not listed above pick one of these in turn.
+    const SUBJECT_ICON_FALLBACKS = [
+      ["#34d399", "#0f766e"],
+      ["#60a5fa", "#1d4ed8"],
+      ["#fbbf24", "#b45309"],
+      ["#a78bfa", "#6d28d9"],
+      ["#22d3ee", "#0e7490"],
+      ["#f472b6", "#be185d"]
+    ];
+
+    function getSubjectIconColors(subject) {
+      const wanted = String(subject || "").trim().toLowerCase();
+      const match = Object.keys(SUBJECT_ICON_COLORS).find(function (name) {
+        return name.toLowerCase() === wanted;
+      });
+      if (match) return SUBJECT_ICON_COLORS[match];
+
+      let hash = 0;
+      for (let i = 0; i < wanted.length; i++) {
+        hash = (hash * 31 + wanted.charCodeAt(i)) >>> 0;
+      }
+      return SUBJECT_ICON_FALLBACKS[hash % SUBJECT_ICON_FALLBACKS.length];
+    }
+
     let questionTimer = null;
     let timeLeft = 45;
 
@@ -1921,6 +1966,7 @@
           subjectCard.dataset.subject = subject;
 
           const initial = (subject && subject.trim()) ? subject.trim().charAt(0).toUpperCase() : "S";
+          const iconColors = getSubjectIconColors(subject);
 
           const statChip = (inner, extra) =>
             `<span class="flex-1 min-w-0 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/70 text-[10px] font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap ${extra || ''}">${inner}</span>`;
@@ -1962,7 +2008,7 @@
           subjectCard.innerHTML = `
             <button type="button" class="subject-toggle w-full text-left px-4 py-3" data-subject-toggle="${subject.replace(/"/g, '&quot;')}" aria-expanded="${isOpen ? 'true' : 'false'}">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xs font-extrabold shadow-sm shrink-0">${initial}</div>
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-extrabold shadow-sm shrink-0" style="background: linear-gradient(135deg, ${iconColors[0]}, ${iconColors[1]});">${initial}</div>
                 <div class="min-w-0 flex-1">
                   <h3 class="text-sm font-extrabold text-slate-900 dark:text-white truncate">${subject}</h3>
                   <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${unitStats.total} ${unitStats.total === 1 ? 'unit' : 'units'} · ${unitStats.open} open</p>
