@@ -1272,14 +1272,19 @@
        Names must match the Quiz_Index subject name, ignoring capitals. */
     const SUBJECT_MCQ_SECONDS = {
       "accounting": 90,
-      "economics": 90,
-      "biology": 90,
-      "chemistry": 90,
-      "physics": 90
+      "economics": 60,
+      "travel & tourism": 60,
+      "biology": 60,
+      "chemistry": 60,
+      "physics": 60,
+      "english": 60,
+      "mathematics": 60,
+      "dhivehi": 60,
+      "islam": 60
     };
 
-    const DEFAULT_MCQ_SECONDS = 90;
-    const MCQ_IMAGE_SECONDS = 120;
+    const DEFAULT_MCQ_SECONDS = 60;
+    const MCQ_IMAGE_SECONDS = 90;
 
     function getMcqSecondsFor(subject, paper, hasImage) {
       const name = String(subject || "").trim().toLowerCase();
@@ -2309,9 +2314,14 @@
               id="writtenInput_${idx}" 
               rows="4" 
               ${isLocked ? 'disabled' : ''} 
+              onpaste="return false;"
+              ondrop="return false;"
+              ondragover="return false;"
+              onbeforeinput="if (event.inputType === 'insertFromPaste' || event.inputType === 'insertFromDrop') { event.preventDefault(); return false; }"
               placeholder="Type your structured answer here (include knowledge, application, and reasoning)..."
               class="w-full p-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 outline-none leading-relaxed"
             >${savedData.text || ''}</textarea>
+            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Typing only — pasting is disabled.</p>
           </div>
 
           ${!isLocked ? `
@@ -2329,7 +2339,7 @@
               onclick="startWrittenRetry(${idx})"
               class="w-full py-2.5 px-4 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
             >
-              <span>Let's try again</span>
+              <span>🔄 Let's try that again</span>
             </button>
             <p class="text-[10px] text-slate-500 dark:text-slate-400 text-center">Use the feedback above. A retry earns XP, but a medal needs a perfect first try.</p>
           ` : ''}
@@ -2405,7 +2415,7 @@
 
           const hintBtn = document.createElement("button");
           hintBtn.className = "mt-2.5 w-full py-2 px-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-[11px] rounded-lg transition-all cursor-pointer";
-          hintBtn.innerText = "Let's try again →";
+          hintBtn.innerText = "🔄 Let's try that again →";
           hintBtn.onclick = () => startRetry(idx);
 
           hintBox.appendChild(hintTitle);
