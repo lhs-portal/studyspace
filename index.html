@@ -1263,18 +1263,53 @@
       renderQuizQuestions();
     }
 
+    /* ------------------------------------------------------------------ */
+    /* QUIZ TIMERS                                                         */
+    /* ------------------------------------------------------------------ */
+    /* Seconds for one MCQ on Paper 1, per subject.
+       Change a number here to adjust that subject.
+       Business Studies and every Paper 2 quiz use the defaults below.
+       Names must match the Quiz_Index subject name, ignoring capitals. */
+    const SUBJECT_MCQ_SECONDS = {
+      "accounting": 90,
+      "economics": 90,
+      "biology": 90,
+      "chemistry": 90,
+      "physics": 90
+    };
+
+    const DEFAULT_MCQ_SECONDS = 90;
+    const MCQ_IMAGE_SECONDS = 120;
+
+    function getMcqSecondsFor(subject, paper, hasImage) {
+      const name = String(subject || "").trim().toLowerCase();
+      const isBusiness = name.includes("business");
+      const isPaper2 = String(paper || "P1").toUpperCase() === "P2";
+
+      // Image questions always get a little longer.
+      if (hasImage) return MCQ_IMAGE_SECONDS;
+
+      // Business and Paper 2 keep the normal timer, whatever the map says.
+      if (!isBusiness && !isPaper2) {
+        const match = Object.keys(SUBJECT_MCQ_SECONDS).find(function (key) {
+          return key.toLowerCase() === name;
+        });
+        if (match) return SUBJECT_MCQ_SECONDS[match];
+      }
+
+      return DEFAULT_MCQ_SECONDS;
+    }
+
     function startQuestionTimer() {
       stopQuestionTimer();
 
-      const isAccounting = activeQuiz && activeQuiz.subject && activeQuiz.subject.toLowerCase().includes("account");
-
-      if (isAccounting) {
-        timeLeft = 90;
-      } else {
-        const currentQ = activeQuestions[currentQuestionIndex];
-        const hasImage = currentQ && currentQ.imageUrl && currentQ.imageUrl.trim().length > 0;
-        timeLeft = hasImage ? 90 : 60;
-      }
+      const currentQ = activeQuestions[currentQuestionIndex];
+      const hasImage = currentQ && currentQ.imageUrl && currentQ.imageUrl.trim().length > 0;
+      timeLeft = getMcqSecondsFor(
+        activeQuiz && activeQuiz.subject,
+        activeQuiz && activeQuiz.paper,
+        hasImage
+      );
 
       const timerBox = document.getElementById("timerContainer");
       const timerDisplay = document.getElementById("timerCountdown");
@@ -2133,7 +2168,8 @@
     async function startQuiz(sheetId, subject, title, quizId) {
       // One id per finished quiz attempt. Every send of this attempt uses the same id,
       // so the server can recognise a repeat and never save it twice.
-      activeQuiz = { sheetId, subject, title, quizId, submissionId: newSubmissionId() };
+      // Remember which paper this attempt is on so the timer can treat P2 differently.
+      activeQuiz = { sheetId, subject, title, quizId, paper: cardPaperSelections[quizId] || "P1", submissionId: newSubmissionId() };
       userAnswers = {};
       lockedQuestions = {};
       currentQuestionIndex = 0;
@@ -2293,7 +2329,7 @@
               onclick="startWrittenRetry(${idx})"
               class="w-full py-2.5 px-4 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
             >
-              <span>🔄 Let's try that again</span>
+              <span>Let's try again</span>
             </button>
             <p class="text-[10px] text-slate-500 dark:text-slate-400 text-center">Use the feedback above. A retry earns XP, but a medal needs a perfect first try.</p>
           ` : ''}
@@ -2369,7 +2405,7 @@
 
           const hintBtn = document.createElement("button");
           hintBtn.className = "mt-2.5 w-full py-2 px-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-[11px] rounded-lg transition-all cursor-pointer";
-          hintBtn.innerText = "🔄 Let's try that again →";
+          hintBtn.innerText = "Let's try again →";
           hintBtn.onclick = () => startRetry(idx);
 
           hintBox.appendChild(hintTitle);
