@@ -1,5 +1,5 @@
 /**
- * study-engine.js - Studyspace Study Hub (version 2)
+ * study-engine.js - Studyspace Study Hub (version 3)
  * L. Hithadhoo School
  *
  * What it does
@@ -22,8 +22,8 @@
   /* ======================================================================= */
   var INDEX_URL = 'notes/notes-index.json';
   var FONT_URL = 'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Roboto+Mono:wght@500;600;700&display=swap';
-  var BODY_FONT = "'Montserrat', 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif";
-  var HEADING_FONT = "'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+  var BODY_FONT = "'Montserrat', 'Faruma', 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif";
+  var HEADING_FONT = "'Roboto Mono', 'Faruma', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
   var SIDEBAR_KEY = 'lhs_hub_sidebar';           // remembers whether the sidebar was left open or closed
   var SIDEBAR_WIDTH = 330;                       // pixels
 
@@ -53,6 +53,15 @@
 
   function isTeacher() {
     try { return typeof userRole !== 'undefined' && userRole === 'teacher'; } catch (e) { return false; }
+  }
+
+  /* Thaana is the script used for Dhivehi. Only those characters switch to RTL. */
+  var THAANA_RE = /[\u0780-\u07BF]/;
+  function isDhivehi(value) {
+    return THAANA_RE.test(String(value == null ? '' : value));
+  }
+  function dvClass(value) {
+    return isDhivehi(value) ? ' dv-rtl' : '';
   }
 
   function store(key, value) { try { localStorage.setItem(key, value); } catch (e) { /* ignore */ } }
@@ -89,7 +98,7 @@
       '--sh-code:#0f1829;--sh-shadow:0 12px 34px rgba(0,0,0,.55);}');
 
     c.push(rule('*, *::before, *::after', 'box-sizing:border-box;'));
-    c.push(R + '{position:relative;font-family:"Plus Jakarta Sans",system-ui,sans-serif;color:var(--sh-text);}');
+    c.push(R + '{position:relative;font-family:"Plus Jakarta Sans","Faruma",system-ui,sans-serif;color:var(--sh-text);}');
     c.push(rule('.sh-root', 'display:flex;flex-direction:column;height:100%;width:100%;background:var(--sh-bg);overflow:hidden;'));
     c.push(rule('button', 'font-family:inherit;cursor:pointer;'));
     c.push(rule('button:focus-visible, input:focus-visible, a:focus-visible', 'outline:2px solid var(--sh-accent);outline-offset:2px;'));
@@ -126,7 +135,7 @@
     /* search + syllabus tree */
     c.push(rule('.sh-search', 'position:relative;flex:0 0 auto;padding:14px 14px 10px;'));
     c.push(rule('.sh-search svg', 'position:absolute;left:26px;top:25px;color:var(--sh-muted);pointer-events:none;'));
-    c.push(rule('.sh-search input', 'width:100%;padding:10px 12px 10px 36px;border:1px solid var(--sh-line);border-radius:12px;background:var(--sh-panel);color:var(--sh-text);font:600 12.5px "Plus Jakarta Sans",system-ui,sans-serif;'));
+    c.push(rule('.sh-search input', 'width:100%;padding:10px 12px 10px 36px;border:1px solid var(--sh-line);border-radius:12px;background:var(--sh-panel);color:var(--sh-text);font:600 12.5px "Plus Jakarta Sans","Faruma",system-ui,sans-serif;'));
     c.push(rule('.sh-search input::placeholder', 'color:var(--sh-muted);font-weight:500;'));
     c.push(rule('.sh-search input:focus', 'outline:none;border-color:var(--sh-accent);box-shadow:0 0 0 3px var(--sh-accent-soft);'));
     c.push(rule('.sh-tree', 'flex:1;min-height:0;overflow-y:auto;padding:4px 10px 24px;'));
@@ -231,6 +240,14 @@
     c.push(rule('.sh-embed figcaption a', 'flex:0 0 auto;font-size:.78rem;'));
     c.push(rule('.sh-note video, .sh-note audio', 'display:block;width:100%;margin:1.6rem 0;border-radius:14px;'));
     c.push(rule('.sh-note video', 'background:#000;'));
+
+    /* Dhivehi (Thaana) content is right-aligned without changing the English interface. */
+    c.push(rule('.dv-rtl', 'direction:rtl;text-align:right;'));
+    c.push(rule('.sh-note ul.dv-rtl, .sh-note ol.dv-rtl', 'padding-left:0;padding-right:1.7rem;'));
+    c.push(rule('.sh-note li.dv-rtl', 'padding-left:0;padding-right:.25rem;'));
+    c.push(rule('.sh-note blockquote.dv-rtl', 'border-left:0;border-right:4px solid var(--sh-accent);border-radius:14px 0 0 14px;'));
+    c.push(rule('.sh-note td.dv-rtl, .sh-note th.dv-rtl', 'text-align:right;'));
+    c.push(rule('.sh-item.dv-rtl, .sh-unit-name.dv-rtl, .sh-tab.dv-rtl', 'text-align:right;'));
 
     /* picture viewer */
     c.push(rule('.sh-lightbox', 'position:fixed;inset:0;z-index:2147483000;background:rgba(2,6,23,.93);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out;'));
@@ -629,6 +646,13 @@
       if (/^https?:/i.test(a.getAttribute('href'))) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer'); }
     });
 
+    // 12. Dhivehi (Thaana) blocks read right-to-left, English stays left-to-right
+    Array.prototype.slice.call(body.querySelectorAll('p,li,h1,h2,h3,h4,h5,h6,blockquote,figcaption,td,th,dt,dd,ul,ol')).forEach(function (el) {
+      if (!isDhivehi(el.textContent)) return;
+      el.classList.add('dv-rtl');
+      el.setAttribute('dir', 'rtl');
+    });
+
     return body.innerHTML;
   }
 
@@ -722,7 +746,7 @@
     var tabs = q('.sh-tabs');
     if (!tabs) return;
     tabs.innerHTML = subjects().map(function (s) {
-      return '<button type="button" class="sh-tab" role="tab" data-subject="' + esc(s) + '" aria-selected="' + (s === state.subject ? 'true' : 'false') + '">' + esc(s) + '</button>';
+      return '<button type="button" class="sh-tab' + dvClass(s) + '" role="tab" data-subject="' + esc(s) + '" aria-selected="' + (s === state.subject ? 'true' : 'false') + '">' + esc(s) + '</button>';
     }).join('');
   }
 
@@ -757,10 +781,10 @@
     tree.innerHTML = units.map(function (u) {
       var open = !!query || !!state.openUnits[u] || (state.current && state.current.unit === u && state.current.subject === state.subject);
       return '<section class="sh-unit' + (open ? ' sh-open' : '') + '" data-unit="' + esc(u) + '">' +
-        '<button type="button" class="sh-unit-head" aria-expanded="' + (open ? 'true' : 'false') + '"><span class="sh-unit-name">' + esc(u) + '</span><span class="sh-unit-count">' + byUnit[u].length + '</span>' + ICON.down + '</button>' +
+        '<button type="button" class="sh-unit-head" aria-expanded="' + (open ? 'true' : 'false') + '"><span class="sh-unit-name' + dvClass(u) + '">' + esc(u) + '</span><span class="sh-unit-count">' + byUnit[u].length + '</span>' + ICON.down + '</button>' +
         '<div class="sh-unit-body">' + byUnit[u].map(function (n) {
           var current = state.current && state.current.filePath === n.filePath;
-          return '<button type="button" class="sh-item" data-path="' + esc(n.filePath) + '"' + (current ? ' aria-current="true"' : '') + '>' + esc(n.title) + '</button>';
+          return '<button type="button" class="sh-item' + dvClass(n.title) + '" data-path="' + esc(n.filePath) + '"' + (current ? ' aria-current="true"' : '') + '>' + esc(n.title) + '</button>';
         }).join('') + '</div></section>';
     }).join('');
   }
@@ -790,8 +814,8 @@
     var prev = i > 0 ? list[i - 1] : null, next = i >= 0 && i < list.length - 1 ? list[i + 1] : null;
     if (!prev && !next) return '';
     return '<nav class="sh-pager" aria-label="Previous and next topic">' +
-      (prev ? '<button type="button" class="sh-prev" data-path="' + esc(prev.filePath) + '"><small>&larr; Previous</small><span>' + esc(prev.title) + '</span></button>' : '') +
-      (next ? '<button type="button" class="sh-next" data-path="' + esc(next.filePath) + '"><small>Next &rarr;</small><span>' + esc(next.title) + '</span></button>' : '') +
+      (prev ? '<button type="button" class="sh-prev" data-path="' + esc(prev.filePath) + '"><small>&larr; Previous</small><span' + (isDhivehi(prev.title) ? ' class="dv-rtl"' : '') + '>' + esc(prev.title) + '</span></button>' : '') +
+      (next ? '<button type="button" class="sh-next" data-path="' + esc(next.filePath) + '"><small>Next &rarr;</small><span' + (isDhivehi(next.title) ? ' class="dv-rtl"' : '') + '>' + esc(next.title) + '</span></button>' : '') +
       '</nav>';
   }
 
@@ -1009,7 +1033,7 @@
 
   window.loadStudyHub = loadStudyHub;
   window.initStudyEngine = initStudyEngine;
-  window.StudyHub = { normalizeNote: normalizeNote, parseMedia: parseMedia, state: state, version: 2 };
+  window.StudyHub = { normalizeNote: normalizeNote, parseMedia: parseMedia, state: state, version: 3 };
 
   document.addEventListener('DOMContentLoaded', initStudyEngine);
 })();
