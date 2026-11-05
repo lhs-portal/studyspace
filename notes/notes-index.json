@@ -3021,15 +3021,26 @@
     ]
   },
   {
-    "id": "economics-answer-structure",
+    "id": "economics-exam-skills",
     "subject": "Economics",
     "unit": "Exam Skills",
-    "title": "Answer Structure",
+    "title": "Exam Skills",
     "keywords": [
-      "answer",
-      "structure",
+      "exam",
+      "skills"
+    ],
+    "filePath": "notes/economics-exam-skills.html",
+    "headings": []
+  },
+  {
+    "id": "economics-2-mark-question",
+    "subject": "Economics",
+    "unit": "Exam Skills",
+    "title": "2-mark question",
+    "keywords": [
       "mark",
       "question",
+      "answer",
       "igcse",
       "economics",
       "questions",
@@ -3040,15 +3051,11 @@
       "either",
       "define",
       "term",
-      "precisely"
+      "precisely",
+      "elements"
     ],
-    "filePath": "notes/economics-answer-structure.html",
+    "filePath": "notes/economics-2-mark-question.html",
     "headings": [
-      {
-        "level": 2,
-        "text": "2-mark question",
-        "id": "h.x4edbnnvbfx7"
-      },
       {
         "level": 4,
         "text": "",
@@ -3078,14 +3085,35 @@
         "level": 4,
         "text": "",
         "id": "h.oq5afhjmf1v"
-      },
+      }
+    ]
+  },
+  {
+    "id": "economics-4-mark-questions",
+    "subject": "Economics",
+    "unit": "Exam Skills",
+    "title": "4-mark questions",
+    "keywords": [
+      "mark",
+      "questions",
+      "answer",
+      "igcse",
+      "economics",
+      "consider",
+      "following",
+      "appear",
+      "section",
+      "paper",
+      "common",
+      "command",
+      "terms",
+      "explain",
+      "analyse"
+    ],
+    "filePath": "notes/economics-4-mark-questions.html",
+    "headings": [
       {
         "level": 2,
-        "text": "4-mark questions",
-        "id": "h.1txlvkmfiqcm"
-      },
-      {
-        "level": 3,
         "text": "1. Explain",
         "id": "h.j5qq61yrtjvi"
       },
@@ -3105,7 +3133,7 @@
         "id": "h.ckusmzfwbc03"
       },
       {
-        "level": 3,
+        "level": 2,
         "text": "2. Analyse",
         "id": "h.api12z86z5u8"
       },
@@ -3130,7 +3158,7 @@
         "id": "h.z5r0risft01w"
       },
       {
-        "level": 3,
+        "level": 2,
         "text": "3. Draw",
         "id": "h.f2cyfapz89hs"
       }
