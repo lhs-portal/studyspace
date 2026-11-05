@@ -1411,6 +1411,297 @@
     "headings": []
   },
   {
+    "id": "business-skills-you-need-to-demonstrate",
+    "subject": "Business",
+    "unit": "Exam Skills",
+    "title": "Skills You Need To Demonstrate",
+    "keywords": [
+      "skills",
+      "need",
+      "demonstrate",
+      "knowledge",
+      "gain",
+      "marks",
+      "recognising",
+      "showing",
+      "understanding",
+      "business",
+      "terms",
+      "concepts",
+      "formulas",
+      "theories",
+      "methods"
+    ],
+    "filePath": "notes/business-skills-you-need-to-demonstrate.html",
+    "headings": [
+      {
+        "level": 2,
+        "text": "Knowledge",
+        "id": "h.rlcozhqnnc9k"
+      },
+      {
+        "level": 2,
+        "text": "Application",
+        "id": "h.twn18gavc7nv"
+      },
+      {
+        "level": 2,
+        "text": "Analysis",
+        "id": "h.nu6jj5479jeo"
+      },
+      {
+        "level": 2,
+        "text": "Evaluation",
+        "id": "h.4wbvwjbwugss"
+      },
+      {
+        "level": 2,
+        "text": "Putting it all together",
+        "id": "h.f8n1qpse2jql"
+      }
+    ]
+  },
+  {
+    "id": "business-2-mark-questions",
+    "subject": "Business",
+    "unit": "Exam Skills",
+    "title": "2-Mark Questions",
+    "keywords": [
+      "mark",
+      "questions",
+      "define",
+      "asked",
+      "give",
+      "precise",
+      "meaning",
+      "business",
+      "term",
+      "definition",
+      "include",
+      "elements",
+      "attract",
+      "marks",
+      "example"
+    ],
+    "filePath": "notes/business-2-mark-questions.html",
+    "headings": [
+      {
+        "level": 3,
+        "text": "Define questions",
+        "id": "h.rzuqnsry1n0o"
+      },
+      {
+        "level": 4,
+        "text": "Example",
+        "id": "h.mvecftg6zwjt"
+      },
+      {
+        "level": 3,
+        "text": "Calculate questions",
+        "id": "h.edj9kopuellu"
+      },
+      {
+        "level": 4,
+        "text": "Example",
+        "id": "h.z78sfmdajj6s"
+      },
+      {
+        "level": 2,
+        "text": "",
+        "id": "h.i4ee8qy1r7m5"
+      },
+      {
+        "level": 2,
+        "text": "State or Identify questions",
+        "id": "h.afnggkofrgg6"
+      },
+      {
+        "level": 4,
+        "text": "Example",
+        "id": "h.6g2towm12swi"
+      }
+    ]
+  },
+  {
+    "id": "business-4-mark-questions",
+    "subject": "Business",
+    "unit": "Exam Skills",
+    "title": "4-Mark Questions",
+    "keywords": [
+      "mark",
+      "questions",
+      "state",
+      "identify",
+      "need",
+      "either",
+      "name",
+      "select",
+      "recognise",
+      "four",
+      "distinct",
+      "points",
+      "express",
+      "clear",
+      "terms"
+    ],
+    "filePath": "notes/business-4-mark-questions.html",
+    "headings": [
+      {
+        "level": 3,
+        "text": "State or Identify questions",
+        "id": "h.vyf52sh0z0jv"
+      },
+      {
+        "level": 3,
+        "text": "Example",
+        "id": "h.hy5cicmsuc1z"
+      },
+      {
+        "level": 2,
+        "text": "Outline questions",
+        "id": "h.tetcx0m7u8gb"
+      },
+      {
+        "level": 3,
+        "text": "Example",
+        "id": "h.5u7gatzcei2b"
+      }
+    ]
+  },
+  {
+    "id": "business-6-mark-questions",
+    "subject": "Business",
+    "unit": "Exam Skills",
+    "title": "6-Mark Questions",
+    "keywords": [
+      "mark",
+      "questions",
+      "guidance",
+      "explain",
+      "achieve",
+      "marks",
+      "follows",
+      "valid",
+      "knowledge",
+      "point",
+      "maximum",
+      "relevant",
+      "application",
+      "made",
+      "analytical"
+    ],
+    "filePath": "notes/business-6-mark-questions.html",
+    "headings": [
+      {
+        "level": 3,
+        "text": "Guidance",
+        "id": "h.oob0mryxu3n4"
+      },
+      {
+        "level": 3,
+        "text": "Example",
+        "id": "h.nug6vczbronq"
+      }
+    ]
+  },
+  {
+    "id": "business-8-mark-questions",
+    "subject": "Business",
+    "unit": "Exam Skills",
+    "title": "8-Mark Questions",
+    "keywords": [
+      "mark",
+      "questions",
+      "explain",
+      "asked",
+      "three",
+      "different",
+      "ways",
+      "type",
+      "question",
+      "requires",
+      "slightly",
+      "response",
+      "order",
+      "score",
+      "full"
+    ],
+    "filePath": "notes/business-8-mark-questions.html",
+    "headings": [
+      {
+        "level": 3,
+        "text": "Example 1",
+        "id": "h.azuuaukgzdlb"
+      },
+      {
+        "level": 4,
+        "text": "Guidance",
+        "id": "h.o405yicqfrl3"
+      },
+      {
+        "level": 3,
+        "text": "Example 2",
+        "id": "h.mzx3zlqaspdo"
+      },
+      {
+        "level": 4,
+        "text": "Guidance",
+        "id": "h.lihg59bqxocb"
+      },
+      {
+        "level": 2,
+        "text": "How do I answer a CIE IGCSE Business 8-mark justify question?",
+        "id": "h.8mpcmiw6vih8"
+      },
+      {
+        "level": 3,
+        "text": "Example",
+        "id": "h.ynkj1bo50ian"
+      }
+    ]
+  },
+  {
+    "id": "business-12-mark-questions",
+    "subject": "Business",
+    "unit": "Exam Skills",
+    "title": "12-Mark Questions",
+    "keywords": [
+      "mark",
+      "questions",
+      "appear",
+      "paper",
+      "required",
+      "case",
+      "study",
+      "evidence",
+      "develop",
+      "arguments",
+      "reaching",
+      "justified",
+      "conclusion",
+      "recommendation",
+      "level"
+    ],
+    "filePath": "notes/business-12-mark-questions.html",
+    "headings": [
+      {
+        "level": 3,
+        "text": "The level of response marking grid",
+        "id": "h.2m3nfytlbokh"
+      },
+      {
+        "level": 3,
+        "text": "",
+        "id": "h.tt0wcqu82hky"
+      },
+      {
+        "level": 3,
+        "text": "Example",
+        "id": "h.pnrsn6sxvklc"
+      }
+    ]
+  },
+  {
     "id": "chemistry-unit-1",
     "subject": "Chemistry",
     "unit": "Unit 1",
@@ -2531,6 +2822,389 @@
         "level": 2,
         "text": "4.7.5 Policies to control inflation",
         "id": "h.mf3ifadt1p3v"
+      }
+    ]
+  },
+  {
+    "id": "economics-5-1-living-standards",
+    "subject": "Economics",
+    "unit": "5 Economic Development",
+    "title": "5.1 Living Standards",
+    "keywords": [
+      "living",
+      "standards",
+      "indicators",
+      "real",
+      "capita",
+      "human",
+      "development",
+      "index",
+      "head",
+      "economic",
+      "sustainable",
+      "increase",
+      "country",
+      "typically",
+      "characterised"
+    ],
+    "filePath": "notes/economics-5-1-living-standards.html",
+    "headings": [
+      {
+        "level": 2,
+        "text": "5.1.1 Indicators of Living Standards",
+        "id": "h.lnocgu6w4qs0"
+      },
+      {
+        "level": 3,
+        "text": "",
+        "id": "h.biyba92z1kp2"
+      },
+      {
+        "level": 3,
+        "text": "Real GDP per head (capita)",
+        "id": "h.ycyvvh3alunb"
+      },
+      {
+        "level": 4,
+        "text": "Difference between real, nominal and per-head GDP",
+        "id": "h.goc635s6x4si"
+      },
+      {
+        "level": 4,
+        "text": "The advantages and disadvantages of real GDP per capital",
+        "id": "h.hbzkou3bgpsr"
+      },
+      {
+        "level": 3,
+        "text": "Human development index (HDI)",
+        "id": "h.hatxqzqmgjho"
+      },
+      {
+        "level": 3,
+        "text": "",
+        "id": "h.d3hql5qutw87"
+      },
+      {
+        "level": 4,
+        "text": "Examples of HDI values",
+        "id": "h.ueh7blkyqgqi"
+      },
+      {
+        "level": 4,
+        "text": "The advantages and disadvantages of using the HDI",
+        "id": "h.mq3f0umr1ke7"
+      },
+      {
+        "level": 2,
+        "text": "5.1.2 Comparing Living Standards",
+        "id": "h.f3ezcoxd52iu"
+      },
+      {
+        "level": 3,
+        "text": "Reasons for differences in living standards",
+        "id": "h.cxc3vef16ib6"
+      },
+      {
+        "level": 4,
+        "text": "Explaining the reasons that affect living standards",
+        "id": "h.1iqvvb174p71"
+      },
+      {
+        "level": 3,
+        "text": "Reasons for differences in income distribution",
+        "id": "h.bi7nrtefl7rr"
+      },
+      {
+        "level": 4,
+        "text": "1. Education and skills",
+        "id": "h.7mo4ywnq2ieb"
+      },
+      {
+        "level": 4,
+        "text": "2. Inheritance and wealth ownership",
+        "id": "h.2sbanud8d2hc"
+      },
+      {
+        "level": 4,
+        "text": "3. Government policy (taxes and welfare)",
+        "id": "h.5qmigoh5s15v"
+      },
+      {
+        "level": 4,
+        "text": "4. Employment opportunities",
+        "id": "h.7f18nx9cl99y"
+      },
+      {
+        "level": 4,
+        "text": "5. Discrimination",
+        "id": "h.kc6qp1tin63c"
+      },
+      {
+        "level": 4,
+        "text": "6. Rural vs urban divide",
+        "id": "h.fv9aam3x87kw"
+      }
+    ]
+  },
+  {
+    "id": "economics-5-2-poverty",
+    "subject": "Economics",
+    "unit": "5 Economic Development",
+    "title": "5.2 Poverty",
+    "keywords": [
+      "poverty",
+      "causes"
+    ],
+    "filePath": "notes/economics-5-2-poverty.html",
+    "headings": [
+      {
+        "level": 2,
+        "text": "5.2.1 The Causes of Poverty",
+        "id": "h.b7h6h0a5flrj"
+      }
+    ]
+  },
+  {
+    "id": "economics-skills-you-need-to-demonstrate",
+    "subject": "Economics",
+    "unit": "Exam Skills",
+    "title": "Skills You Need To Demonstrate",
+    "keywords": [
+      "skills",
+      "need",
+      "demonstrate",
+      "introduction",
+      "igcse",
+      "economics",
+      "exams",
+      "test",
+      "three",
+      "students",
+      "across",
+      "papers",
+      "heavily",
+      "rewarded",
+      "paper"
+    ],
+    "filePath": "notes/economics-skills-you-need-to-demonstrate.html",
+    "headings": [
+      {
+        "level": 2,
+        "text": "An introduction to the skills",
+        "id": "h.eayrbb8vbqm0"
+      },
+      {
+        "level": 2,
+        "text": "AO1 Knowledge and Understanding",
+        "id": "h.k5jlf6noudws"
+      },
+      {
+        "level": 2,
+        "text": "AO2 Analysis",
+        "id": "h.49khwzycfr3t"
+      },
+      {
+        "level": 3,
+        "text": "AO2 using diagrams",
+        "id": "h.pfyy5mtazv1z"
+      },
+      {
+        "level": 2,
+        "text": "AO3 Evaluation",
+        "id": "h.t4ct7cygul9u"
+      },
+      {
+        "level": 2,
+        "text": "Putting the skills together",
+        "id": "h.7tpty4f3zdv8"
+      }
+    ]
+  },
+  {
+    "id": "economics-answer-structure",
+    "subject": "Economics",
+    "unit": "Exam Skills",
+    "title": "Answer Structure",
+    "keywords": [
+      "answer",
+      "structure",
+      "mark",
+      "question",
+      "igcse",
+      "economics",
+      "questions",
+      "consider",
+      "following",
+      "test",
+      "knowledge",
+      "either",
+      "define",
+      "term",
+      "precisely"
+    ],
+    "filePath": "notes/economics-answer-structure.html",
+    "headings": [
+      {
+        "level": 2,
+        "text": "2-mark question",
+        "id": "h.x4edbnnvbfx7"
+      },
+      {
+        "level": 4,
+        "text": "",
+        "id": "h.rn02xabgz80u"
+      },
+      {
+        "level": 4,
+        "text": "",
+        "id": "h.vk8mu7f1vohg"
+      },
+      {
+        "level": 4,
+        "text": "",
+        "id": "h.yewzei4j5zvs"
+      },
+      {
+        "level": 4,
+        "text": "",
+        "id": "h.8l8r6yyhyjt3"
+      },
+      {
+        "level": 4,
+        "text": "",
+        "id": "h.r8altdoe0lc7"
+      },
+      {
+        "level": 4,
+        "text": "",
+        "id": "h.oq5afhjmf1v"
+      },
+      {
+        "level": 2,
+        "text": "4-mark questions",
+        "id": "h.1txlvkmfiqcm"
+      },
+      {
+        "level": 3,
+        "text": "1. Explain",
+        "id": "h.j5qq61yrtjvi"
+      },
+      {
+        "level": 4,
+        "text": "",
+        "id": "h.wgawq8p75n3a"
+      },
+      {
+        "level": 4,
+        "text": "",
+        "id": "h.tol76lkk7jcv"
+      },
+      {
+        "level": 3,
+        "text": "",
+        "id": "h.ckusmzfwbc03"
+      },
+      {
+        "level": 3,
+        "text": "2. Analyse",
+        "id": "h.api12z86z5u8"
+      },
+      {
+        "level": 4,
+        "text": "",
+        "id": "h.kq44v7swa1s1"
+      },
+      {
+        "level": 4,
+        "text": "",
+        "id": "h.j273oyt44a4s"
+      },
+      {
+        "level": 4,
+        "text": "",
+        "id": "h.6c5bzwaudrh6"
+      },
+      {
+        "level": 4,
+        "text": "",
+        "id": "h.z5r0risft01w"
+      },
+      {
+        "level": 3,
+        "text": "3. Draw",
+        "id": "h.f2cyfapz89hs"
+      }
+    ]
+  },
+  {
+    "id": "economics-6-mark-questions",
+    "subject": "Economics",
+    "unit": "Exam Skills",
+    "title": "6-Mark Questions",
+    "keywords": [
+      "mark",
+      "questions",
+      "answer",
+      "igcse",
+      "economics",
+      "discuss",
+      "consider",
+      "following",
+      "question",
+      "requires",
+      "balanced",
+      "explanation",
+      "arguments",
+      "sides",
+      "examiners"
+    ],
+    "filePath": "notes/economics-6-mark-questions.html",
+    "headings": [
+      {
+        "level": 4,
+        "text": "Summary of the 6-mark 'discuss' structure",
+        "id": "h.dqypclnu5pkf"
+      },
+      {
+        "level": 2,
+        "text": "6-mark 'analyse' questions?",
+        "id": "h.4nymmzi4n89o"
+      },
+      {
+        "level": 2,
+        "text": "6-mark 'analyse, using a demand and supply diagram' questions?",
+        "id": "h.3qznumakgrln"
+      }
+    ]
+  },
+  {
+    "id": "economics-8-mark-questions",
+    "subject": "Economics",
+    "unit": "Exam Skills",
+    "title": "8-Mark Questions",
+    "keywords": [
+      "mark",
+      "questions",
+      "answer",
+      "igcse",
+      "economics",
+      "discuss",
+      "consider",
+      "following",
+      "question",
+      "requires",
+      "balanced",
+      "explanation",
+      "arguments",
+      "sides",
+      "issue"
+    ],
+    "filePath": "notes/economics-8-mark-questions.html",
+    "headings": [
+      {
+        "level": 4,
+        "text": "Conjunctions you can use to strengthen your structure",
+        "id": "h.9i2vn8tmsjs7"
       }
     ]
   },
