@@ -7,7 +7,7 @@
   <script src="./api.js?v=1"></script>
   <script src="./streaks.js?v=11"></script>
   <script src="./offline-sync.js?v=11" defer></script>
-  <script src="./study-engine.js?v=2" defer></script>
+  <script src="./study-engine.js?v=3" defer></script>
   <title>Hithadhoo School - Studyspace</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="logo.png" />
@@ -28,7 +28,21 @@
     }
   </script>
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    /* Faruma is only used for Thaana (Dhivehi) characters; English UI text keeps its font. */
+    @font-face {
+      font-family: 'Faruma';
+      src: url('fonts/Faruma.woff2') format('woff2'),
+           url('fonts/Faruma.woff') format('woff');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+      unicode-range: U+0780-07BF, U+200C-200D;
+    }
+    body { font-family: 'Plus Jakarta Sans', 'Faruma', sans-serif; }
+    button, input, textarea, select { font-family: inherit; }
+
+    /* Right-to-left text for Dhivehi content. Applied only to the text itself, not the whole page. */
+    .dv-rtl { direction: rtl; text-align: right; }
     
     .card-shadow { 
       box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); 
@@ -298,14 +312,14 @@
       <div>
         <div class="flex items-center justify-between gap-2 text-[11px] font-bold">
           <span id="profileNextLabel" class="text-slate-700 dark:text-slate-200">Next: Novice</span>
-          <span id="rankNext" class="text-emerald-600 dark:text-emerald-400">60 XP to go</span>
+          <span id="rankNext" class="text-emerald-600 dark:text-emerald-400">600 XP to go</span>
         </div>
         <div class="mt-1.5 h-2.5 w-full rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
           <div id="rankProgressBar" class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-700" style="width: 0%"></div>
         </div>
         <div class="mt-1 flex items-center justify-between text-[10px] font-semibold text-slate-400 dark:text-slate-500">
           <span id="profileRankMin">0 XP</span>
-          <span id="profileRankMax">60 XP</span>
+          <span id="profileRankMax">600 XP</span>
         </div>
       </div>
 
@@ -732,7 +746,7 @@
           </div>
           <div class="text-right">
             <div id="rewardRankNow" class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Beginner</div>
-            <div id="rewardToNext" class="text-[10px] font-semibold text-slate-400">60 XP to Novice</div>
+            <div id="rewardToNext" class="text-[10px] font-semibold text-slate-400">600 XP to Novice</div>
           </div>
         </div>
 
@@ -914,6 +928,30 @@
     function setText(id, value) {
       const el = document.getElementById(id);
       if (el) el.innerText = value;
+    }
+
+    /* Dhivehi (Thaana) detection: only content in this range is treated as RTL. */
+    const THAANA_PATTERN = /[\u0780-\u07BF]/;
+    function hasThaana(value) {
+      return THAANA_PATTERN.test(String(value == null ? "" : value));
+    }
+
+    /* Adds RTL alignment only when the text is Dhivehi; English content is left unchanged. */
+    function applyContentDirection(el, value) {
+      if (!el) return el;
+      const text = value == null ? el.textContent : value;
+      const rtl = hasThaana(text);
+      el.classList.toggle("dv-rtl", rtl);
+      if (rtl) {
+        el.setAttribute("dir", "rtl");
+        el.style.direction = "rtl";
+        el.style.textAlign = "right";
+      } else {
+        el.removeAttribute("dir");
+        el.style.direction = "";
+        el.style.textAlign = "";
+      }
+      return el;
     }
 
     function setRingPercent(id, circumference, percent) {
@@ -1293,19 +1331,19 @@
        Names must match the Quiz_Index subject name, ignoring capitals. */
     const SUBJECT_MCQ_SECONDS = {
       "accounting": 90,
-      "economics": 60,
-      "travel & tourism": 60,
-      "biology": 60,
-      "chemistry": 60,
-      "physics": 60,
-      "english": 60,
-      "mathematics": 60,
-      "dhivehi": 60,
-      "islam": 60
+      "economics": 90,
+      "travel & tourism": 90,
+      "biology": 90,
+      "chemistry": 90,
+      "physics": 90,
+      "english": 90,
+      "mathematics": 90,
+      "dhivehi": 90,
+      "islam": 90
     };
 
-    const DEFAULT_MCQ_SECONDS = 60;
-    const MCQ_IMAGE_SECONDS = 90;
+    const DEFAULT_MCQ_SECONDS = 90;
+    const MCQ_IMAGE_SECONDS = 120;
 
     function getMcqSecondsFor(subject, paper, hasImage) {
       const name = String(subject || "").trim().toLowerCase();
@@ -2340,7 +2378,8 @@
       if (q.caseStudy) {
         const caseBox = document.createElement("div");
         caseBox.className = "p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-xs text-amber-900 dark:text-amber-200 leading-relaxed";
-        caseBox.innerHTML = `<strong class="text-amber-700 dark:text-amber-400 block mb-1">Case Study:</strong>${q.caseStudy}`;
+        caseBox.innerHTML = `<strong class="text-amber-700 dark:text-amber-400 block mb-1">Case Study:</strong><div class="case-study-text">${q.caseStudy}</div>`;
+        applyContentDirection(caseBox.querySelector(".case-study-text"), q.caseStudy);
         qCard.appendChild(caseBox);
       }
 
@@ -2352,6 +2391,7 @@
       const qTitle = document.createElement("h4");
       qTitle.className = "text-sm font-bold text-slate-900 dark:text-white";
       qTitle.innerText = `Q${idx + 1}. ${q.question}${(!hideMarks && q.maxMarks) ? ` [${q.maxMarks} marks]` : ''}`;
+      applyContentDirection(qTitle, q.question);
       qCard.appendChild(qTitle);
 
       if (q.imageUrl) {
@@ -2381,6 +2421,7 @@
             <textarea 
               id="writtenInput_${idx}" 
               rows="4" 
+              dir="auto"
               ${isLocked ? 'disabled' : ''} 
               onpaste="return false;"
               ondrop="return false;"
@@ -2424,6 +2465,9 @@
 
           const evalWrapper = document.createElement("div");
           evalWrapper.innerHTML = evalBoxHtml;
+          evalWrapper.querySelectorAll("p").forEach(function (p) {
+            applyContentDirection(p, p.textContent);
+          });
           qCard.appendChild(evalWrapper);
         }
 
@@ -2445,6 +2489,7 @@
           const btn = document.createElement("button");
           btn.className = "w-full text-left p-3 rounded-xl border text-xs font-medium transition-all bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-white cursor-pointer";
           btn.innerText = `${opt.id}. ${opt.text}`;
+          applyContentDirection(btn, opt.text);
 
           if (lockedQuestions[idx]) {
             btn.disabled = true;
@@ -2505,7 +2550,8 @@
           if (q.explanation) {
             const exp = document.createElement("div");
             exp.className = "p-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs rounded-lg border border-slate-200 dark:border-slate-800 mt-2 animate-float-in";
-            exp.innerHTML = `<strong class="${wasRight ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">Explanation:</strong> ${q.explanation}`;
+            exp.innerHTML = `<strong class="${wasRight ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">Explanation:</strong> <div class="explanation-text mt-1">${q.explanation}</div>`;
+            applyContentDirection(exp.querySelector(".explanation-text"), q.explanation);
             qCard.appendChild(exp);
           }
         }
