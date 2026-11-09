@@ -1,6 +1,15 @@
-// sw.js - Service Worker for offline capability and immediate cache purging
+// sw.js - Service Worker for offline capability, immediate cache purging and push reminders
+//
+// OneSignal shares this same worker (see the matching serviceWorkerPath/scope in index.html).
+// KEEP this import at the top: it is what lets a closed phone receive the 4 PM and 8 PM reminders.
+// The try/catch only protects offline caching if the OneSignal CDN cannot be reached during install.
+try {
+  importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
+} catch (err) {
+  console.warn('[Service Worker] OneSignal push script could not load. Offline caching will still work.', err);
+}
 
-const CACHE_NAME = 'studyspace-v30'; // Bumped so every phone and laptop picks up the new files
+const CACHE_NAME = 'studyspace-v34'; // Bumped so every phone and laptop picks up the new files
 
 const ASSETS_TO_CACHE = [
   './',
@@ -21,7 +30,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching core assets for v30');
+      console.log('[Service Worker] Caching core assets for v34');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
