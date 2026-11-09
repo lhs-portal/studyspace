@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- OneSignal push reminders. The queue must exist before the deferred SDK loads. -->
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+  </script>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script src="./subject-quizzes.js?v=2"></script>
   <script src="./api.js?v=1"></script>
   <script src="./streaks.js?v=11"></script>
@@ -104,6 +109,15 @@
     .xp-ring circle {
       transition: stroke-dashoffset 1s cubic-bezier(0.22, 1, 0.36, 1);
     }
+
+    /* The avatar still taps normally; holding it reveals the quiet photo options. */
+    .avatar-press {
+      touch-action: manipulation;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .avatar-press > * { pointer-events: none; }
 
     .profile-panel {
       top: 4.5rem;
@@ -243,11 +257,12 @@
         <button
           id="profileBtn"
           onclick="toggleProfilePanel(event)"
+          data-avatar-longpress
           aria-haspopup="dialog"
           aria-expanded="false"
           aria-label="Open my XP profile"
           title="My XP profile"
-          class="hidden relative h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900"
+          class="avatar-press hidden relative h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900"
         >
           <svg class="xp-ring absolute inset-0 h-full w-full" viewBox="0 0 44 44" aria-hidden="true">
             <defs>
@@ -261,6 +276,7 @@
               stroke-dasharray="119.38" stroke-dashoffset="119.38"></circle>
           </svg>
           <span id="profileInitials" class="absolute inset-[5px] rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center text-[12px] font-extrabold ring-2 ring-white dark:ring-slate-900">S</span>
+          <img id="profileAvatarImg" alt="" class="hidden absolute inset-[5px] rounded-full object-cover ring-2 ring-white dark:ring-slate-900" style="width: calc(100% - 10px); height: calc(100% - 10px);" onerror="this.classList.add('hidden')">
           <span id="profileLevelBadge" class="absolute -bottom-0.5 -right-0.5 h-[17px] w-[17px] sm:h-[18px] sm:w-[18px] rounded-full bg-amber-400 text-slate-950 text-[9px] font-extrabold items-center justify-center ring-2 ring-white dark:ring-slate-900 hidden" title="Rank">1</span>
         </button>
       </div>
@@ -279,7 +295,7 @@
       <button onclick="closeProfilePanel()" class="absolute top-3 right-3 h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs" aria-label="Close profile">✕</button>
 
       <div class="flex items-center gap-3">
-        <span class="relative block h-16 w-16 shrink-0">
+        <span id="profileAvatarWrap" data-avatar-longpress class="avatar-press relative block h-16 w-16 shrink-0">
           <svg class="xp-ring absolute inset-0 h-16 w-16" viewBox="0 0 64 64" aria-hidden="true">
             <defs>
               <linearGradient id="panelRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -292,6 +308,7 @@
               stroke-dasharray="175.93" stroke-dashoffset="175.93"></circle>
           </svg>
           <span id="profilePanelAvatar" class="absolute inset-[7px] rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center text-lg font-extrabold ring-2 ring-white dark:ring-slate-900">S</span>
+          <img id="profilePanelAvatarImg" alt="" class="hidden absolute inset-[7px] rounded-full object-cover ring-2 ring-white dark:ring-slate-900" style="width: calc(100% - 14px); height: calc(100% - 14px);" onerror="this.classList.add('hidden')">
           <span id="profilePanelBadge" class="absolute -bottom-0.5 -right-0.5 h-6 w-6 rounded-full bg-amber-400 text-slate-950 text-[10px] font-extrabold flex items-center justify-center ring-2 ring-white dark:ring-slate-900" title="Rank">1</span>
         </span>
 
@@ -344,9 +361,50 @@
         </p>
       </div>
 
+      <!-- Push reminders: shown only for students once the app knows who is signed in. -->
+      <div id="reminderCard" class="hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 px-3 py-2.5">
+        <div class="flex items-start gap-2">
+          <span class="text-sm leading-none mt-0.5" aria-hidden="true">🔔</span>
+          <div class="min-w-0 flex-1">
+            <div class="text-[11px] font-extrabold text-slate-800 dark:text-slate-100">Reminders</div>
+            <p id="reminderStatus" class="mt-0.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400 leading-relaxed">Checking this device…</p>
+            <p id="reminderDetail" class="mt-1 text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed"></p>
+          </div>
+        </div>
+        <button id="reminderButton" type="button" onclick="toggleReminders()" class="mt-2 w-full py-1.5 rounded-lg text-[11px] font-bold transition bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700">Turn on reminders</button>
+      </div>
+
       <button onclick="closeProfilePanel(); openLeaderboardModal()" class="w-full py-2 rounded-xl text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
         View leaderboard →
       </button>
+    </div>
+  </div>
+
+  <!-- Quiet photo options (long-press the avatar) -->
+  <div id="avatarMenu" class="hidden fixed z-[70] w-40 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl p-1" role="menu" aria-label="Profile photo options">
+    <button id="avatarMenuUpload" type="button" role="menuitem" onclick="openAvatarPicker(event)" class="w-full text-left px-3 py-2 rounded-lg text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">Upload photo</button>
+    <button id="avatarMenuRemove" type="button" role="menuitem" onclick="removeMyAvatar()" class="hidden w-full text-left px-3 py-2 rounded-lg text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition">Remove photo</button>
+    <button type="button" role="menuitem" onclick="closeAvatarMenu()" class="w-full text-left px-3 py-2 rounded-lg text-[11px] font-semibold text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition">Cancel</button>
+  </div>
+  <input id="avatarFileInput" type="file" accept="image/*" class="hidden" onchange="handleAvatarFile(event)">
+
+  <!-- PROFILE PHOTO PREVIEW (opens after choosing a photo) -->
+  <div id="avatarModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-xs bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800">
+        <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Your profile photo</h3>
+        <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">It is cropped square and saved at 256 × 256.</p>
+      </div>
+
+      <div class="p-5 flex flex-col items-center gap-3">
+        <img id="avatarPreviewImg" alt="Photo preview" class="h-32 w-32 rounded-full object-cover bg-slate-100 dark:bg-slate-800 ring-4 ring-emerald-500/30">
+        <p id="avatarModalMsg" class="hidden text-[11px] font-semibold text-rose-600 dark:text-rose-400 text-center"></p>
+      </div>
+
+      <div class="px-5 pb-5 flex gap-2">
+        <button onclick="closeAvatarModal()" class="flex-1 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition">Cancel</button>
+        <button id="avatarSaveBtn" onclick="saveMyAvatar()" class="flex-1 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition">Save photo</button>
+      </div>
     </div>
   </div>
 
@@ -441,21 +499,18 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       
       <!-- REVIEW MISSED QUESTIONS (students only) -->
-      <div id="missedCard" class="hidden bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow flex-col justify-between">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-sky-500/10 border border-sky-500/20">📚</div>
-            <div>
-              <h3 class="text-sm font-bold text-slate-900 dark:text-white">Missed Questions</h3>
-              <p id="missedCardDesc" class="text-xs text-slate-500 dark:text-slate-400">Loading...</p>
-            </div>
+      <div id="missedCard" class="hidden bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow flex flex-col sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-x-4">
+        <div class="flex items-center gap-3 min-w-0 sm:col-start-1 sm:row-start-1">
+          <div class="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl bg-sky-500/10 border border-sky-500/20">📚</div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Missed Questions</h3>
+            <p id="missedCardDesc" class="text-xs text-slate-500 dark:text-slate-400">Loading...</p>
           </div>
-          <button id="missedStartBtn" onclick="startMissedReview()" class="hidden w-full sm:w-auto px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-sky-500/20 transition cursor-pointer whitespace-nowrap">
-            Review &rarr;
-          </button>
         </div>
-        <div id="missedSubjectChips" class="hidden flex flex-wrap gap-2 mt-4"></div>
-        <p id="missedWrittenNote" class="hidden text-[11px] text-slate-500 dark:text-slate-400 mt-3"></p>
+        <button id="missedStartBtn" onclick="startMissedReview()" class="hidden w-full sm:w-auto mt-4 sm:mt-0 sm:col-start-2 sm:row-start-1 sm:row-span-2 px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-sky-500/20 transition cursor-pointer whitespace-nowrap">
+          Review &rarr;
+        </button>
+        <div id="missedSubjectChips" class="hidden flex flex-wrap gap-2 mt-4 sm:mt-3 sm:col-start-1 sm:row-start-2"></div>
       </div>
 
       <!-- STUDY HUB NAVIGATION CARD -->
@@ -891,6 +946,10 @@
 
     let myProgress = null;
     let myMedals = 0;
+    let myAvatarUrl = "";
+    let myAvatarVersion = 0;
+    let pendingAvatarDataUrl = "";
+    let avatarBusy = false;
     let xpToastTimer = null;
     let xpRewardTimer = null;
     let xpRewardCountTimer = null;
@@ -1092,6 +1151,7 @@
       if (panel) panel.classList.add("hidden");
       if (backdrop) backdrop.classList.add("hidden");
       if (btn) btn.setAttribute("aria-expanded", "false");
+      closeAvatarMenu();
     }
 
     function toggleProfilePanel(event) {
@@ -1112,9 +1172,651 @@
 
     document.addEventListener("keydown", function (e) {
       if (e.key !== "Escape") return;
+      closeAvatarMenu();
       closeProfilePanel();
+      closeAvatarModal();
       closeXpReward();
     });
+
+    /* ------------------------------------------------------------------ */
+    /* PROFILE PHOTO                                                       */
+    /* ------------------------------------------------------------------ */
+
+    function avatarSrc(url, version) {
+      const base = String(url || "");
+      if (!base) return "";
+      if (base.indexOf("data:") === 0) return base;
+      const v = Number(version) || 0;
+      if (!v || /[?&]v=/.test(base)) return base;
+      return base + (base.indexOf("?") === -1 ? "?" : "&") + "v=" + v;
+    }
+
+    // Small avatar + initials fallback, used in the leaderboard and teacher table.
+    function avatarChipHtml(name, url, version) {
+      const initials = escapeMissed(getInitials(name || "Student"));
+      const chip = `<span class="relative inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full overflow-hidden align-middle mr-1.5 bg-gradient-to-br from-emerald-500 to-teal-700 text-white text-[9px] font-extrabold">${initials}`;
+      if (!url) return chip + `</span>`;
+      return chip + `<img src="${escapeMissed(avatarSrc(url, version))}" alt="" loading="lazy" class="absolute inset-0 h-full w-full object-cover" onerror="this.remove()"></span>`;
+    }
+
+    // A short hold on either avatar opens a tiny menu; a normal tap still works as before.
+    const AVATAR_HOLD_MS = 550;
+    const AVATAR_HOLD_SLOP = 10;
+    let avatarHoldTimer = 0;
+    let avatarHoldStart = null;
+    let avatarHoldTarget = null;
+    let avatarHoldFired = false;
+
+    function avatarPressTarget(node) {
+      return node && node.closest ? node.closest("[data-avatar-longpress]") : null;
+    }
+
+    function cancelAvatarHold() {
+      if (avatarHoldTimer) {
+        clearTimeout(avatarHoldTimer);
+        avatarHoldTimer = 0;
+      }
+      avatarHoldStart = null;
+      avatarHoldTarget = null;
+    }
+
+    function openAvatarMenu(anchor, focusFirst) {
+      const menu = document.getElementById("avatarMenu");
+      if (!menu || !anchor) return;
+
+      const removeItem = document.getElementById("avatarMenuRemove");
+      if (removeItem) removeItem.classList.toggle("hidden", !myAvatarUrl);
+
+      menu.classList.remove("hidden");
+      const rect = anchor.getBoundingClientRect();
+      const menuRect = menu.getBoundingClientRect();
+      let left = rect.left + rect.width / 2 - menuRect.width / 2;
+      let top = rect.bottom + 8;
+      if (top + menuRect.height > window.innerHeight - 8) top = rect.top - menuRect.height - 8;
+      left = Math.max(8, Math.min(left, window.innerWidth - menuRect.width - 8));
+      top = Math.max(8, top);
+      menu.style.left = left + "px";
+      menu.style.top = top + "px";
+
+      if (focusFirst) {
+        const first = document.getElementById("avatarMenuUpload");
+        if (first) first.focus();
+      }
+
+      try {
+        if (navigator.vibrate) navigator.vibrate(8);
+      } catch (err) {
+        // A little haptic nudge is optional.
+      }
+    }
+
+    function closeAvatarMenu() {
+      const menu = document.getElementById("avatarMenu");
+      if (menu) menu.classList.add("hidden");
+    }
+
+    document.addEventListener("pointerdown", function (e) {
+      const menu = document.getElementById("avatarMenu");
+      if (menu && !menu.classList.contains("hidden") && !menu.contains(e.target)) closeAvatarMenu();
+
+      const anchor = avatarPressTarget(e.target);
+      if (!anchor) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+
+      cancelAvatarHold();
+      avatarHoldStart = { x: e.clientX, y: e.clientY };
+      avatarHoldTarget = anchor;
+      avatarHoldTimer = setTimeout(function () {
+        avatarHoldTimer = 0;
+        const held = avatarHoldTarget;
+        avatarHoldStart = null;
+        avatarHoldTarget = null;
+        if (!held) return;
+        avatarHoldFired = true;
+        openAvatarMenu(held);
+      }, AVATAR_HOLD_MS);
+    });
+
+    document.addEventListener("pointermove", function (e) {
+      if (!avatarHoldStart) return;
+      if (Math.abs(e.clientX - avatarHoldStart.x) > AVATAR_HOLD_SLOP ||
+          Math.abs(e.clientY - avatarHoldStart.y) > AVATAR_HOLD_SLOP) {
+        cancelAvatarHold();
+      }
+    }, { passive: true });
+
+    ["pointerup", "pointercancel"].forEach(function (name) {
+      document.addEventListener(name, function () {
+        cancelAvatarHold();
+        if (!avatarHoldFired) return;
+        setTimeout(function () { avatarHoldFired = false; }, 700);
+      }, { passive: true });
+    });
+
+    // Swallow the click that follows a long press, so the profile panel does not toggle.
+    document.addEventListener("click", function (e) {
+      if (!avatarHoldFired) return;
+      avatarHoldFired = false;
+      if (avatarPressTarget(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+
+    document.addEventListener("contextmenu", function (e) {
+      const anchor = avatarPressTarget(e.target);
+      if (!anchor) return;
+      e.preventDefault();
+      cancelAvatarHold();
+      avatarHoldFired = true;
+      setTimeout(function () { avatarHoldFired = false; }, 700);
+      openAvatarMenu(anchor, true);
+    });
+
+    window.addEventListener("resize", closeAvatarMenu);
+    window.addEventListener("scroll", closeAvatarMenu, true);
+
+    // Shows the saved photo in the header and profile panel. The initials stay underneath,
+    // so a broken or blocked Drive image simply reveals them again.
+    function applyMyAvatar(url, version) {
+      const source = url ? avatarSrc(url, version) : "";
+      ["profileAvatarImg", "profilePanelAvatarImg"].forEach(function (id) {
+        const img = document.getElementById(id);
+        if (!img) return;
+        if (source) {
+          img.classList.remove("hidden");
+          img.src = source;
+        } else {
+          img.classList.add("hidden");
+          img.removeAttribute("src");
+        }
+      });
+      const removeItem = document.getElementById("avatarMenuRemove");
+      if (removeItem) removeItem.classList.toggle("hidden", !source);
+    }
+
+    function persistAvatarInSession() {
+      try {
+        const raw = localStorage.getItem("lhs_user_session");
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        saved.avatarUrl = myAvatarUrl;
+        saved.avatarVersion = myAvatarVersion;
+        localStorage.setItem("lhs_user_session", JSON.stringify(saved));
+      } catch (err) {
+        // The next whoami refresh will still carry the photo.
+      }
+    }
+
+    function openAvatarPicker(event) {
+      if (event) event.stopPropagation();
+      closeAvatarMenu();
+      const input = document.getElementById("avatarFileInput");
+      if (input) input.click();
+    }
+
+    function avatarDataUrlBytes(dataUrl) {
+      const comma = String(dataUrl || "").indexOf(",");
+      return comma === -1 ? 0 : Math.ceil((dataUrl.length - comma - 1) * 3 / 4);
+    }
+
+    // Crops the middle square, resizes to 256x256 and compresses to a small JPEG.
+    // Canvas re-encoding also removes EXIF/GPS data from phone photos.
+    function imageFileToAvatarDataUrl(file) {
+      return new Promise(function (resolve, reject) {
+        const objectUrl = URL.createObjectURL(file);
+        const image = new Image();
+        image.onload = function () {
+          try {
+            const width = image.naturalWidth || image.width;
+            const height = image.naturalHeight || image.height;
+            const side = Math.min(width, height);
+            if (!side) throw new Error("empty image");
+            const sx = Math.floor((width - side) / 2);
+            const sy = Math.floor((height - side) / 2);
+
+            const canvas = document.createElement("canvas");
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#ffffff";          // transparent PNGs get a clean white background
+            ctx.fillRect(0, 0, 256, 256);
+            ctx.drawImage(image, sx, sy, side, side, 0, 0, 256, 256);
+
+            let dataUrl = "";
+            [0.82, 0.72, 0.62, 0.5].some(function (quality) {
+              dataUrl = canvas.toDataURL("image/jpeg", quality);
+              return avatarDataUrlBytes(dataUrl) <= 78 * 1024;
+            });
+
+            URL.revokeObjectURL(objectUrl);
+            resolve(dataUrl);
+          } catch (err) {
+            URL.revokeObjectURL(objectUrl);
+            reject(err);
+          }
+        };
+        image.onerror = function () {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error("image could not be read"));
+        };
+        image.src = objectUrl;
+      });
+    }
+
+    async function handleAvatarFile(event) {
+      const input = event && event.target;
+      const file = input && input.files && input.files[0];
+      if (input) input.value = "";
+      if (!file) return;
+
+      if (!/^image\//i.test(file.type)) {
+        alert("Please choose a photo from your camera or gallery.");
+        return;
+      }
+      if (file.size > 12 * 1024 * 1024) {
+        alert("That photo is larger than 12 MB. Please choose a smaller one.");
+        return;
+      }
+
+      try {
+        pendingAvatarDataUrl = await imageFileToAvatarDataUrl(file);
+        const preview = document.getElementById("avatarPreviewImg");
+        if (preview) preview.src = pendingAvatarDataUrl;
+        showAvatarModalMessage("");
+        const modal = document.getElementById("avatarModal");
+        if (modal) modal.classList.remove("hidden");
+      } catch (err) {
+        alert("That photo could not be opened. Please try another one.");
+      }
+    }
+
+    function showAvatarModalMessage(message) {
+      const el = document.getElementById("avatarModalMsg");
+      if (!el) return;
+      el.innerText = message || "";
+      el.classList.toggle("hidden", !message);
+    }
+
+    function closeAvatarModal() {
+      const modal = document.getElementById("avatarModal");
+      if (modal) modal.classList.add("hidden");
+      pendingAvatarDataUrl = "";
+      showAvatarModalMessage("");
+      const preview = document.getElementById("avatarPreviewImg");
+      if (preview) preview.removeAttribute("src");
+    }
+
+    async function saveMyAvatar() {
+      if (avatarBusy || !pendingAvatarDataUrl) return;
+      avatarBusy = true;
+      const btn = document.getElementById("avatarSaveBtn");
+      const oldLabel = btn ? btn.innerText : "";
+      if (btn) { btn.innerText = "Saving..."; btn.disabled = true; }
+      showAvatarModalMessage("");
+
+      try {
+        const res = await API.call("setMyAvatar", { image: pendingAvatarDataUrl });
+        if (!res || res.success === false) {
+          showAvatarModalMessage((res && res.error) || "Could not save your photo. Please try again.");
+          return;
+        }
+        myAvatarUrl = res.avatarUrl || pendingAvatarDataUrl;
+        myAvatarVersion = Number(res.avatarVersion) || Date.now();
+        applyMyAvatar(myAvatarUrl, myAvatarVersion);
+        persistAvatarInSession();
+        closeAvatarModal();
+        if (userRole !== "teacher") loadStudentStats();
+      } catch (err) {
+        showAvatarModalMessage("Could not save your photo. Please check your connection and try again.");
+      } finally {
+        avatarBusy = false;
+        if (btn) { btn.innerText = oldLabel || "Save photo"; btn.disabled = false; }
+      }
+    }
+
+    async function removeMyAvatar() {
+      if (avatarBusy) return;
+      closeAvatarMenu();
+
+      avatarBusy = true;
+      const btn = document.getElementById("avatarMenuRemove");
+      if (btn) { btn.innerText = "Removing..."; btn.disabled = true; }
+
+      try {
+        const res = await API.call("clearMyAvatar", {});
+        if (!res || res.success === false) {
+          alert((res && res.error) || "Could not remove your photo. Please try again.");
+          return;
+        }
+        myAvatarUrl = "";
+        myAvatarVersion = 0;
+        applyMyAvatar("");
+        persistAvatarInSession();
+        if (userRole !== "teacher") loadStudentStats();
+      } catch (err) {
+        alert("Could not remove your photo. Please check your connection and try again.");
+      } finally {
+        avatarBusy = false;
+        if (btn) { btn.innerText = "Remove photo"; btn.disabled = false; }
+      }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* PUSH REMINDERS (OneSignal)                                          */
+    /* ------------------------------------------------------------------ */
+
+    // Paste the OneSignal App ID here. The REST API key belongs only in Apps Script
+    // Script Properties (ONESIGNAL_REST_API_KEY), never in this public file.
+    const ONESIGNAL_APP_ID = "PASTE_ONESIGNAL_APP_ID_HERE";
+
+    let oneSignalInstance = null;
+    let oneSignalInitPromise = null;
+    let oneSignalListenersBound = false;
+    let reminderUiBusy = false;
+    let lastReminderSyncKey = "";
+
+    function remindersConfigured() {
+      return !!ONESIGNAL_APP_ID && ONESIGNAL_APP_ID.indexOf("PASTE_") !== 0;
+    }
+
+    function isIosDevice() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    }
+
+    function isStandaloneApp() {
+      return window.navigator.standalone === true ||
+        (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+    }
+
+    function whenOneSignalReady(timeoutMs) {
+      return new Promise(function (resolve) {
+        let settled = false;
+        const timer = setTimeout(function () {
+          if (settled) return;
+          settled = true;
+          resolve(null);
+        }, timeoutMs || 10000);
+
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(function (OneSignal) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(OneSignal);
+        });
+      });
+    }
+
+    function oneSignalWorkerPath() {
+      // OneSignal wants a path from the domain root plus a matching scope.
+      // This works at the domain root and in a GitHub Pages /Studyspace/ folder.
+      const worker = new URL("./sw.js", window.location.href);
+      const scope = new URL("./", window.location.href);
+      return {
+        path: worker.pathname.replace(/^\/+/, ""),
+        scope: scope.pathname
+      };
+    }
+
+    async function initializeOneSignal() {
+      if (!remindersConfigured() || userRole === "teacher") return null;
+      if (oneSignalInstance) return oneSignalInstance;
+      if (oneSignalInitPromise) return oneSignalInitPromise;
+
+      oneSignalInitPromise = (async function () {
+        const OneSignal = await whenOneSignalReady(10000);
+        if (!OneSignal) return null;
+
+        try {
+          const worker = oneSignalWorkerPath();
+          await OneSignal.init({
+            appId: ONESIGNAL_APP_ID,
+            serviceWorkerPath: worker.path,
+            serviceWorkerParam: { scope: worker.scope },
+            autoResubscribe: true,
+            welcomeNotification: { disable: true },
+            promptOptions: {
+              slidedown: {
+                prompts: [{ type: "push", autoPrompt: false }]
+              }
+            }
+          });
+          oneSignalInstance = OneSignal;
+          bindOneSignalListeners(OneSignal);
+          return OneSignal;
+        } catch (err) {
+          console.warn("Could not start push reminders:", err);
+          return null;
+        }
+      })();
+
+      return oneSignalInitPromise;
+    }
+
+    function bindOneSignalListeners(OneSignal) {
+      if (oneSignalListenersBound) return;
+      oneSignalListenersBound = true;
+
+      OneSignal.User.PushSubscription.addEventListener("change", function () {
+        refreshReminderUi();
+        if (currentUser && userRole !== "teacher") syncPushSubscription();
+      });
+
+      OneSignal.Notifications.addEventListener("permissionChange", function () {
+        refreshReminderUi();
+        if (currentUser && userRole !== "teacher") syncPushSubscription();
+      });
+    }
+
+    function reminderButtonClasses(active) {
+      return active
+        ? "mt-2 w-full py-1.5 rounded-lg text-[11px] font-bold transition bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/60 border border-rose-200 dark:border-rose-900/60"
+        : "mt-2 w-full py-1.5 rounded-lg text-[11px] font-bold transition bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-600";
+    }
+
+    function setReminderUi(status, detail, button) {
+      const card = document.getElementById("reminderCard");
+      const statusEl = document.getElementById("reminderStatus");
+      const detailEl = document.getElementById("reminderDetail");
+      const btn = document.getElementById("reminderButton");
+
+      if (card) card.classList.toggle("hidden", !currentUser || userRole === "teacher");
+      if (statusEl) statusEl.innerText = status || "";
+      if (detailEl) detailEl.innerText = detail || "";
+      if (!btn) return;
+
+      btn.classList.toggle("hidden", !button);
+      if (!button) return;
+      btn.innerText = (reminderUiBusy ? "Working… " : "") + button.label;
+      btn.className = reminderButtonClasses(!!button.active);
+      btn.disabled = reminderUiBusy;
+      btn.dataset.active = button.active ? "1" : "";
+    }
+
+    function refreshReminderUi() {
+      if (!currentUser || userRole === "teacher") {
+        const card = document.getElementById("reminderCard");
+        if (card) card.classList.add("hidden");
+        return;
+      }
+
+      if (!remindersConfigured()) {
+        setReminderUi(
+          "Reminders are not set up for this school yet.",
+          "A teacher needs to add the OneSignal App ID before phones can receive reminders.",
+          null
+        );
+        return;
+      }
+
+      if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+        setReminderUi("This browser cannot show reminders.", "Open Studyspace in Chrome, Edge or Safari.", null);
+        return;
+      }
+
+      if (isIosDevice() && !isStandaloneApp()) {
+        setReminderUi(
+          "Add Studyspace to your Home Screen first.",
+          "On iPhone, tap Share → Add to Home Screen, then open it from there and turn reminders on.",
+          null
+        );
+        return;
+      }
+
+      const OneSignal = oneSignalInstance;
+      if (!OneSignal) {
+        setReminderUi("Reminders are unavailable right now.", "Check your connection, then reopen this profile.", null);
+        return;
+      }
+
+      const permission = OneSignal.Notifications.permission;
+      const subscribed = OneSignal.User.PushSubscription.optedIn === true;
+      const subscriptionId = OneSignal.User.PushSubscription.id;
+
+      if (permission === false && window.Notification && window.Notification.permission === "denied") {
+        setReminderUi(
+          "Notifications are blocked for Studyspace.",
+          "Allow notifications in your browser settings, then reopen this profile.",
+          null
+        );
+        return;
+      }
+
+      if (subscribed && subscriptionId) {
+        setReminderUi(
+          "Reminders are on for this device.",
+          "Streak reminder at 8 PM. Due reviews at 4 PM. Nothing is sent when there is nothing to do.",
+          { label: "Turn off reminders", active: true }
+        );
+        return;
+      }
+
+      setReminderUi(
+        "Turn on streak and review reminders.",
+        "A gentle 8 PM nudge if your streak is waiting, and a 4 PM digest when review questions are due.",
+        { label: "Turn on reminders", active: false }
+      );
+    }
+
+    async function syncPushSubscription(force) {
+      if (!currentUser || userRole === "teacher") return;
+      const OneSignal = oneSignalInstance || await initializeOneSignal();
+      if (!OneSignal) return;
+
+      const subscription = OneSignal.User.PushSubscription;
+      const id = subscription.id;
+      const optedIn = subscription.optedIn === true;
+      const key = currentUser + "|" + (id || "") + "|" + (optedIn ? "1" : "0");
+      if (!force && key === lastReminderSyncKey) return;
+      lastReminderSyncKey = key;
+
+      if (!optedIn || !id) return;
+
+      try {
+        await API.call("savePushSubscription", {
+          subscriptionId: id,
+          platform: navigator.platform || "",
+          userAgent: navigator.userAgent || ""
+        });
+      } catch (err) {
+        console.warn("Could not save this device for reminders:", err);
+      }
+    }
+
+    async function detachPushSubscription(subscriptionId) {
+      if (!currentUser) return;
+      const params = {};
+      if (subscriptionId) params.subscriptionId = subscriptionId;
+      try {
+        await API.call("removePushSubscription", params);
+      } catch (err) {
+        console.warn("Could not remove this device from reminders:", err);
+      }
+    }
+
+    async function toggleReminders() {
+      if (reminderUiBusy || !currentUser || userRole === "teacher") return;
+
+      const OneSignal = await initializeOneSignal();
+      if (!OneSignal) {
+        refreshReminderUi();
+        return;
+      }
+
+      reminderUiBusy = true;
+      refreshReminderUi();
+
+      try {
+        const subscription = OneSignal.User.PushSubscription;
+
+        if (subscription.optedIn === true) {
+          await detachPushSubscription(subscription.id);
+          await subscription.optOut();
+          lastReminderSyncKey = "";
+        } else {
+          const granted = await OneSignal.Notifications.requestPermission();
+          const allowed = granted === true || OneSignal.Notifications.permission === true;
+          if (!allowed) {
+            refreshReminderUi();
+            return;
+          }
+          await subscription.optIn();
+          await syncPushSubscription(true);
+        }
+      } catch (err) {
+        console.warn("Could not change reminder settings:", err);
+      } finally {
+        reminderUiBusy = false;
+        refreshReminderUi();
+      }
+    }
+
+    async function initReminders() {
+      if (!currentUser || userRole === "teacher") {
+        refreshReminderUi();
+        return;
+      }
+
+      refreshReminderUi();
+      const OneSignal = await initializeOneSignal();
+      if (!OneSignal) {
+        refreshReminderUi();
+        return;
+      }
+
+      refreshReminderUi();
+      await syncPushSubscription(true);
+    }
+
+    // Runs before sign-out so a shared phone stops showing the previous student's reminders.
+    async function detachRemindersOnLogout() {
+      if (!currentUser || userRole === "teacher") return;
+
+      let OneSignal = oneSignalInstance;
+      if (!OneSignal && oneSignalInitPromise) {
+        OneSignal = await Promise.race([
+          oneSignalInitPromise,
+          new Promise(function (resolve) { setTimeout(function () { resolve(null); }, 1200); })
+        ]);
+      }
+      if (!OneSignal) return;
+
+      const subscription = OneSignal.User.PushSubscription;
+
+      // The session token is still present here; the helper removes only this device.
+      await Promise.race([
+        detachPushSubscription(subscription.id),
+        new Promise(function (resolve) { setTimeout(resolve, 2500); })
+      ]);
+
+      try {
+        await subscription.optOut();
+      } catch (err) {
+        // The next student's opt-in cleans this subscription up on the server.
+      }
+    }
 
     /* ------------------------------------------------------------------ */
     /* AFTER-QUIZ XP POPUP                                                 */
@@ -1573,6 +2275,8 @@
         userTitle = data.title;   
         userName = data.name || "";
         userGradeStream = data.grade || data.gradeStream || "9B";
+        myAvatarUrl = data.avatarUrl || "";
+        myAvatarVersion = Number(data.avatarVersion) || 0;
 
         if (data.commonName) {
           commonName = data.commonName;
@@ -1600,7 +2304,9 @@
           name: userName,
           commonName: commonName,
           gradeStream: userGradeStream,
-          streakData: userStreakData
+          streakData: userStreakData,
+          avatarUrl: myAvatarUrl,
+          avatarVersion: myAvatarVersion
         }));
 
         await initPortalSession();
@@ -1616,6 +2322,7 @@
       document.getElementById("loginModal").classList.add("hidden");
       updateUserUI(userStreakData);
       loadMyProgress();
+      initReminders();
 
       if (typeof initStreakModule === 'function') {
         initStreakModule({
@@ -1682,6 +2389,7 @@
         setText("profileInitials", initials);
         setText("profilePanelAvatar", initials);
         setText("profilePanelName", userName || displayName);
+        applyMyAvatar(myAvatarUrl, myAvatarVersion);
         if (!showProfile) closeProfilePanel();
       }
 
@@ -1698,7 +2406,14 @@
       }
     }
 
-    function logoutUser() {
+    async function logoutUser() {
+      // Stop this device receiving the signed-in student's reminders (shared-phone safety).
+      try {
+        await detachRemindersOnLogout();
+      } catch (err) {
+        // Signing out must never be blocked by a push cleanup failure.
+      }
+
       const savedTheme = localStorage.getItem("lhs_theme");
       const waitingResults = localStorage.getItem("lhs_pending_v2");   // results not sent yet must survive signing out
       localStorage.clear();
@@ -1804,7 +2519,7 @@
               <td class="p-3 text-center font-bold ${idx === 0 ? 'text-amber-500 text-sm' : idx === 1 ? 'text-slate-400' : idx === 2 ? 'text-amber-700' : 'text-slate-500'}">
                 ${idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `#${idx + 1}`}
               </td>
-              <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${nameWithStreak}</td>
+              <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${avatarChipHtml(displayName, r.avatarUrl, r.avatarVersion)}${nameWithStreak}</td>
               <td class="p-3 text-center text-slate-600 dark:text-slate-300"><span class="font-bold text-amber-600 dark:text-amber-300">${xp}</span> <span class="text-[10px]">${rankName}</span></td>
               <td class="p-3 text-center text-amber-600 dark:text-amber-300 font-bold">${r.firstTry100s || 0}</td>
               <td class="p-3 text-center text-slate-600 dark:text-slate-300">${r.attemptsCount || 0}</td>
@@ -1869,7 +2584,7 @@
           tbody.innerHTML += `
             <tr onclick="openStudentAnalytics('${r.email}')" class="border-b border-slate-200 dark:border-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
               <td class="p-3 font-bold text-slate-500">#${idx + 1}</td>
-              <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${nameWithStreak}</td>
+              <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${avatarChipHtml(displayName, r.avatarUrl, r.avatarVersion)}${nameWithStreak}</td>
               <td class="p-3 text-slate-600 dark:text-slate-300"><span class="font-bold text-amber-600 dark:text-amber-300">${xp}</span> <span class="text-[10px]">${rankName}</span></td>
               <td class="p-3 text-slate-600 dark:text-slate-300">${r.attemptsCount || 0}</td>
               <td class="p-3 text-amber-600 dark:text-amber-300">🏅 ${r.firstTry100s || 0}</td>
@@ -2809,24 +3524,51 @@
         const results = activeQuestions.map((q, i) => ({
           quizId: q.reviewQuizId,
           key: q.reviewKey,
-          correct: !!(userAnswers[i] && userAnswers[i].selected === q.correctOption)
+          correct: !!(userAnswers[i] && userAnswers[i].selected === q.correctOption),
+          // Old backends do not send reviewDue; treat those questions as due so the
+          // Version 5 practice save still works until the new backend is deployed.
+          due: q.reviewDue !== false
         }));
         const rightCount = results.filter(r => r.correct).length;
+        const dueResults = results.filter(r => r.due);
+        const practiceCount = results.length - dueResults.length;
 
-        let out;
-        try {
-          out = await API.call("submitMissedReview", { results: results });
-        } catch (err) {
-          console.error(err);
-          activeQuiz.submitting = false;
-          alert("Could not reach the server. Your review was not saved. Please try again.");
-          return;
+        // Only due questions are sent. Scheduled ones are voluntary practice and stay where they are.
+        let out = null;
+        if (dueResults.length > 0) {
+          try {
+            out = await API.call("submitMissedReview", { results: dueResults });
+          } catch (err) {
+            console.error(err);
+            activeQuiz.submitting = false;
+            alert("Could not reach the server. Your review was not saved. Please try again.");
+            return;
+          }
         }
 
-        const cleared = out && typeof out.cleared === "number" ? out.cleared : rightCount;
-        alert(`Review finished!\n${rightCount} of ${results.length} correct.` + (cleared > 0
-          ? `\n${cleared} question${cleared === 1 ? "" : "s"} cleared from your list.`
-          : `\nThese stay on your list until you get them right. Keep going!`));
+        let msg = `${dueResults.length > 0 ? "Review" : "Practice"} finished!\n${rightCount} of ${results.length} correct.`;
+        if (dueResults.length > 0) {
+          const mastered = out && typeof out.mastered === "number" ? out.mastered : 0;
+          const stillDue = out && typeof out.stillDue === "number" ? out.stillDue : 0;
+          const nextDue = out ? out.nextDue : null;
+
+          if (mastered > 0) {
+            msg += `\n${mastered} question${mastered === 1 ? "" : "s"} mastered and retired from your list.`;
+          }
+          if (stillDue > 0) {
+            msg += `\n${stillDue} still due. A short round later today will keep them moving.`;
+          } else if (nextDue) {
+            msg += `\nAll caught up. Next review ${formatReviewDay(nextDue)}.`;
+          } else {
+            msg += "\nAll caught up. Nothing left on your review list.";
+          }
+          if (practiceCount > 0) {
+            msg += `\n${practiceCount} extra question${practiceCount === 1 ? " was" : "s were"} practice only; their review dates did not change.`;
+          }
+        } else {
+          msg += "\nNothing was rescheduled and no XP was added. Your review dates stay the same.";
+        }
+        alert(msg);
 
         if (out && out.xp) {
           renderRankCard(out.xp);
@@ -3119,32 +3861,57 @@
       }
     }
 
+    // Turns the server's ISO date into "today", "tomorrow", "Friday" or "6 Nov".
+    function formatReviewDay(value) {
+      const d = new Date(value);
+      if (!isFinite(d.getTime())) return "";
+      const startOf = (x) => { const y = new Date(x.getTime()); y.setHours(0, 0, 0, 0); return y.getTime(); };
+      const diff = Math.round((startOf(d) - startOf(new Date())) / 86400000);
+      if (diff <= 0) return "today";
+      if (diff === 1) return "tomorrow";
+      if (diff < 7) return d.toLocaleDateString(undefined, { weekday: "long" });
+      return d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+    }
+
     function renderMissedCard() {
       const card = document.getElementById("missedCard");
       const desc = document.getElementById("missedCardDesc");
       const btn = document.getElementById("missedStartBtn");
       const chips = document.getElementById("missedSubjectChips");
-      const note = document.getElementById("missedWrittenNote");
       if (!card || !missedSummary) return;
 
+      const total = missedSummary.total || 0;
       const mcq = missedSummary.mcq || 0;
-      const written = missedSummary.written || 0;
+      // The Version 6 backend sends dueMcq/scheduled. Until it is deployed, fall back to
+      // the old summary shape so the card never claims "All caught up" by mistake.
+      const hasSchedule = typeof missedSummary.dueMcq === "number";
+      const due = hasSchedule ? missedSummary.dueMcq : mcq;
+      const scheduled = hasSchedule ? (missedSummary.scheduled || 0) : 0;
       card.classList.remove("hidden");
 
-      if (mcq > 0) {
-        desc.innerText = `${mcq} question${mcq === 1 ? "" : "s"} waiting for you. Get one right and it leaves your list.`;
-        btn.classList.remove("hidden");
-        btn.disabled = missedBusy;
-        btn.innerText = missedBusy ? "Loading..." : `Start Review (${Math.min(mcq, 10)}) →`;
+      if (due > 0) {
+        desc.innerText = hasSchedule
+          ? `${due} question${due === 1 ? "" : "s"} due today` +
+            (scheduled > 0 ? ` · ${scheduled} scheduled later` : "") + "."
+          : `${due} question${due === 1 ? "" : "s"} to review.`;
+      } else if (total > 0) {
+        const nextLine = missedSummary.nextDue ? ` Next review ${formatReviewDay(missedSummary.nextDue)}.` : "";
+        desc.innerText = "All caught up." + nextLine;
       } else {
-        desc.innerText = written > 0
-          ? "No multiple-choice questions to review right now."
-          : "Nothing to review yet. Questions you get wrong in a quiz will appear here so you can practise them again.";
-        btn.classList.add("hidden");
+        desc.innerText = "Nothing to review yet. Questions you get wrong in a quiz will appear here so you can practise them again.";
       }
 
-      const subjects = (missedSummary.bySubject || []).filter(s => s.mcq > 0);
-      if (mcq > 0 && subjects.length > 1) {
+      if (mcq > 0) {
+        btn.classList.remove("hidden");
+        btn.disabled = missedBusy;
+        btn.innerText = missedBusy ? "Loading..." : "Review →";
+      } else {
+        btn.classList.add("hidden");
+        btn.disabled = false;
+      }
+
+      const subjects = (missedSummary.bySubject || []).filter(s => (s.mcq || 0) > 0);
+      if (subjects.length > 1) {
         chips.classList.remove("hidden");
         chips.innerHTML = subjects.map((s, i) => `
           <button onclick="startMissedReview(${i})" ${missedBusy ? "disabled" : ""} class="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-sky-500 transition cursor-pointer">
@@ -3155,30 +3922,26 @@
         chips.innerHTML = "";
       }
 
-      if (written > 0) {
-        note.classList.remove("hidden");
-        note.innerText = `${written} written question${written === 1 ? " is" : "s are"} saved too. Rewriting them after feedback is coming soon.`;
-      } else {
-        note.classList.add("hidden");
-      }
     }
 
     // subjectIndex: position in the list of chips (leave out to review everything)
+    // Every missed question is offered; only those the server marked as due can move the schedule.
     async function startMissedReview(subjectIndex) {
       if (missedBusy || !missedSummary) return;
 
       let subject = "";
       if (typeof subjectIndex === "number") {
-        const withMcq = (missedSummary.bySubject || []).filter(s => s.mcq > 0);
+        const withMcq = (missedSummary.bySubject || []).filter(s => (s.mcq || 0) > 0);
         subject = withMcq[subjectIndex] ? withMcq[subjectIndex].subject : "";
       }
 
       missedBusy = true;
       renderMissedCard();
       try {
-        const data = await API.call("startMissedReview", { subject: subject, count: 10 });
+        // practice: true asks for every missed question, due ones first
+        const data = await API.call("startMissedReview", { subject: subject, count: 10, practice: true });
         if (!data || data.error || !Array.isArray(data.questions) || data.questions.length === 0) {
-          alert(data && data.error ? data.error : "There are no questions ready to review right now.");
+          alert(data && data.error ? data.error : "You have no missed multiple-choice questions to review yet.");
           return;
         }
         launchReviewQuizModal(data);
@@ -3249,6 +4012,9 @@
         userName = data.name || "";
         userGradeStream = data.grade || userGradeStream;
         if (data.commonName) commonName = data.commonName;
+        myAvatarUrl = data.avatarUrl || "";
+        myAvatarVersion = Number(data.avatarVersion) || 0;
+        applyMyAvatar(myAvatarUrl, myAvatarVersion);
 
         const saved = JSON.parse(localStorage.getItem("lhs_user_session") || "{}");
         saved.role = userRole;
@@ -3256,8 +4022,11 @@
         saved.name = userName;
         saved.commonName = commonName;
         saved.gradeStream = userGradeStream;
+        saved.avatarUrl = myAvatarUrl;
+        saved.avatarVersion = myAvatarVersion;
         localStorage.setItem("lhs_user_session", JSON.stringify(saved));
 
+        initReminders();
         if (roleChanged) location.reload();
       } catch (e) {
         // Offline, or the session ended (the handler above deals with that): keep what we have
@@ -3276,6 +4045,8 @@
           userName = user.name;
           commonName = user.commonName;
           userGradeStream = user.gradeStream || user.grade || "9B";
+          myAvatarUrl = user.avatarUrl || "";
+          myAvatarVersion = Number(user.avatarVersion) || 0;
           if (user.streakData) {
             userStreakData = user.streakData;
           }
