@@ -9,7 +9,7 @@ try {
   console.warn('[Service Worker] OneSignal push script could not load. Offline caching will still work.', err);
 }
 
-const CACHE_NAME = 'studyspace-v36'; // Bumped so every phone and laptop picks up the new files
+const CACHE_NAME = 'studyspace-v37'; // Bumped so every phone and laptop picks up the new files
 
 const ASSETS_TO_CACHE = [
   './',
