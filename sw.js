@@ -9,7 +9,7 @@ try {
   console.warn('[Service Worker] OneSignal push script could not load. Offline caching will still work.', err);
 }
 
-const CACHE_NAME = 'studyspace-v37'; // Bumped so every phone and laptop picks up the new files
+const CACHE_NAME = 'studyspace-v38'; // Bumped so every phone and laptop picks up the new files
 
 const ASSETS_TO_CACHE = [
   './',
@@ -17,7 +17,7 @@ const ASSETS_TO_CACHE = [
   './manifest.json',
   './logo.png',
   './offline-sync.js',
-  './study-engine.js?v=3',
+  './study-engine.js?v=4',
   './fonts/Faruma.woff2',
   './fonts/Faruma.woff',
   './api.js?v=1',
@@ -30,7 +30,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching core assets for v36');
+      console.log('[Service Worker] Caching core assets for v38');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
