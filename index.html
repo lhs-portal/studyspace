@@ -835,9 +835,10 @@
             <circle id="rewardRing" cx="66" cy="66" r="58" fill="none" stroke="url(#rewardRingGrad)" stroke-width="9" stroke-linecap="round"
               stroke-dasharray="364.42" stroke-dashoffset="364.42"></circle>
           </svg>
-          <div class="absolute inset-[13px] rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex flex-col items-center justify-center ring-4 ring-white dark:ring-slate-900">
+          <div class="absolute inset-[13px] overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex flex-col items-center justify-center ring-4 ring-white dark:ring-slate-900">
             <span id="rewardRankName" class="text-[10px] font-bold uppercase tracking-wider text-emerald-100/90">Beginner</span>
             <span id="rewardInitials" class="text-2xl font-extrabold leading-tight">S</span>
+            <img id="rewardAvatarImg" alt="" class="hidden absolute inset-0 h-full w-full object-cover" onerror="this.classList.add('hidden')">
           </div>
 
           <div id="rewardXpChip" class="animate-xp-pop absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-sm font-extrabold shadow-lg shadow-amber-500/30">
@@ -1402,7 +1403,7 @@
     // so a broken or blocked Drive image simply reveals them again.
     function applyMyAvatar(url, version) {
       const source = url ? avatarSrc(url, version) : "";
-      ["profileAvatarImg", "profilePanelAvatarImg"].forEach(function (id) {
+      ["profileAvatarImg", "profilePanelAvatarImg", "rewardAvatarImg"].forEach(function (id) {
         const img = document.getElementById(id);
         if (!img) return;
         if (source) {
@@ -1590,7 +1591,7 @@
 
     // Paste the OneSignal App ID here. The REST API key belongs only in Apps Script
     // Script Properties (ONESIGNAL_REST_API_KEY), never in this public file.
-    const ONESIGNAL_APP_ID = "PASTE_ONESIGNAL_APP_ID_HERE";
+    const ONESIGNAL_APP_ID = "f3866cb9-f9d9-4243-9135-ca999a50702b";
 
     let oneSignalInstance = null;
     let oneSignalInitPromise = null;
