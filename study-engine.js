@@ -1,5 +1,5 @@
 /**
- * study-engine.js - Studyspace Study Hub (version 3)
+ * study-engine.js - Studyspace Study Hub (version 4)
  * L. Hithadhoo School
  *
  * What it does
@@ -686,13 +686,69 @@
     return state.indexLoaded;
   }
 
+  /* ------------------------------------------------------------------ */
+  /* STREAM FILTER                                                       */
+  /* ------------------------------------------------------------------ */
+  /* A student only sees the subjects for their own stream:
+       Business stream (9B, 10B, "Business", ...)  -> Business / Economics / Accounting
+       Science stream  (9S, 10S, "Science", ...)   -> Biology / Chemistry / Physics
+     Shared subjects (English, Mathematics, Dhivehi, Islam, Travel & Tourism, ...)
+     stay visible to every student. Teachers always see every subject. */
+
+  var STREAM_BUSINESS_KEYS = ['business', 'business studies', 'economics', 'accounting', 'commerce'];
+  var STREAM_SCIENCE_KEYS = ['science', 'biology', 'chemistry', 'physics', 'combined science', 'agricultural science', 'marine science'];
+
+  function normalizeSubjectName(value) {
+    return String(value == null ? '' : value).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').replace(/^ +| +$/g, '');
+  }
+
+  /* "9B", "10-S", "Business" -> 'business'; "9S", "Science" -> 'science'; anything else -> ''. */
+  function studentStream() {
+    var raw = '';
+    try { raw = String(typeof userGradeStream !== 'undefined' && userGradeStream ? userGradeStream : '').toUpperCase(); } catch (e) { raw = ''; }
+    if (!raw) return '';
+    if (raw.indexOf('SCIENCE') !== -1) return 'science';
+    if (raw.indexOf('BUSINESS') !== -1 || raw.indexOf('COMMERCE') !== -1) return 'business';
+    var code = raw.replace(/[^A-Z0-9]/g, '');
+    if (/S$/.test(code)) return 'science';
+    if (/B$/.test(code)) return 'business';
+    return '';
+  }
+
+  function subjectStream(subject) {
+    var name = normalizeSubjectName(subject);
+    if (!name) return '';
+    function hasKey(keys) {
+      return keys.some(function (key) {
+        return name === key || name.indexOf(key + ' ') === 0;
+      });
+    }
+    if (hasKey(STREAM_BUSINESS_KEYS)) return 'business';
+    if (hasKey(STREAM_SCIENCE_KEYS)) return 'science';
+    return '';
+  }
+
+  function subjectAllowedForStudent(subject) {
+    var stream = studentStream();
+    if (!stream) return true;                       // unknown stream: do not hide anything
+    var owner = subjectStream(subject);
+    return !owner || owner === stream;              // shared subjects always stay
+  }
+
+  /* Everything the current person may see. The raw index is kept untouched so a
+     different login on the same tab is filtered again without another download. */
+  function visibleIndex() {
+    if (isTeacher()) return state.index;
+    return state.index.filter(function (n) { return subjectAllowedForStudent(n.subject); });
+  }
+
   function subjects() {
     var seen = {}, out = [];
-    state.index.forEach(function (n) { if (!seen[n.subject]) { seen[n.subject] = true; out.push(n.subject); } });
+    visibleIndex().forEach(function (n) { if (!seen[n.subject]) { seen[n.subject] = true; out.push(n.subject); } });
     return out;
   }
 
-  function notesOfSubject(subject) { return state.index.filter(function (n) { return n.subject === subject; }); }
+  function notesOfSubject(subject) { return visibleIndex().filter(function (n) { return n.subject === subject; }); }
 
   /* ======================================================================= */
   /* DRAWING THE HUB                                                         */
@@ -792,9 +848,14 @@
   function renderWelcome() {
     var reader = q('.sh-reader');
     if (!reader) return;
-    if (state.indexLoaded && !state.index.length) {
-      reader.innerHTML = '<div class="sh-welcome"><div class="sh-welcome-ico">&#128214;</div><h2>Notes are on their way</h2><p>' +
-        (isTeacher() ? 'No notes have been published yet. In Apps Script, run <code>syncAllNotesToGitHub</code>, then reopen the Study Hub.' : 'Your teacher has not published notes here yet. Please check back soon.') + '</p></div>';
+    var shown = visibleIndex();
+    if (state.indexLoaded && !shown.length) {
+      var nothingForStream = !!state.index.length;
+      var emptyText = nothingForStream
+        ? 'No notes have been published for your stream yet. Please check back soon.'
+        : (isTeacher() ? 'No notes have been published yet. In Apps Script, run <code>syncAllNotesToGitHub</code>, then reopen the Study Hub.' : 'Your teacher has not published notes here yet. Please check back soon.');
+      reader.innerHTML = '<div class="sh-welcome"><div class="sh-welcome-ico">&#128214;</div><h2>' +
+        (nothingForStream ? 'No notes for your stream yet' : 'Notes are on their way') + '</h2><p>' + emptyText + '</p></div>';
       return;
     }
     if (state.indexError && !state.indexLoaded) {
@@ -938,7 +999,7 @@
 
       var item = t.closest('.sh-item, .sh-prev, .sh-next');
       if (item) {
-        var entry = state.index.find(function (n) { return n.filePath === item.getAttribute('data-path'); });
+        var entry = visibleIndex().find(function (n) { return n.filePath === item.getAttribute('data-path'); });
         if (entry) {
           if (state.subject !== entry.subject) { state.subject = entry.subject; renderTabs(); }
           state.openUnits[entry.unit] = true;
@@ -953,7 +1014,7 @@
         if (what === 'retry-index') {
           fetchIndex().then(function () { renderTabs(); if (!state.subject && subjects().length) state.subject = subjects()[0]; renderTabs(); renderTree(); renderWelcome(); });
         } else if (what === 'retry-note') {
-          var again = state.index.find(function (n) { return n.filePath === act.getAttribute('data-path'); });
+          var again = visibleIndex().find(function (n) { return n.filePath === act.getAttribute('data-path'); });
           if (again) { delete noteCache[again.filePath]; openNote(again); }
         }
         return;
@@ -1033,7 +1094,15 @@
 
   window.loadStudyHub = loadStudyHub;
   window.initStudyEngine = initStudyEngine;
-  window.StudyHub = { normalizeNote: normalizeNote, parseMedia: parseMedia, state: state, version: 3 };
+  window.StudyHub = {
+    normalizeNote: normalizeNote,
+    parseMedia: parseMedia,
+    visibleIndex: visibleIndex,
+    studentStream: studentStream,
+    subjectStream: subjectStream,
+    state: state,
+    version: 4
+  };
 
   document.addEventListener('DOMContentLoaded', initStudyEngine);
 })();
