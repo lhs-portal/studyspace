@@ -941,7 +941,7 @@
     let userTitle = "";
     let userName = "";
     let commonName = "";
-    let userGradeStream = "9B";
+    let userGradeStream = "";
     let userStreakData = { streak: 0, streakStatus: "ACTIVE", missedDays: 0, qotdCompletedToday: false };
     let activeQuiz = null;
     let activeQuestions = [];
@@ -2357,7 +2357,7 @@
         userRole = data.role;     
         userTitle = data.title;   
         userName = data.name || "";
-        userGradeStream = data.grade || data.gradeStream || "9B";
+        userGradeStream = data.grade || data.gradeStream || "";
         myAvatarUrl = data.avatarUrl || "";
         myAvatarVersion = Number(data.avatarVersion) || 0;
 
@@ -2505,18 +2505,25 @@
       location.reload();
     }
 
-    function isStudentInStream(studentGradeStream, targetStream) {
-      if (!studentGradeStream || !targetStream) return false;
-      const cleanStudent = String(studentGradeStream).trim().toUpperCase();
-      const cleanTarget = String(targetStream).trim().toUpperCase();
+    // Mirrors the backend stream rules, so a long name such as "Grade 9 Business"
+    // matches itself instead of falling through to an empty stream.
+    function normalizeStreamForStudyspace(value) {
+      const raw = String(value == null ? "" : value).trim().toUpperCase();
+      if (!raw) return "";
+      if (raw.indexOf("SCIENCE") !== -1) return "science";
+      if (raw.indexOf("BUSINESS") !== -1 || raw.indexOf("COMMERCE") !== -1) return "business";
+      const code = raw.replace(/[^A-Z0-9]/g, "");
+      if (/S$/.test(code)) return "science";
+      if (/B$/.test(code)) return "business";
+      return "";
+    }
 
-      if (cleanTarget.includes("SCIENCE") || cleanTarget.includes("9S") || cleanTarget.includes("10S")) {
-        return cleanStudent.includes("9S") || cleanStudent.includes("10S");
-      }
-      if (cleanTarget.includes("BUSINESS") || cleanTarget.includes("9B") || cleanTarget.includes("10B")) {
-        return cleanStudent.includes("9B") || cleanStudent.includes("10B");
-      }
-      return cleanStudent === cleanTarget;
+    function isStudentInStream(studentGradeStream, targetStream) {
+      const student = normalizeStreamForStudyspace(studentGradeStream);
+      const target = normalizeStreamForStudyspace(targetStream);
+      if (!target) return true;    // unknown viewer stream: do not filter
+      if (!student) return false;  // ungraded row: keep out of a known-stream list
+      return student === target;
     }
 
     function sortRankings(list) {
@@ -2544,10 +2551,9 @@
         const data = await API.call("getLeaderboard");
         cachedLeaderboardData = Array.isArray(data) ? data : [];
 
-        filteredLeaderboardList = cachedLeaderboardData.filter(s => {
-          if (!s.gradeStream && !s.grade) return true;
-          return isStudentInStream(s.gradeStream || s.grade, userGradeStream);
-        });
+        filteredLeaderboardList = cachedLeaderboardData.filter(s =>
+          isStudentInStream(s.gradeStream || s.grade, userGradeStream)
+        );
 
         const rankedList = sortRankings(filteredLeaderboardList);
 
@@ -4152,10 +4158,12 @@
         if (!data || !data.authenticated) return;
 
         const roleChanged = data.role !== userRole;
+        const oldGrade = userGradeStream;
         userRole = data.role;
         userTitle = data.title;
         userName = data.name || "";
-        userGradeStream = data.grade || userGradeStream;
+        userGradeStream = data.grade || data.gradeStream || "";
+        const gradeChanged = userGradeStream !== oldGrade;
         if (data.commonName) commonName = data.commonName;
         myAvatarUrl = data.avatarUrl || "";
         myAvatarVersion = Number(data.avatarVersion) || 0;
@@ -4172,7 +4180,20 @@
         localStorage.setItem("lhs_user_session", JSON.stringify(saved));
 
         initReminders();
-        if (roleChanged) location.reload();
+
+        // A corrected stream must refresh an already-open Study Hub without a full reload.
+        if (gradeChanged && !roleChanged && typeof loadStudyHub === "function") {
+          const hubModal = document.getElementById("studyHubModal");
+          if (hubModal && !hubModal.classList.contains("hidden")) {
+            loadStudyHub("studyHubContainer");
+          }
+        }
+
+        // Reload at most once per tab for a role change, so a stale session cannot loop forever.
+        if (roleChanged && sessionStorage.getItem("lhs_role_reloaded") !== "1") {
+          sessionStorage.setItem("lhs_role_reloaded", "1");
+          location.reload();
+        }
       } catch (e) {
         // Offline, or the session ended (the handler above deals with that): keep what we have
       }
@@ -4189,7 +4210,7 @@
           userTitle = user.title;
           userName = user.name;
           commonName = user.commonName;
-          userGradeStream = user.gradeStream || user.grade || "9B";
+          userGradeStream = user.gradeStream || user.grade || "";
           myAvatarUrl = user.avatarUrl || "";
           myAvatarVersion = Number(user.avatarVersion) || 0;
           if (user.streakData) {
@@ -4214,9 +4235,12 @@
       let refreshing = false;
 
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
+        // Reload once per tab only. OneSignal can make this event fire repeatedly,
+        // which previously caused an endless reload loop.
+        if (!refreshing && sessionStorage.getItem("lhs_sw_reloaded") !== "1") {
           refreshing = true;
-          console.log('[App] New service worker took control. Reloading for fresh cache...');
+          sessionStorage.setItem("lhs_sw_reloaded", "1");
+          console.log('[App] New service worker took control. Reloading once for fresh cache...');
           window.location.reload();
         }
       });
