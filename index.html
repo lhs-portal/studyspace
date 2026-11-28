@@ -401,6 +401,50 @@
     #bottomTabBar .tab-button[aria-current="page"] { background: #e9e9e9; }
     html.dark #bottomTabBar .tab-button[aria-current="page"] { background: #262626; }
 
+    /* Multiple-choice answers: quiet cards with a solid option badge, not pale pills. */
+    .mcq-option {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-align: left;
+      padding: 0.7rem 0.8rem;
+      border: 1px solid var(--card-outline);
+      border-radius: 0.9rem;
+      background: #f5f5f5;
+      color: #1c1917;
+      font: 700 12.5px "Plus Jakarta Sans", "Faruma", system-ui, sans-serif;
+      line-height: 1.45;
+      transition: border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+    }
+    html.dark .mcq-option { background: #262626; color: #e9e9e9; }
+    .mcq-option__badge {
+      flex: 0 0 1.8rem;
+      height: 1.8rem;
+      border-radius: 0.65rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #e9e9e9;
+      color: #070707;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      transition: background-color 0.16s ease, color 0.16s ease;
+    }
+    html.dark .mcq-option__badge { background: #3f3f46; color: #e9e9e9; }
+    .mcq-option__text { flex: 1 1 auto; min-width: 0; }
+    .mcq-option:not(:disabled):hover { border-color: #10b981; background: #ecfdf5; color: #065f46; transform: translateY(-1px); }
+    html.dark .mcq-option:not(:disabled):hover { background: #064e3b; color: #d1fae5; }
+    .mcq-option:not(:disabled):hover .mcq-option__badge { background: #10b981; color: #022c22; }
+    .mcq-option[data-state="correct"] { background: #d1fae5; border-color: #10b981; color: #065f46; }
+    html.dark .mcq-option[data-state="correct"] { background: #064e3b; color: #a7f3d0; }
+    .mcq-option[data-state="correct"] .mcq-option__badge { background: #10b981; color: #022c22; }
+    .mcq-option[data-state="wrong"] { background: #ffe4e6; border-color: #f43f5e; color: #9f1239; }
+    html.dark .mcq-option[data-state="wrong"] { background: #881337; color: #ffe4e6; }
+    .mcq-option[data-state="wrong"] .mcq-option__badge { background: #f43f5e; color: #ffffff; }
+    .mcq-option:disabled { cursor: default; opacity: 1; }
+
     /* Mobile: lift the icon row to the Instagram level with a little breathing
        room below the buttons instead of letting them sit on the screen edge. */
     @media (max-width: 640px) {
@@ -3785,29 +3829,23 @@
         }
 
         const optsContainer = document.createElement("div");
-        optsContainer.className = "space-y-1.5 mt-2";
+        optsContainer.className = "space-y-2 mt-3";
 
         q.options.forEach(opt => {
           const btn = document.createElement("button");
-          btn.className = "w-full text-left p-3 rounded-xl border text-xs font-medium transition-all bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-white cursor-pointer";
-          btn.innerText = `${opt.id}. ${opt.text}`;
-          applyContentDirection(btn, opt.text);
+          btn.type = "button";
+          btn.className = "mcq-option";
+          btn.innerHTML = '<span class="mcq-option__badge">' + studyspaceEscapeHtml(String(opt.id)) + '</span>' +
+            '<span class="mcq-option__text">' + studyspaceEscapeHtml(String(opt.text)) + '</span>';
+          applyContentDirection(btn.querySelector(".mcq-option__text"), opt.text);
 
           if (lockedQuestions[idx]) {
             btn.disabled = true;
-            btn.classList.remove("cursor-pointer");
-            if (opt.id === q.correctOption) {
-              btn.className = "w-full text-left p-3 rounded-xl border text-xs font-bold bg-emerald-100 dark:bg-emerald-950/80 border-emerald-500 text-emerald-800 dark:text-emerald-300";
-            }
-            if (answerState.selected === opt.id && opt.id !== q.correctOption) {
-              btn.className = "w-full text-left p-3 rounded-xl border text-xs font-bold bg-rose-100 dark:bg-rose-950/80 border-rose-500 text-rose-800 dark:text-rose-300";
-            }
+            if (opt.id === q.correctOption) btn.dataset.state = "correct";
+            if (answerState.selected === opt.id && opt.id !== q.correctOption) btn.dataset.state = "wrong";
           } else if (awaitingRetry) {
             btn.disabled = true;
-            btn.classList.remove("cursor-pointer");
-            if (answerState.selected === opt.id) {
-              btn.className = "w-full text-left p-3 rounded-xl border text-xs font-bold bg-rose-100 dark:bg-rose-950/80 border-rose-500 text-rose-800 dark:text-rose-300";
-            }
+            if (answerState.selected === opt.id) btn.dataset.state = "wrong";
           } else {
             btn.onclick = () => chooseAnswer(idx, opt.id, q.correctOption);
           }

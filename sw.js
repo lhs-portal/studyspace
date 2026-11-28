@@ -9,7 +9,7 @@ try {
   console.warn('[Service Worker] OneSignal push script could not load. Offline caching will still work.', err);
 }
 
-const CACHE_NAME = 'studyspace-v88-v16'; // Studyarea panel toggle centred on the panel's left edge
+const CACHE_NAME = 'studyspace-v89-v16'; // Redesigned multiple-choice option cards
 
 const MAX_CACHE_ENTRIES = 80;
 const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -35,7 +35,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching core assets for v88');
+      console.log('[Service Worker] Caching core assets for v89');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
