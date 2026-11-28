@@ -1,0 +1,380 @@
+/*
+ * Version 14 - dark palette.
+ *
+ * app canvas       #070707
+ * cards            #161616
+ * nested surfaces  #262626  (hover #333333)
+ * primary CTA      #e9e9e9  (dark text #070707 / #161616)
+ * text             #e9e9e9  (muted #a0a0a0)
+ *
+ * Light mode, emerald/amber/rose accents and the Studyarea's own text colours
+ * (set in study-engine.js) stay unchanged. The navbar keeps its frosted blur.
+ * Selectors outrank Tailwind's generated `.dark\:*:is(.dark *)` utilities.
+ */
+
+:root { color-scheme: light; }
+html.dark { color-scheme: dark; }
+
+/* Inline SVG icons from icons.js: sit cleanly beside text and in icon boxes. */
+.ui-icon { display: inline-block; vertical-align: -0.15em; flex-shrink: 0; }
+button .ui-icon, a .ui-icon { vertical-align: middle; }
+
+/* ------------------------------------------------------------------ */
+/* Backgrounds                                                          */
+/* ------------------------------------------------------------------ */
+
+html.dark .dark\:bg-slate-950,
+html.dark .bg-slate-900 { background-color: #070707; }
+
+html.dark .dark\:bg-slate-950\/40 { background-color: rgba(7, 7, 7, 0.4); }
+html.dark .dark\:bg-slate-950\/60 { background-color: rgba(7, 7, 7, 0.6); }
+html.dark .bg-slate-950\/70 { background-color: rgba(7, 7, 7, 0.7); }
+
+html.dark .dark\:bg-slate-900 { background-color: #161616; }
+html.dark .dark\:bg-slate-900\/40 { background-color: rgba(22, 22, 22, 0.4); }
+html.dark .dark\:bg-slate-900\/50 { background-color: rgba(22, 22, 22, 0.5); }
+html.dark .dark\:bg-slate-900\/70 { background-color: rgba(22, 22, 22, 0.7); }
+html.dark .dark\:bg-slate-900\/95 { background-color: rgba(7, 7, 7, 0.85); } /* frosted navbar */
+
+html.dark .dark\:bg-slate-800 { background-color: #262626; }
+html.dark .dark\:bg-slate-800\/60,
+html.dark .bg-slate-800\/60 { background-color: rgba(38, 38, 38, 0.6); }
+html.dark .dark\:bg-slate-800\/70 { background-color: rgba(38, 38, 38, 0.7); }
+html.dark .dark\:bg-slate-800\/80,
+html.dark .bg-slate-800\/80 { background-color: rgba(38, 38, 38, 0.8); }
+
+html.dark .dark\:bg-slate-700,
+html.dark .dark\:hover\:bg-slate-700:hover { background-color: #333333; }
+html.dark .dark\:hover\:bg-slate-800:hover { background-color: #333333; }
+html.dark .dark\:hover\:bg-slate-800\/50:hover { background-color: rgba(51, 51, 51, 0.5); }
+
+/* ------------------------------------------------------------------ */
+/* Borders and rings                                                    */
+/* ------------------------------------------------------------------ */
+
+html.dark .dark\:border-slate-800 { border-color: #333333; }
+html.dark .dark\:border-slate-800\/50 { border-color: rgba(51, 51, 51, 0.5); }
+html.dark .dark\:border-slate-800\/60 { border-color: rgba(51, 51, 51, 0.6); }
+html.dark .dark\:border-slate-700,
+html.dark .border-slate-700 { border-color: #333333; }
+html.dark .border-slate-700\/50 { border-color: rgba(51, 51, 51, 0.5); }
+html.dark .dark\:ring-slate-900 { --tw-ring-color: #161616; }
+
+/* ------------------------------------------------------------------ */
+/* Text                                                                 */
+/* ------------------------------------------------------------------ */
+
+html.dark .dark\:text-slate-100 { color: #e9e9e9; }
+html.dark .dark\:text-slate-200,
+html.dark .dark\:hover\:text-slate-200:hover,
+html.dark .text-slate-200 { color: #e9e9e9; }
+html.dark .dark\:text-slate-300 { color: #c8c8c8; }
+html.dark .dark\:text-slate-400 { color: #a0a0a0; }
+html.dark .dark\:text-slate-500 { color: #7a7a7a; }
+html.dark .dark\:placeholder-slate-500::placeholder { color: #7a7a7a; }
+html.dark .dark\:text-slate-600 { color: #5c5c5c; }
+html.dark .dark\:text-slate-800 { color: #2b2b2b; }
+
+/* ------------------------------------------------------------------ */
+/* Neutral/grey buttons: crisp #e9e9e9 fill with #070707 text in both
+   themes. Accent buttons, navbar and footer controls keep their own
+   treatments; .ghost-button demotes secondary actions, and disabled
+   buttons stay muted so they read as unavailable. */
+/* ------------------------------------------------------------------ */
+
+button.bg-slate-100:not(.cursor-not-allowed),
+button.bg-slate-200:not(.cursor-not-allowed),
+a.bg-slate-100:not(.cursor-not-allowed),
+a.bg-slate-200:not(.cursor-not-allowed) {
+  background-color: #e9e9e9 !important;
+  color: #070707 !important;
+  border-color: #e9e9e9 !important;
+}
+
+button:hover.bg-slate-100:not(.cursor-not-allowed),
+button:hover.bg-slate-200:not(.cursor-not-allowed),
+a:hover.bg-slate-100:not(.cursor-not-allowed),
+a:hover.bg-slate-200:not(.cursor-not-allowed) {
+  background-color: #f5f5f5 !important;
+  border-color: #f5f5f5 !important;
+  color: #070707 !important;
+}
+
+html.dark button.dark\:bg-slate-800:not(.cursor-not-allowed),
+html.dark button.dark\:bg-slate-900:not(.cursor-not-allowed),
+html.dark a.dark\:bg-slate-800:not(.cursor-not-allowed),
+html.dark a.dark\:bg-slate-900:not(.cursor-not-allowed) {
+  background-color: #e9e9e9 !important;
+  color: #070707 !important;
+  border-color: #e9e9e9 !important;
+}
+
+html.dark button:hover.dark\:bg-slate-700:not(.cursor-not-allowed),
+html.dark button:hover.dark\:bg-slate-800:not(.cursor-not-allowed),
+html.dark a:hover.dark\:bg-slate-700:not(.cursor-not-allowed),
+html.dark a:hover.dark\:bg-slate-800:not(.cursor-not-allowed) {
+  background-color: #f5f5f5 !important;
+  border-color: #f5f5f5 !important;
+  color: #070707 !important;
+}
+
+html.dark .cursor-not-allowed {
+  background-color: #717171 !important;
+  color: #080808 !important;
+}
+
+html.dark .cursor-not-allowed:hover { background-color: #717171 !important; }
+
+/* ------------------------------------------------------------------ */
+/* Quiet secondary controls: ghost fill, muted text, no heavy shadow.   */
+/* One off-white action per view keeps the hierarchy human-sized.       */
+/* ------------------------------------------------------------------ */
+
+.ghost-button,
+button.ghost-button,
+a.ghost-button {
+  background-color: transparent !important;
+  color: #64748b !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+  box-shadow: none !important;
+}
+
+.ghost-button:hover,
+button.ghost-button:hover,
+a.ghost-button:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: rgba(15, 23, 42, 0.16) !important;
+}
+
+html.dark .ghost-button,
+html.dark button.ghost-button,
+html.dark a.ghost-button {
+  background-color: transparent !important;
+  color: #a0a0a0 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .ghost-button:hover,
+html.dark button.ghost-button:hover,
+html.dark a.ghost-button:hover {
+  background-color: #262626 !important;
+  color: #e9e9e9 !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* ------------------------------------------------------------------ */
+/* Quiet filled actions: surface + edge, no bright white glare.         */
+/* Used by the large Enter and Study buttons when ghost feels too flat.  */
+/* ------------------------------------------------------------------ */
+
+.quiet-button,
+button.quiet-button,
+a.quiet-button {
+  background-color: #e2e8f0 !important;
+  color: #334155 !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
+}
+
+.quiet-button:hover,
+button.quiet-button:hover,
+a.quiet-button:hover {
+  background-color: #e9e9e9 !important;
+  color: #0f172a !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1) !important;
+}
+
+html.dark .quiet-button,
+html.dark button.quiet-button,
+html.dark a.quiet-button {
+  background-color: #262626 !important;
+  color: #e9e9e9 !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+}
+
+html.dark .quiet-button:hover,
+html.dark button.quiet-button:hover,
+html.dark a.quiet-button:hover {
+  background-color: #333333 !important;
+  color: #e9e9e9 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 3px 8px rgba(0, 0, 0, 0.32) !important;
+}
+
+/* Navbar controls stay nested-subtle; footer pills get their own rule below. */
+html.dark #adminSettingsBtn {
+  background-color: #262626;
+  color: #e9e9e9;
+}
+
+html.dark #adminSettingsBtn:hover { background-color: #333333; }
+
+/* ------------------------------------------------------------------ */
+/* Gradients that still used literal slate-900 stops                    */
+/* ------------------------------------------------------------------ */
+
+html.dark .dark\:via-slate-900 {
+  --tw-gradient-stops: var(--tw-gradient-from), #161616 var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+html.dark .dark\:to-slate-900 { --tw-gradient-to: #161616; }
+
+/* ------------------------------------------------------------------ */
+/* Quiet scrollbars: slim thumbs, transparent tracks, no chunky buttons  */
+/* ------------------------------------------------------------------ */
+
+:root {
+  scrollbar-width: thin;
+  scrollbar-color: #949494 transparent;
+}
+
+html.dark { scrollbar-color: #666666 transparent; }
+
+*::-webkit-scrollbar { width: 3px; height: 3px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-button { display: none; }
+*::-webkit-scrollbar-thumb { background: #949494; border-radius: 99px; }
+html.dark::-webkit-scrollbar-thumb { background: #666666; }
+html.dark *::-webkit-scrollbar-thumb { background: #666666; }
+html.dark::-webkit-scrollbar-thumb:hover,
+html.dark *::-webkit-scrollbar-thumb:hover { background: #8a8a8a; }
+
+/* ------------------------------------------------------------------ */
+/* Cards: barely visible outline; ribbons and trays stay flat          */
+/* ------------------------------------------------------------------ */
+/* A 1px low-contrast edge keeps cards separated without reading as a
+   heavy outline. Functional controls keep their own stronger borders. */
+
+:root { --card-outline: rgba(15, 23, 42, 0.03); }
+html.dark { --card-outline: rgba(255, 255, 255, 0.035); }
+
+.card-shadow,
+.subject-card,
+.subject-card .rounded-xl,
+.subject-card .border-dashed,
+.profile-panel,
+#avatarMenu,
+#welcomeBoard,
+#missedCard,
+#teacherBanner,
+#adminHome,
+#teacherTableContainer,
+#xpRewardCard,
+#xpToast,
+#quizModal .space-y-3,
+#avatarModal > div,
+#loginModal > div,
+#leaderboardPage .leaderboard-card,
+#studentProfileModal > div,
+#analyticsModal > div,
+#quizModal > div,
+#adminModal > div {
+  border: 1px solid var(--card-outline) !important;
+}
+
+/* The expanded subject card uses the same quiet outline, not a green edge. */
+.subject-card.is-open,
+html.dark .subject-card.is-open {
+  border-color: var(--card-outline) !important;
+}
+
+/* Ribbon badges, gradient header strips and icon trays are flat. */
+#welcomeBoard .inline-flex,
+#profilePanel .rounded-full,
+#studentProfileModal .rounded,
+#leaderboardPage .rounded,
+#analyticsModal .rounded,
+#quizSubjectTag,
+#medalBanner,
+#timerContainer,
+#missedCard .w-9.h-9,
+#adminHome .w-11.h-11,
+.subject-card .w-10.h-10,
+#xpRewardCard .rounded-xl,
+#profilePanel .border-b,
+#studentProfileModal .border-b,
+#leaderboardPage .border-b,
+#analyticsModal .border-b,
+#quizModal .border-b,
+#adminModal .border-b,
+#loginModal .border-b,
+#studyHubContainer .sh-top,
+#studyHubContainer .sh-tab,
+#studyHubContainer .sh-table-wrap,
+#studyHubContainer .sh-welcome-ico {
+  border: 0 !important;
+}
+
+/* Subject panel separator stays flat. */
+.subject-card .panel-content {
+  border: 0 !important;
+}
+
+/* ------------------------------------------------------------------ */
+/* Bottom ribbon: same canvas colour, quiet ghost utilities            */
+/* ------------------------------------------------------------------ */
+/* Studyarea text colours are owned by study-engine.js and are untouched. */
+
+html.dark #appFooter {
+  background-color: #070707 !important;
+  color: #a0a0a0;
+}
+
+#appFooter .footer-pill {
+  background-color: transparent !important;
+  color: #64748b !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+  box-shadow: none !important;
+}
+
+#appFooter .footer-pill:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: rgba(15, 23, 42, 0.16) !important;
+}
+
+html.dark #appFooter .footer-pill {
+  color: #a0a0a0 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark #appFooter .footer-pill:hover {
+  background-color: #262626 !important;
+  color: #e9e9e9 !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+#appFooter #signOutBtn {
+  color: #e11d48 !important;
+  border-color: rgba(225, 29, 72, 0.18) !important;
+}
+
+html.dark #appFooter #signOutBtn {
+  color: #fb7185 !important;
+  border-color: rgba(251, 113, 133, 0.18) !important;
+}
+
+#appFooter #signOutBtn:hover {
+  background-color: rgba(225, 29, 72, 0.08) !important;
+  color: #be123c !important;
+}
+
+html.dark #appFooter #signOutBtn:hover {
+  background-color: rgba(251, 113, 133, 0.08) !important;
+  color: #fda4af !important;
+}
+
+#appFooter .footer-pill .ui-icon {
+  opacity: 0.88;
+}
+
+.gold-button {
+  background: #fbbf24;
+  color: #070707;
+  border: 1px solid #f59e0b;
+}
+.gold-button:hover { background: #fcd34d; }
+
+

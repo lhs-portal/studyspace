@@ -3,16 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <script>
+    // Apply the saved theme before CSS paints so light-mode users never see a dark flash.
+    (function () {
+      try {
+        var saved = localStorage.getItem("lhs_theme");
+        var dark = saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+      } catch (e) {}
+    })();
+  </script>
   <!-- OneSignal push reminders. The queue must exist before the deferred SDK loads. -->
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
   </script>
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-  <script src="./subject-quizzes.js?v=2"></script>
-  <script src="./api.js?v=1"></script>
-  <script src="./streaks.js?v=11"></script>
-  <script src="./offline-sync.js?v=11" defer></script>
-  <script src="./study-engine.js?v=4" defer></script>
+  <script src="./icons.js?v=5"></script>
+  <script src="./subject-quizzes.js?v=3" defer></script>
+  <script src="./api.js?v=2" defer></script>
+  <script src="./streaks.js?v=15" defer></script>
+  <script src="./offline-sync.js?v=12" defer></script>
+  <script src="./cache-reset.js?v=8" defer></script>
+  <script src="./study-engine.js?v=8" defer></script>
   <title>Hithadhoo School - Studyspace</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="logo.png" />
@@ -49,14 +62,17 @@
     /* Right-to-left text for Dhivehi content. Applied only to the text itself, not the whole page. */
     .dv-rtl { direction: rtl; text-align: right; }
     
-    .card-shadow { 
-      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); 
+    .card-shadow {
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     }
-    .dark .card-shadow { 
-      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5); 
+    .dark .card-shadow {
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
     }
-    .card-shadow:hover { 
-      box-shadow: 0 10px 25px -3px rgba(16, 185, 129, 0.18); 
+    .card-shadow:hover {
+      box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+    }
+    .dark .card-shadow:hover {
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
     }
 
     @keyframes flyInAndAway {
@@ -151,9 +167,9 @@
         top: auto;
         left: 0;
         right: 0;
-        bottom: 0;
+        bottom: calc(4.75rem + env(safe-area-inset-bottom));
         width: 100%;
-        max-height: 88vh;
+        max-height: calc(100vh - 6rem);
         border-radius: 1.5rem 1.5rem 0 0;
         animation: profileSheetIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       }
@@ -222,28 +238,252 @@
       mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
     }
 
+    /* Native modal dialogs: the browser owns focus, Esc, the top layer and inertness. */
+    dialog.modal-surface {
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      max-height: none;
+      margin: 0;
+      padding: 1rem;
+      border: 0;
+      background: transparent;
+      color: inherit;
+    }
+    dialog.modal-surface[open] { display: flex; align-items: center; justify-content: center; }
+    dialog.modal-surface:modal { overscroll-behavior: contain; }
+    dialog.modal-surface::backdrop {
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      overflow: hidden;
+      overscroll-behavior: contain;
+    }
+
+    dialog.profile-panel {
+      position: fixed;
+      inset-block-start: 4.5rem;
+      inset-inline-end: 1rem;
+      inset-inline-start: auto;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+    dialog.profile-panel[open] { display: block; }
+    dialog.profile-panel::backdrop {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(2px);
+      overflow: hidden;
+      overscroll-behavior: contain;
+    }
+    @media (max-width: 640px) {
+      dialog.profile-panel {
+        inset-block-start: auto;
+        inset-inline-end: 0;
+        inset-inline-start: 0;
+        inset-block-end: 0;
+        width: 100%;
+        max-height: 88vh;
+        border-radius: 1.5rem 1.5rem 0 0;
+      }
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0.5rem;
+      z-index: 200;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      background: #e9e9e9;
+      color: #070707;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .skip-link:focus-visible { left: 1rem; outline: 2px solid #059669; outline-offset: 2px; }
+
+    a:focus-visible, button:focus-visible, input:focus-visible,
+    select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid #059669;
+      outline-offset: 2px;
+    }
+    #loginForm input[aria-invalid="true"],
+    #loginForm input:user-invalid { border-color: #e11d48 !important; }
+
+    .table-wrapper:focus-visible { outline: 2px solid #059669; outline-offset: 2px; }
+    .responsive-table {
+      overflow: auto;
+      max-inline-size: 100%;
+      max-block-size: min(500px, 80vh);
+      container-type: inline-size;
+    }
+    .responsive-table thead {
+      position: sticky;
+      inset-block-start: 0;
+      z-index: 1;
+      background: #ffffff;
+    }
+    html.dark .responsive-table thead { background: #161616; }
+
+    @container (width < 600px) {
+      .responsive-table table,
+      .responsive-table thead,
+      .responsive-table tbody,
+      .responsive-table tr,
+      .responsive-table th,
+      .responsive-table td { display: block; }
+      .responsive-table thead { display: none; }
+      .responsive-table tr {
+        margin-block-end: 0.75rem;
+        border: 1px solid var(--card-outline);
+        border-radius: 0.75rem;
+        padding: 0.5rem;
+      }
+      .responsive-table td {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.35rem 0.25rem !important;
+      }
+      .responsive-table td::before {
+        content: attr(data-label);
+        flex: 0 0 auto;
+        font-weight: 700;
+        color: #64748b;
+      }
+      html.dark .responsive-table td::before { color: #a0a0a0; }
+    }
+
+    /* Five-page shell: only one page is visible; the bottom bar works at every width. */
+    body { padding-bottom: calc(3.9rem + env(safe-area-inset-bottom)); }
+    .app-page[hidden], .app-page.hidden { display: none !important; }
+
+    #bottomTabBar {
+      position: fixed;
+      inset-inline: 0;
+      inset-block-end: 0;
+      z-index: 45;
+      padding-bottom: env(safe-area-inset-bottom);
+      background: rgba(255, 255, 255, 0.94);
+      border-top: 1px solid rgba(15, 23, 42, 0.1);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    html.dark #bottomTabBar {
+      background: rgba(7, 7, 7, 0.9);
+      border-top-color: rgba(255, 255, 255, 0.07);
+    }
+    #bottomTabBar .tab-strip {
+      max-width: 72rem;
+      margin-inline: auto;
+      padding: 0.35rem 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(0.15rem, 1.5vw, 0.6rem);
+    }
+    #bottomTabBar .tab-button {
+      flex: 0 0 3.05rem;
+      min-width: 3.05rem;
+      min-height: 3.05rem;
+      padding: 0;
+      border: 0;
+      border-radius: 1rem;
+      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.18s ease;
+    }
+    #bottomTabBar .tab-button:hover { background: #f1f5f9; }
+    html.dark #bottomTabBar .tab-button:hover { background: #262626; }
+    #bottomTabBar .tab-button.hidden { display: none; }
+    #bottomTabBar .tab-button[aria-current="page"] { background: #e9e9e9; }
+    html.dark #bottomTabBar .tab-button[aria-current="page"] { background: #262626; }
+
+    /* Icons carry the label: quiet when idle, full colour when active. */
+    #bottomTabBar .tab-icon { display: inline-flex; align-items: center; justify-content: center; }
+    #bottomTabBar .tab-icon svg {
+      display: block;
+      opacity: 0.5;
+      filter: grayscale(1);
+      transition: opacity 0.18s ease, filter 0.18s ease;
+    }
+    #bottomTabBar .tab-button:hover .tab-icon svg,
+    #bottomTabBar .tab-button[aria-current="page"] .tab-icon svg {
+      opacity: 1;
+      filter: none;
+    }
+
+    /* Studyarea is a full-height page, not a floating card. The hub owns its
+       own header, so the page gives it every pixel between the sticky top bar
+       and the fixed bottom tabs. Its text colours stay in study-engine.js. */
+    body[data-page="studyarea"] #mainContent {
+      max-width: none;
+      padding: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    #studyareaPage {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    #studyHubContainer {
+      width: 100%;
+      height: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
+      border: 0;
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+    /* Toast and offline indicator sit above the fixed tab bar. */
+    #xpToast { bottom: calc(4.4rem + env(safe-area-inset-bottom)) !important; }
+    #syncPending { bottom: calc(4.4rem + env(safe-area-inset-bottom)) !important; }
+
+    /* Leaderboard is a single card: no nested borders and no visible scrollbar. */
+    #leaderboardPage .leaderboard-table { overflow: visible; }
+    #leaderboardPage .leaderboard-table .avatar-press { width: 1.5rem; height: 1.5rem; font-size: 9px; }
+    #leaderboardPage .leaderboard-body { scrollbar-width: none; -ms-overflow-style: none; }
+    #leaderboardPage .leaderboard-body::-webkit-scrollbar { display: none; }
+
     @media (prefers-reduced-motion: reduce) {
       .xp-ring circle { transition-duration: 0.001s; }
       .profile-panel, .animate-reward-in, .animate-xp-pop, .xp-sparkle { animation-duration: 0.001s; animation-delay: 0s; }
       .subject-panel, .subject-card .chevron { transition-duration: 0.001s; }
     }
   </style>
+  <!-- Version 14: top-bar aesthetics only (scoped to the header). -->
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen antialiased flex flex-col transition-colors duration-200">
+
+  <a href="#mainContent" class="skip-link">Skip to main content</a>
 
   <!-- TOP NAVBAR -->
   <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-        <img 
-          src="logo.png" 
-          alt="Hithadhoo School Logo" 
-          class="h-9 w-9 sm:h-10 sm:w-10 object-contain rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-0.5"
-          onerror="this.onerror=null; this.outerHTML='<div class=\'h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xs sm:text-sm\'>HS</div>';"
-        />
+        <div class="relative h-9 w-9 sm:h-10 sm:w-10 shrink-0">
+          <img 
+            id="schoolLogo"
+            src="logo.png" 
+            alt="School logo" 
+            width="40"
+            height="40"
+            decoding="async"
+            class="h-full w-full object-contain rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-0.5"
+            onerror="this.style.display='none'; var f=document.getElementById('schoolLogoFallback'); if(f) f.style.display='flex';"
+          />
+          <div id="schoolLogoFallback" class="hidden absolute inset-0 rounded-xl bg-emerald-600 text-white items-center justify-center font-bold text-xs sm:text-sm">S</div>
+        </div>
         <div>
           <div class="flex items-center gap-2">
-            <span class="font-bold text-slate-900 dark:text-white text-[13px] min-[370px]:text-[15px] sm:text-xl tracking-tight whitespace-nowrap">Hithadhoo School</span>
+            <span id="schoolNameText" class="font-bold text-slate-900 dark:text-white text-[13px] min-[370px]:text-[15px] sm:text-xl tracking-tight whitespace-nowrap">Studyspace</span>
           </div>
           <p class="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hidden sm:block">Studyspace</p>
         </div>
@@ -252,6 +492,15 @@
       <!-- TOP BANNER RIGHT SIDE -->
       <div id="navUserSection" class="flex items-center gap-2.5 sm:gap-3 min-w-0">
         <div id="userProfileTag" class="text-right min-w-0"></div>
+
+        <!-- School administrator settings. Shown only after the server confirms an admin role. -->
+        <button
+          id="adminSettingsBtn"
+          onclick="openAdminSettings()"
+          aria-label="Open school settings"
+          title="School settings"
+          class="hidden h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-lg transition cursor-pointer"
+        ><span data-ui-icon="gear" data-size="18" aria-hidden="true"></span></button>
 
         <!-- Profile icon with the XP ring around it -->
         <button
@@ -284,15 +533,13 @@
   </header>
 
   <!-- MY XP PROFILE PANEL (opens from the profile icon) -->
-  <div id="profileBackdrop" class="hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-[2px]" onclick="closeProfilePanel()"></div>
-
-  <div id="profilePanel" class="profile-panel hidden fixed z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="profilePanelName">
+  <dialog id="profilePanel" class="profile-panel bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-y-auto" aria-labelledby="profilePanelName" closedby="any">
     <div class="profile-panel-handle justify-center pt-2.5 pb-1">
       <span class="h-1.5 w-10 rounded-full bg-slate-300 dark:bg-slate-700"></span>
     </div>
 
     <div class="relative p-4 pb-3 bg-gradient-to-br from-emerald-50 via-white to-white dark:from-emerald-950/60 dark:via-slate-900 dark:to-slate-900 border-b border-slate-100 dark:border-slate-800">
-      <button onclick="closeProfilePanel()" class="absolute top-3 right-3 h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs" aria-label="Close profile">✕</button>
+      <button onclick="closeProfilePanel()" class="absolute top-3 right-3 h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs" aria-label="Close profile"><span data-ui-icon="close" data-size="14" aria-hidden="true"></span></button>
 
       <div class="flex items-center gap-3">
         <span id="profileAvatarWrap" data-avatar-longpress class="avatar-press relative block h-16 w-16 shrink-0">
@@ -361,24 +608,21 @@
         </p>
       </div>
 
-      <!-- Push reminders: shown only for students once the app knows who is signed in. -->
-      <div id="reminderCard" class="hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 px-3 py-2.5">
-        <div class="flex items-start gap-2">
-          <span class="text-sm leading-none mt-0.5" aria-hidden="true">🔔</span>
-          <div class="min-w-0 flex-1">
-            <div class="text-[11px] font-extrabold text-slate-800 dark:text-slate-100">Reminders</div>
-            <p id="reminderStatus" class="mt-0.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400 leading-relaxed">Checking this device…</p>
-            <p id="reminderDetail" class="mt-1 text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed"></p>
-          </div>
-        </div>
-        <button id="reminderButton" type="button" onclick="toggleReminders()" class="mt-2 w-full py-1.5 rounded-lg text-[11px] font-bold transition bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700">Turn on reminders</button>
+      <div class="rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 px-3 py-2.5">
+        <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 leading-relaxed">
+          Photo, reminders, theme and sign-in controls now live in Settings.
+        </p>
       </div>
 
-      <button onclick="closeProfilePanel(); openLeaderboardModal()" class="w-full py-2 rounded-xl text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+      <button onclick="closeProfilePanel(); goToPage('settings')" class="ghost-button w-full py-2 rounded-lg text-[11px] font-bold transition border">
+        Open settings →
+      </button>
+
+      <button onclick="closeProfilePanel(); openLeaderboardModal()" class="ghost-button w-full py-2 rounded-lg text-[11px] font-bold transition border">
         View leaderboard →
       </button>
     </div>
-  </div>
+  </dialog>
 
   <!-- Quiet photo options (long-press the avatar) -->
   <div id="avatarMenu" class="hidden fixed z-[70] w-40 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl p-1" role="menu" aria-label="Profile photo options">
@@ -389,10 +633,10 @@
   <input id="avatarFileInput" type="file" accept="image/*" class="hidden" onchange="handleAvatarFile(event)">
 
   <!-- PROFILE PHOTO PREVIEW (opens after choosing a photo) -->
-  <div id="avatarModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+  <dialog id="avatarModal" class="modal-surface" aria-labelledby="avatarModalTitle" closedby="any">
     <div class="w-full max-w-xs bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800">
-        <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Your profile photo</h3>
+        <h3 id="avatarModalTitle" class="text-sm font-extrabold text-slate-900 dark:text-white">Your profile photo</h3>
         <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">It is cropped square and saved at 256 × 256.</p>
       </div>
 
@@ -402,50 +646,65 @@
       </div>
 
       <div class="px-5 pb-5 flex gap-2">
-        <button onclick="closeAvatarModal()" class="flex-1 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition">Cancel</button>
+        <button onclick="closeAvatarModal()" class="ghost-button flex-1 py-2 rounded-lg text-xs font-bold transition border">Cancel</button>
         <button id="avatarSaveBtn" onclick="saveMyAvatar()" class="flex-1 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition">Save photo</button>
       </div>
     </div>
-  </div>
+  </dialog>
 
   <!-- LOGIN MODAL -->
-  <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+  <dialog id="loginModal" class="modal-surface" aria-labelledby="loginSchoolName" closedby="none">
     <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
       <div class="bg-gradient-to-r from-emerald-700 to-teal-800 p-6 text-white text-center border-b border-emerald-600/30">
         <div class="inline-flex h-14 w-14 rounded-2xl bg-white p-2 items-center justify-center mb-3 shadow-lg">
           <img 
+            id="loginSchoolLogo"
             src="logo.png" 
-            alt="Hithadhoo School Logo" 
+            alt="School logo" 
+            width="40"
+            height="40"
+            decoding="async"
+            fetchpriority="high"
             class="h-full w-full object-contain"
-            onerror="this.onerror=null; this.outerHTML='<span class=\'text-2xl\'>🎓</span>';"
+            onerror="this.style.display='none'; var f=document.getElementById('loginLogoFallback'); if(f) f.style.display='block';"
           />
+          <span id="loginLogoFallback" class="hidden" aria-hidden="true"><span data-ui-icon="graduation" data-size="24"></span></span>
         </div>
-        <h2 class="text-2xl font-extrabold tracking-tight text-white">Hithadhoo School</h2>
+        <h2 id="loginSchoolName" class="text-2xl font-extrabold tracking-tight text-white">Studyspace</h2>
         <p class="text-xs font-semibold text-emerald-200 mt-1">Studyspace</p>
       </div>
 
       <form id="loginForm" class="p-6 space-y-4" onsubmit="handleLoginSubmit(event)">
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">School Email Address</label>
+          <label for="emailInput" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">School Email Address</label>
           <input 
             type="email" 
             id="emailInput" 
+            name="email"
+            autocomplete="username"
+            autofocus
             required 
+            aria-describedby="loginError"
             placeholder="name@hithadhooschool.edu.mv"
             class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 outline-none"
           />
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Password</label>
+          <label for="passwordInput" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Password</label>
           <input 
             type="password" 
             id="passwordInput" 
+            name="password"
+            autocomplete="current-password"
             required 
+            aria-describedby="loginError"
             placeholder="••••••••"
             class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 outline-none"
           />
         </div>
+
+        <p id="loginError" class="hidden text-[11px] font-semibold text-rose-600 dark:text-rose-400" role="alert" aria-live="polite"></p>
 
         <button 
           type="submit" 
@@ -456,79 +715,61 @@
         </button>
       </form>
     </div>
-  </div>
+  </dialog>
 
   <!-- MAIN CONTENT -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 space-y-8">
+  <main id="mainContent" tabindex="-1" class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
+
+    <!-- PAGE 2 OF 5: HOME (default) -->
+    <section id="homePage" class="app-page space-y-8" data-page="home">
 
     <!-- WELCOME BOARD -->
-    <div id="welcomeBoard" class="bg-gradient-to-r from-emerald-100 via-white to-emerald-50 dark:from-emerald-950/80 dark:via-slate-900 dark:to-slate-900 p-6 rounded-2xl border border-emerald-300 dark:border-emerald-800/40 card-shadow flex flex-col gap-5">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 id="welcomeTitle" class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Welcome!</h2>
-          <p id="motivationalQuote" class="text-xs font-medium text-emerald-700 dark:text-emerald-400/90 mt-1 italic">"Success is the sum of small efforts, repeated day in and day out."</p>
-        </div>
-        <div class="px-3 py-1.5 rounded-xl bg-emerald-200/60 dark:bg-emerald-900/40 border border-emerald-400 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold w-max">
-          🚀 Beat your personal best!
+    <div id="welcomeBoard" class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 card-shadow flex flex-col gap-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"></span>
+            <h1 id="welcomeTitle" class="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">Welcome!</h1>
+          </div>
+          <p id="motivationalQuote" class="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1">"And say, 'My Lord, increase me in knowledge.'"</p>
         </div>
       </div>
 
-      <!-- TODAY'S MINI QUIZ TAB -->
-      <div id="miniQuizBanner" class="p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700">
-        <div class="flex items-center gap-3">
-          <div id="miniQuizIcon" class="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 dark:text-orange-400">
-            🔥
-          </div>
-          <div>
+      <!-- TODAY'S MINI QUIZ — a row inside the welcome section, not another card -->
+      <div id="miniQuizBanner" class="pt-4 border-t border-slate-200 dark:border-[#333333] flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <span id="miniQuizIcon" class="text-xl leading-none shrink-0" aria-hidden="true">🔥</span>
+          <div class="min-w-0">
             <h3 id="miniQuizTitle" class="text-sm font-bold text-slate-900 dark:text-white">
               Today's Mini Quiz
             </h3>
-            <p id="miniQuizDesc" class="text-xs text-slate-500 dark:text-slate-400">
-              Daily Challenge — keep your streak alive!
+            <p id="miniQuizDesc" class="text-[11px] text-slate-500 dark:text-slate-400">
+              One short quiz · start your streak today
             </p>
           </div>
         </div>
 
-        <button id="btnTakeMiniQuiz" onclick="startBusinessMiniQuiz()" class="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer">
+        <button id="btnTakeMiniQuiz" onclick="startBusinessMiniQuiz()" class="w-full sm:w-auto px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-[11px] rounded-lg shadow-sm shadow-black/10 transition flex items-center justify-center gap-2 cursor-pointer">
           Take Quiz &rarr;
         </button>
       </div>
     </div>
 
-<!-- REVIEW MISSED QUESTIONS & STUDY HUB BANNER GRID -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      
       <!-- REVIEW MISSED QUESTIONS (students only) -->
-      <div id="missedCard" class="hidden bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow flex flex-col sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-x-4">
-        <div class="flex items-center gap-3 min-w-0 sm:col-start-1 sm:row-start-1">
-          <div class="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl bg-sky-500/10 border border-sky-500/20">📚</div>
-          <div>
+      <div id="missedCard" class="hidden max-w-2xl bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 card-shadow flex flex-col sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-x-3">
+        <div class="flex items-center gap-2 min-w-0 sm:col-start-1 sm:row-start-1">
+          <div class="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-[#e9e9e9] dark:bg-[#262626]"><span data-ui-icon="book" data-size="20" aria-hidden="true"></span></div>
+          <div class="min-w-0">
             <h3 class="text-sm font-bold text-slate-900 dark:text-white">Missed Questions</h3>
-            <p id="missedCardDesc" class="text-xs text-slate-500 dark:text-slate-400">Loading...</p>
+            <p id="missedCardDesc" class="text-[11px] leading-snug text-slate-500 dark:text-slate-400">Loading…</p>
           </div>
         </div>
-        <button id="missedStartBtn" onclick="startMissedReview()" class="hidden w-full sm:w-auto mt-4 sm:mt-0 sm:col-start-2 sm:row-start-1 sm:row-span-2 px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-sky-500/20 transition cursor-pointer whitespace-nowrap">
+        <button id="missedStartBtn" onclick="startMissedReview()" class="ghost-button hidden w-full sm:w-auto mt-3 sm:mt-0 sm:col-start-2 sm:row-start-1 sm:row-span-2 inline-flex items-center justify-center min-w-[88px] px-3 py-2 font-bold text-[11px] rounded-lg transition cursor-pointer whitespace-nowrap">
           Review &rarr;
         </button>
-        <div id="missedSubjectChips" class="hidden flex flex-wrap gap-2 mt-4 sm:mt-3 sm:col-start-1 sm:row-start-2"></div>
+        <div id="missedSubjectChips" class="hidden flex flex-wrap gap-2 mt-3 sm:mt-2 sm:col-start-1 sm:row-start-2"></div>
       </div>
 
-      <!-- STUDY HUB NAVIGATION CARD -->
-      <div id="studyHubCard" class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">📖</div>
-          <div>
-            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Studyroom</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Search revision notes, syllabus topics, and unit guides</p>
-          </div>
-        </div>
-        <button onclick="openStudyHubModal()" class="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition cursor-pointer whitespace-nowrap">
-          Enter &rarr;
-        </button>
-      </div>
-
-    </div>
-    
     <!-- DASHBOARD -->
     <section id="dashboardSection" class="space-y-5">
       <div id="teacherBanner" class="hidden p-4 rounded-2xl bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-600/50 flex items-center justify-between">
@@ -541,31 +782,41 @@
         </div>
       </div>
 
+      <!-- ADMIN HOME SHORTCUT: the full admin panel lives on the Settings page. -->
+      <div id="adminHomeNotice" class="hidden p-6 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-11 h-11 shrink-0 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-xl"><span data-ui-icon="gear" data-size="22" aria-hidden="true"></span></div>
+          <div class="min-w-0">
+            <div class="text-sm font-extrabold text-slate-900 dark:text-white">School administration</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">Gemini cost, prepaid balance, users and unit constraints are in Settings.</div>
+          </div>
+        </div>
+        <button onclick="goToPage('settings')" class="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition whitespace-nowrap cursor-pointer">
+          Open settings &rarr;
+        </button>
+      </div>
+
       <!-- Student Stats -->
-      <div id="studentStatsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow">
-          <div class="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">BEST SCORE</div>
-          <div id="statAvgScore" class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">0%</div>
+      <div id="studentStatsGrid" class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 card-shadow flex flex-col justify-between min-h-[76px]">
+          <div class="text-slate-500 dark:text-slate-400 text-[11px] font-bold tracking-wide">BEST SCORE</div>
+          <div id="statAvgScore" class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">0%</div>
         </div>
 
-        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow">
-          <div class="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">MEDALS</div>
-          <div id="statFirstTry" class="text-3xl font-extrabold text-slate-900 dark:text-white">0</div>
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 card-shadow flex flex-col justify-between min-h-[76px]">
+          <div class="text-slate-500 dark:text-slate-400 text-[11px] font-bold tracking-wide">MEDALS</div>
+          <div id="statFirstTry" class="text-2xl font-extrabold text-slate-900 dark:text-white">0</div>
         </div>
 
-        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow">
-          <div class="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">TOTAL ATTEMPTS</div>
-          <div id="statAttempts" class="text-3xl font-extrabold text-slate-900 dark:text-white">0</div>
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 card-shadow flex flex-col justify-between min-h-[76px]">
+          <div class="text-slate-500 dark:text-slate-400 text-[11px] font-bold tracking-wide">TOTAL ATTEMPTS</div>
+          <div id="statAttempts" class="text-2xl font-extrabold text-slate-900 dark:text-white">0</div>
         </div>
 
         <!-- LEADERBOARD TAB -->
-        <div onclick="openLeaderboardModal()" class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 card-shadow cursor-pointer hover:border-emerald-500 transition-all group">
-          <div class="flex items-center justify-between mb-2">
-            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold">LEADERBOARD</div>
-            <span class="text-xs text-emerald-500 font-bold group-hover:translate-x-1 transition-transform">View &rarr;</span>
-          </div>
-          <div id="statRank" class="text-3xl font-extrabold text-amber-500 dark:text-amber-400">#--</div>
-          <div class="text-[10px] text-slate-400 mt-1">Class Stream Standing</div>
+        <div onclick="openLeaderboardModal()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLeaderboardModal();}" role="button" tabindex="0" aria-label="Open leaderboard" class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 card-shadow cursor-pointer transition-all flex flex-col justify-between min-h-[76px]">
+          <div class="text-slate-500 dark:text-slate-400 text-[11px] font-bold tracking-wide">LEADERBOARD</div>
+          <div id="statRank" class="mt-2 text-2xl font-extrabold text-amber-500 dark:text-amber-400">#--</div>
         </div>
       </div>
 
@@ -595,14 +846,16 @@
       </div>
     </section>
 
-    <!-- QUIZ SELECTOR -->
-    <section class="space-y-4">
+    </section>
+
+    <!-- PAGE 1 OF 5: QUIZZES -->
+    <section id="quizzesPage" class="app-page hidden space-y-4" data-page="quizzes">
       <div class="flex items-center justify-between">
         <div>
           <h2 class="text-xl font-bold text-slate-900 dark:text-white">Let's Practice!</h2>
           <p class="text-xs text-slate-500 dark:text-slate-400">Select any syllabus unit to take a quiz</p>
         </div>
-        <button onclick="refreshUnits()" class="px-3 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5">
+        <button onclick="refreshUnits()" class="ghost-button px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer flex items-center gap-1.5">
           Refresh
         </button>
       </div>
@@ -611,53 +864,149 @@
         <div class="text-xs text-slate-500">Loading units...</div>
       </div>
     </section>
-  </main>
 
-  <!-- FULL STREAM LEADERBOARD MODAL -->
-  <div id="leaderboardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-    <div class="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
-      <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
+    <!-- PAGE 3 OF 5: STUDYAREA -->
+    <section id="studyareaPage" class="app-page hidden" data-page="studyarea" aria-label="Studyarea">
+      <div id="studyHubContainer"></div>
+    </section>
+
+    <!-- PAGE 4 OF 5: LEADERBOARD -->
+    <section id="leaderboardPage" class="app-page hidden space-y-3" data-page="leaderboard">
+      <div class="flex items-center justify-between gap-3">
         <div>
-          <span class="px-2.5 py-0.5 text-[10px] font-bold rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/50">Stream Rankings</span>
-          <h3 class="text-base font-bold text-slate-900 dark:text-white mt-1">🏆 Class Leaderboard</h3>
+          <h2 id="leaderboardTitle" class="text-xl font-bold text-slate-900 dark:text-white">🏆 Class Leaderboard</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Your stream only · tap and hold a photo for a classmate profile</p>
         </div>
-        <button onclick="closeLeaderboardModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl font-bold">&times;</button>
+        <button onclick="closeLeaderboardModal()" class="ghost-button px-3 py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer">Home</button>
       </div>
 
-      <div class="p-5 overflow-y-auto flex-1">
-        <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
-          <table class="w-full text-left text-xs">
-            <thead>
-              <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400">
-                <th class="p-3 w-12 text-center">Rank</th>
-                <th class="p-3">Student</th>
-                <th class="p-3 text-center">XP / Rank</th>
-                <th class="p-3 text-center">Medals 🏅</th>
-                <th class="p-3 text-center">Attempts</th>
-                <th class="p-3 text-right">Best Score</th>
-              </tr>
-            </thead>
-            <tbody id="leaderboardModalTableBody">
-              <tr><td colspan="6" class="p-4 text-center text-slate-500">Loading leaderboard...</td></tr>
-            </tbody>
-          </table>
+      <div class="leaderboard-card w-full bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
+        <div class="leaderboard-body px-2 py-2 overflow-y-auto flex-1" tabindex="0" role="region" aria-label="Class leaderboard, scrollable">
+          <div class="leaderboard-table">
+            <table class="w-full table-fixed text-left text-[11px]">
+              <caption class="sr-only">Class leaderboard with rank, student, XP, mastery level and medals</caption>
+              <thead>
+                <tr class="border-y border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                  <th scope="col" class="w-10 px-2 py-1.5 text-center">Rank</th>
+                  <th scope="col" class="px-2 py-1.5">Student</th>
+                  <th scope="col" class="px-2 py-1.5 text-center">XP · Level</th>
+                  <th scope="col" class="w-12 px-2 py-1.5 text-center">Medals</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboardModalTableBody">
+                <tr><td colspan="4" class="px-2 py-3 text-center text-slate-500">Loading leaderboard...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <p class="mt-2 text-[10px] font-semibold text-slate-400 dark:text-slate-500 text-center">Hold a photo to see a classmate's profile.</p>
+      </div>
+    </section>
+
+    <!-- PAGE 5 OF 5: SETTINGS -->
+    <section id="settingsPage" class="app-page hidden space-y-4" data-page="settings">
+      <div>
+        <h2 class="text-xl font-bold text-slate-900 dark:text-white">Settings</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Your profile, reminders, appearance and school tools.</p>
       </div>
 
-      <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end">
-        <button onclick="closeLeaderboardModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer">
-          Close
+      <!-- Full school administration stays available as a dialog from here. -->
+      <div id="adminHome" class="hidden p-6 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 card-shadow">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-11 h-11 shrink-0 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-xl"><span data-ui-icon="gear" data-size="22" aria-hidden="true"></span></div>
+          <div class="min-w-0">
+            <div class="text-sm font-extrabold text-slate-900 dark:text-white">School administration</div>
+            <div id="adminHomeSchool" class="text-xs text-slate-500 dark:text-slate-400 truncate">Gemini cost, prepaid balance, users and unit constraints</div>
+          </div>
+        </div>
+        <button onclick="openAdminSettings()" class="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition whitespace-nowrap cursor-pointer">
+          Open settings &rarr;
         </button>
       </div>
+
+      <div id="settingsProfileCard" class="hidden bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 card-shadow flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="relative block h-14 w-14 shrink-0 rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 text-white ring-2 ring-white dark:ring-slate-900 overflow-hidden">
+            <span id="settingsAvatar" class="absolute inset-0 flex items-center justify-center text-base font-extrabold">S</span>
+            <img id="settingsAvatarImg" alt="" class="hidden absolute inset-0 h-full w-full rounded-full object-cover" onerror="this.classList.add('hidden')">
+          </span>
+          <div class="min-w-0">
+            <div id="settingsProfileName" class="text-sm font-extrabold text-slate-900 dark:text-white truncate">Student</div>
+            <div id="settingsProfileRank" class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">Beginner</div>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Hold the header avatar for photo options too.</p>
+          </div>
+        </div>
+        <div class="flex w-full sm:w-auto gap-2">
+          <button onclick="openProfilePanel()" class="ghost-button flex-1 sm:flex-none px-4 py-2 rounded-lg text-[11px] font-bold transition border cursor-pointer">XP profile</button>
+          <button onclick="openAvatarPicker(event)" class="quiet-button flex-1 sm:flex-none px-4 py-2 rounded-lg text-[11px] font-bold transition cursor-pointer">Change photo</button>
+        </div>
+      </div>
+
+      <!-- Push reminders: shown only for students once the app knows who is signed in. -->
+      <div id="reminderCard" class="hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-3 card-shadow">
+        <div class="flex items-start gap-2">
+          <span class="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-[#e9e9e9] dark:bg-[#262626]"><span data-ui-icon="bell" data-size="20" aria-hidden="true"></span></span>
+          <div class="min-w-0 flex-1">
+            <div class="text-[11px] font-extrabold text-slate-800 dark:text-slate-100">Reminders</div>
+            <p id="reminderStatus" class="mt-0.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400 leading-relaxed">Checking this device…</p>
+            <p id="reminderDetail" class="mt-1 text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed"></p>
+          </div>
+        </div>
+        <button id="reminderButton" type="button" onclick="toggleReminders()" class="ghost-button mt-2 w-full py-1.5 rounded-lg text-[11px] font-bold transition border">Turn on reminders</button>
+      </div>
+
+      <div id="settingsAppearanceCard" class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 card-shadow">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Appearance &amp; session</h3>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400">Theme, fresh data and sign-out.</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="toggleTheme()" id="themeToggleBtn" aria-label="Toggle theme" title="Toggle theme" class="ghost-button px-3 py-2 rounded-lg text-[11px] font-bold transition border flex items-center gap-2 cursor-pointer">
+            <span id="themeIcon" aria-hidden="true"></span><span>Theme</span>
+          </button>
+          <button onclick="forceClearCacheAndRefresh()" id="forceRefreshBtn" aria-label="Clear cache and sync fresh data" title="Clear cache &amp; sync fresh data" class="ghost-button px-3 py-2 rounded-lg text-[11px] font-bold transition border flex items-center gap-2 cursor-pointer">
+            <span data-ui-icon="refresh" data-size="14" aria-hidden="true"></span><span>Fresh data</span>
+          </button>
+          <button onclick="logoutUser()" id="signOutBtn" class="footer-pill signout-button inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-bold text-[11px] border transition cursor-pointer">
+            <span data-ui-icon="signOut" data-size="14" aria-hidden="true"></span><span>Sign Out</span>
+          </button>
+        </div>
+      </div>
+
+      <footer id="appFooter" class="bg-white dark:bg-slate-900 py-4 text-center text-xs text-slate-500 dark:text-slate-400 rounded-xl border border-slate-200 dark:border-slate-800 card-shadow">
+        <div id="schoolFooterText">Studyspace &copy; 2026</div>
+      </footer>
+    </section>
+  </main>
+
+  <!-- BOTTOM TAB BAR: Quizzes · Studyarea · Home · Leaderboard · Settings.
+       Icons are the whole control; aria-label and title carry the name. -->
+  <nav id="bottomTabBar" aria-label="Main navigation">
+    <div class="tab-strip">
+      <button type="button" class="tab-button" data-page="quizzes" onclick="goToPage('quizzes')" aria-label="Quizzes" title="Quizzes">
+        <span class="tab-icon" data-ui-icon="quiz" data-size="24" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="tab-button" data-page="studyarea" onclick="goToPage('studyarea')" aria-label="Studyarea" title="Studyarea">
+        <span class="tab-icon" data-ui-icon="bookOpen" data-size="24" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="tab-button" data-page="home" onclick="goToPage('home')" aria-current="page" aria-label="Home" title="Home">
+        <span class="tab-icon" data-ui-icon="home" data-size="26" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="tab-button" data-page="leaderboard" onclick="goToPage('leaderboard')" aria-label="Leaderboard" title="Leaderboard">
+        <span class="tab-icon" data-ui-icon="trophy" data-size="24" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="tab-button" data-page="settings" onclick="goToPage('settings')" aria-label="Settings" title="Settings">
+        <span class="tab-icon" data-ui-icon="gear" data-size="24" aria-hidden="true"></span>
+      </button>
     </div>
-  </div>
+  </nav>
 
   <!-- CLASSMATE PROFILE (hold a photo on the class leaderboard) -->
-  <div id="studentProfileModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onclick="if (event.target === this) closeStudentProfile()">
-    <div class="w-full max-w-xs bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="studentProfileName">
+  <dialog id="studentProfileModal" class="modal-surface" aria-labelledby="studentProfileName" closedby="any">
+    <div class="w-full max-w-xs bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
       <div class="relative p-5 pb-4 bg-gradient-to-br from-emerald-50 via-white to-white dark:from-emerald-950/60 dark:via-slate-900 dark:to-slate-900 border-b border-slate-100 dark:border-slate-800">
-        <button onclick="closeStudentProfile()" class="absolute top-3 right-3 h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs" aria-label="Close profile">✕</button>
+        <button onclick="closeStudentProfile()" class="absolute top-3 right-3 h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs" aria-label="Close profile"><span data-ui-icon="close" data-size="14" aria-hidden="true"></span></button>
 
         <div class="flex items-center gap-3">
           <span class="relative block h-16 w-16 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 text-white ring-2 ring-white dark:ring-slate-900">
@@ -711,10 +1060,10 @@
         <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 text-center leading-relaxed">This is a read-only classmate profile. Only you can change your own photo and reminders.</p>
       </div>
     </div>
-  </div>
+  </dialog>
 
   <!-- STUDENT DETAILED ANALYTICS MODAL -->
-  <div id="analyticsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+  <dialog id="analyticsModal" class="modal-surface" aria-labelledby="analyticsStudentName" closedby="any">
     <div class="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
       <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
         <div>
@@ -742,15 +1091,16 @@
 
         <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Unit Attempt History</h4>
         
-        <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+        <div class="table-wrapper responsive-table border border-slate-200 dark:border-slate-800 rounded-xl" tabindex="0" role="region" aria-label="Unit attempt history, scrollable">
           <table class="w-full text-left text-xs">
+            <caption class="sr-only">Unit attempt history with attempts, medals, full marks run and highest score</caption>
             <thead>
               <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400">
-                <th class="p-3">Quiz ID / Unit</th>
-                <th class="p-3 text-center">Attempts Made</th>
-                <th class="p-3 text-center">Medals</th>
-                <th class="p-3 text-center">100% Run</th>
-                <th class="p-3 text-right">Highest Score</th>
+                <th scope="col" class="p-3">Quiz ID / Unit</th>
+                <th scope="col" class="p-3 text-center">Attempts Made</th>
+                <th scope="col" class="p-3 text-center">Medals</th>
+                <th scope="col" class="p-3 text-center">100% Run</th>
+                <th scope="col" class="p-3 text-right">Highest Score</th>
               </tr>
             </thead>
             <tbody id="analyticsTableBody">
@@ -761,20 +1111,15 @@
       </div>
 
       <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end">
-        <button onclick="closeAnalyticsModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer">
+        <button onclick="closeAnalyticsModal()" class="ghost-button px-4 py-2 font-bold text-xs rounded-lg border transition-all cursor-pointer">
           Close Window
         </button>
       </div>
     </div>
-  </div>
-
-<!-- FULL-SCREEN STUDY HUB (drawn entirely by study-engine.js) -->
-<div id="studyHubModal" class="hidden fixed inset-0 z-[100] w-screen h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
-  <div id="studyHubContainer" class="w-full h-full"></div>
-</div>
+  </dialog>
 
   <!-- QUIZ MODAL -->
-  <div id="quizModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+  <dialog id="quizModal" class="modal-surface" aria-labelledby="quizModalTitle" closedby="closerequest">
     <div class="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
       <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
         <div>
@@ -802,7 +1147,7 @@
         </button>
       </div>
     </div>
-  </div>
+  </dialog>
 
   <!-- XP TOAST (small, temporary; it never blocks the page) -->
   <div id="xpToast" class="hidden fixed bottom-5 right-4 z-[60] max-w-[280px] px-4 py-3 rounded-2xl bg-emerald-900 dark:bg-emerald-950 border border-emerald-400/60 text-emerald-50 shadow-2xl backdrop-blur-md animate-float-in">
@@ -811,11 +1156,11 @@
   </div>
 
   <!-- AFTER-QUIZ XP REWARD POPUP -->
-  <div id="xpRewardOverlay" class="hidden fixed inset-0 z-[80] bg-slate-950/70 backdrop-blur-sm items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="rewardTitle">
+  <dialog id="xpRewardOverlay" class="modal-surface" aria-labelledby="rewardTitle" closedby="any">
     <div id="xpRewardCard" class="w-full max-w-[350px] max-h-[92vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl animate-reward-in">
 
       <div class="relative px-5 pt-6 pb-5 text-center bg-gradient-to-b from-emerald-100 via-emerald-50 to-white dark:from-emerald-950/80 dark:via-emerald-950/40 dark:to-slate-900 border-b border-emerald-200/70 dark:border-emerald-900/40">
-        <button onclick="closeXpReward()" class="absolute top-3 right-3 h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-800 text-xs" aria-label="Close reward">✕</button>
+        <button onclick="closeXpReward()" class="absolute top-3 right-3 h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-800 text-xs" aria-label="Close reward"><span data-ui-icon="close" data-size="14" aria-hidden="true"></span></button>
 
         <span class="xp-sparkle absolute top-5 left-7 text-amber-400 text-sm">✦</span>
         <span class="xp-sparkle xp-sparkle-2 absolute top-9 right-9 text-emerald-400 text-xs">✦</span>
@@ -881,49 +1226,40 @@
         </div>
 
         <div class="pt-1 space-y-2">
-          <button onclick="closeXpReward()" class="w-full py-2.5 rounded-xl text-xs font-extrabold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition">Back to quizzes</button>
-          <button onclick="closeXpReward(); openProfilePanel()" class="w-full py-2 rounded-xl text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">See my profile</button>
+          <button onclick="closeXpReward(); goToPage('quizzes')" class="w-full py-2.5 rounded-xl text-xs font-extrabold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition">Back to quizzes</button>
+          <button onclick="closeXpReward(); goToPage('settings')" class="w-full py-2 rounded-xl text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">See my profile</button>
         </div>
       </div>
     </div>
-  </div>
+  </dialog>
 
-  <!-- FOOTER WITH THEME TOGGLE & SIGNOUT BUTTON -->
-  <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500 dark:text-slate-500 mt-auto">
-    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div>Hithadhoo School - Studyspace &copy; 2026</div>
-
-      <div class="flex items-center gap-3">
-        <button 
-          onclick="forceClearCacheAndRefresh()" 
-          id="forceRefreshBtn"
-          title="Clear Cache & Sync Fresh Data"
-          class="px-3.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-xs rounded-xl border border-amber-500/20 transition cursor-pointer flex items-center gap-1.5"
-        >
-          🔄
-        </button>
-        
-        <button 
-          onclick="toggleTheme()" 
-          id="themeToggleBtn"
-          aria-label="Toggle Theme"
-          class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
-        >
-          <span id="themeIcon">☀️</span>
-        </button>
-
-        <button 
-          onclick="logoutUser()" 
-          class="px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs rounded-xl border border-rose-500/20 transition cursor-pointer"
-        >
-          Sign Out
-        </button>
+  <!-- ADMIN SETTINGS MODAL (Version 14) -->
+  <dialog id="adminModal" class="modal-surface" aria-labelledby="adminSettingsTitle" closedby="any">
+    <div class="w-full max-w-5xl max-h-[92vh] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl flex flex-col overflow-hidden">
+      <div class="flex items-start justify-between gap-4 px-5 py-4 border-b border-slate-200 dark:border-slate-800">
+        <div>
+          <h2 id="adminSettingsTitle" class="text-lg font-extrabold text-slate-900 dark:text-white">School settings</h2>
+          <p id="adminSchoolLabel" class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Loading school…</p>
+        </div>
+        <button onclick="closeAdminSettings()" aria-label="Close settings" class="ghost-button h-9 w-9 rounded-lg font-bold transition cursor-pointer"><span data-ui-icon="close" data-size="14" aria-hidden="true"></span></button>
       </div>
+      <div id="adminTabs" class="flex gap-1 px-5 pt-3 pb-2 border-b border-slate-200 dark:border-slate-800 overflow-x-auto whitespace-nowrap text-xs font-bold">
+        <button data-admin-tab="overview" onclick="adminSwitchTab('overview')" class="px-3 py-2 rounded-lg bg-emerald-500 text-slate-950 transition cursor-pointer">Overview</button>
+        <button data-admin-tab="details" onclick="adminSwitchTab('details')" class="px-3 py-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">School details</button>
+        <button data-admin-tab="users" onclick="adminSwitchTab('users')" class="px-3 py-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">Teachers &amp; students</button>
+        <button data-admin-tab="units" onclick="adminSwitchTab('units')" class="px-3 py-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">Unit constraints</button>
+        <button data-admin-tab="platform" id="adminPlatformTab" onclick="adminSwitchTab('platform')" class="hidden px-3 py-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">Platform</button>
+      </div>
+      <div id="adminTabContent" class="px-5 py-4 overflow-y-auto flex-1 text-xs text-slate-700 dark:text-slate-200">Loading…</div>
     </div>
-  </footer>
+  </dialog>
 
   <script>
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxp8krlvEmXQGeNp96G2ybXV9KjecxpCu61LuT34lMil2z4fklRAB9ge_K23FcOh1qFbg/exec";
+    // The Apps Script address lives in api.js only (api.js?v=2 above).
+
+    // Keep the sign-in gate visible from the first paint, as in V14.
+    // The deferred API client is not needed here; window.onload closes it for valid saved sessions.
+    if (document.getElementById("loginModal")) showDialog("loginModal");
 
     const PRAISE_MESSAGES = ["Good job! 🌟", "You're so smart! 💡", "You're great at this! ✨", "Let's get them all! 🚀", "Wonderful! 🎈", "Amazing! 🎉", "That's right! 🙌", "Historic W", "You're cooking", "Iconic!", "You're farming aura", "Main character energy", "Slay", "Based", "Wow, you're locked in"];
     const ENCOURAGEMENT_MESSAGES = ["You can get the next one! 💪", "That's okay! 🌱", "Don't worry! 😊", "You can get this next time! 🎯", "Mistakes make perfect! ✨", "No worries", "Just a little setback", "Trust the process", "It's giving learning curve", "We love a redemption arc", "That's valid, shake it off"];
@@ -952,53 +1288,22 @@
     let filteredLeaderboardList = [];
     let renderedLeaderboardList = [];
     let midnightTimer = null;
+    let currentPage = "home";
+    const APP_PAGE_IDS = {
+      quizzes: "quizzesPage",
+      home: "homePage",
+      studyarea: "studyareaPage",
+      leaderboard: "leaderboardPage",
+      settings: "settingsPage"
+    };
 
     const cardPaperSelections = {};
 
     /* ------------------------------------------------------------------ */
-    /* SUBJECT CARD COLOURS                                                */
+    /* SUBJECT ICONS                                                       */
     /* ------------------------------------------------------------------ */
-    /* Each subject gets two hex colours: [light corner, dark corner].
-       The subject name must match the "subject" column in Quiz_Index.
-       Matching ignores capitals, so "business studies" also works.
-       Add a new line to give a subject its own colour. */
-    const SUBJECT_ICON_COLORS = {
-      "Business": ["#34d399", "#0f766e"],
-      "Economics": ["#fbbf24", "#b45309"],
-      "Accounting": ["#60a5fa", "#1d4ed8"],
-      "Travel and Tourism": ["#22d3ee", "#0e7490"],
-      "Biology": ["#4ade80", "#15803d"],
-      "Chemistry": ["#a78bfa", "#6d28d9"],
-      "Physics": ["#f472b6", "#be185d"],
-      "English": ["#f87171", "#b91c1c"],
-      "Mathematics": ["#818cf8", "#4338ca"],
-      "Dhivehi": ["#2dd4bf", "#0f766e"],
-      "Islam": ["#34d399", "#047857"]
-    };
-
-    // Subjects not listed above pick one of these in turn.
-    const SUBJECT_ICON_FALLBACKS = [
-      ["#34d399", "#0f766e"],
-      ["#60a5fa", "#1d4ed8"],
-      ["#fbbf24", "#b45309"],
-      ["#a78bfa", "#6d28d9"],
-      ["#22d3ee", "#0e7490"],
-      ["#f472b6", "#be185d"]
-    ];
-
-    function getSubjectIconColors(subject) {
-      const wanted = String(subject || "").trim().toLowerCase();
-      const match = Object.keys(SUBJECT_ICON_COLORS).find(function (name) {
-        return name.toLowerCase() === wanted;
-      });
-      if (match) return SUBJECT_ICON_COLORS[match];
-
-      let hash = 0;
-      for (let i = 0; i < wanted.length; i++) {
-        hash = (hash * 31 + wanted.charCodeAt(i)) >>> 0;
-      }
-      return SUBJECT_ICON_FALLBACKS[hash % SUBJECT_ICON_FALLBACKS.length];
-    }
+    /* Solid, full-colour subject icons come from icons.js; the old initial
+       tile and its duplicate colour table are no longer needed. */
 
     let questionTimer = null;
     let timeLeft = 45;
@@ -1046,6 +1351,140 @@
       if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
       return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
     }
+
+    /* Native <dialog> keeps focus, Escape and inertness in the browser. */
+    function showDialog(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (typeof el.showModal === "function") {
+        if (!el.open) el.showModal();
+      } else {
+        el.classList.remove("hidden");
+        el.setAttribute("open", "");
+      }
+    }
+
+    function closeDialog(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (typeof el.close === "function") {
+        if (el.open) el.close();
+      } else {
+        el.classList.add("hidden");
+        el.removeAttribute("open");
+      }
+    }
+
+    function onDialogClose(id, handler) {
+      const el = document.getElementById(id);
+      if (el && typeof handler === "function") el.addEventListener("close", handler);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* FIVE-PAGE NAVIGATION                                                 */
+    /* ------------------------------------------------------------------ */
+    /* Page order follows the bottom bar: Quizzes, Home, Studyarea,
+       Leaderboard, Settings. Home is the default and the only page shown
+       before a role is known. Dialogs still sit above whichever page is open. */
+    function pageAllowed(page) {
+      if (page === "quizzes" || page === "studyarea") return userRole !== "admin";
+      if (page === "leaderboard") return userRole !== "teacher" && userRole !== "admin";
+      return Object.prototype.hasOwnProperty.call(APP_PAGE_IDS, page);
+    }
+
+    function applyNavVisibility() {
+      document.querySelectorAll("#bottomTabBar .tab-button").forEach(function (btn) {
+        const page = btn.getAttribute("data-page");
+        btn.classList.toggle("hidden", !pageAllowed(page));
+      });
+      if (!pageAllowed(currentPage)) goToPage("home");
+    }
+
+    function setPage(page, options) {
+      const target = pageAllowed(page) ? page : "home";
+      currentPage = target;
+      document.body.setAttribute("data-page", target);
+
+      Object.keys(APP_PAGE_IDS).forEach(function (name) {
+        const section = document.getElementById(APP_PAGE_IDS[name]);
+        if (!section) return;
+        const active = name === target;
+        section.classList.toggle("hidden", !active);
+        section.hidden = !active;
+        section.setAttribute("aria-hidden", active ? "false" : "true");
+      });
+
+      document.querySelectorAll("#bottomTabBar .tab-button").forEach(function (btn) {
+        const active = btn.getAttribute("data-page") === target;
+        if (active) btn.setAttribute("aria-current", "page");
+        else btn.removeAttribute("aria-current");
+      });
+
+      if (target === "studyarea" && typeof loadStudyHub === "function") {
+        loadStudyHub("studyHubContainer");
+      }
+      if (target === "leaderboard" && typeof renderLeaderboardPage === "function") {
+        renderLeaderboardPage();
+      }
+      if (target === "settings" && typeof applySettingsVisibility === "function") {
+        applySettingsVisibility();
+      }
+      if (!options || options.scroll !== false) {
+        const main = document.getElementById("mainContent");
+        if (main) main.scrollIntoView({ behavior: "smooth", block: "start" });
+        else window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }
+
+    function goToPage(page) {
+      setPage(page);
+      if (typeof closeAvatarMenu === "function") closeAvatarMenu();
+    }
+
+    function resetXpRewardTimers() {
+      if (xpRewardTimer) { clearTimeout(xpRewardTimer); xpRewardTimer = null; }
+      if (xpRewardCountTimer) { clearInterval(xpRewardCountTimer); xpRewardCountTimer = null; }
+    }
+
+    function showLoginError(message, invalid) {
+      const el = document.getElementById("loginError");
+      if (!el) return;
+      el.textContent = message || "";
+      el.classList.toggle("hidden", !message);
+      ["emailInput", "passwordInput"].forEach(function (id) {
+        const input = document.getElementById(id);
+        if (!input) return;
+        if (invalid) input.setAttribute("aria-invalid", "true");
+        else input.removeAttribute("aria-invalid");
+      });
+    }
+
+    /* closedby is new in some browsers: close on backdrop clicks as a fallback. */
+    function installDialogAccessibility() {
+      document.querySelectorAll("dialog[closedby='any']").forEach(function (dialog) {
+        dialog.addEventListener("click", function (e) {
+          if (e.target === dialog) dialog.close();
+        });
+      });
+      onDialogClose("profilePanel", function () {
+        const btn = document.getElementById("profileBtn");
+        if (btn) btn.setAttribute("aria-expanded", "false");
+        closeAvatarMenu();
+      });
+      onDialogClose("avatarModal", function () {
+        pendingAvatarDataUrl = "";
+        showAvatarModalMessage("");
+        const preview = document.getElementById("avatarPreviewImg");
+        if (preview) preview.removeAttribute("src");
+      });
+      onDialogClose("xpRewardOverlay", resetXpRewardTimers);
+      onDialogClose("quizModal", stopQuestionTimer);
+      ["emailInput", "passwordInput"].forEach(function (id) {
+        const input = document.getElementById(id);
+        if (input) input.addEventListener("input", function () { showLoginError(""); });
+      });
+    }
+    installDialogAccessibility();
 
     function setText(id, value) {
       const el = document.getElementById(id);
@@ -1147,6 +1586,9 @@
       setText("profilePanelName", name);
       setText("profileInitials", initials);
       setText("profilePanelAvatar", initials);
+      setText("settingsAvatar", initials);
+      setText("settingsProfileName", name);
+      setText("settingsProfileRank", rank.name || "Beginner");
       setText("rewardInitials", initials);
 
       const bar = document.getElementById("rankProgressBar");
@@ -1172,7 +1614,7 @@
     }
 
     async function loadMyProgress() {
-      if (userRole === "teacher") {
+      if (userRole === "teacher" || userRole === "admin") {
         setProfileUiVisible(false);
         return;
       }
@@ -1190,15 +1632,12 @@
     /* ------------------------------------------------------------------ */
 
     function openProfilePanel() {
-      if (userRole === "teacher") return;
-
+      if (userRole === "teacher" || userRole === "admin") return;
       const panel = document.getElementById("profilePanel");
-      const backdrop = document.getElementById("profileBackdrop");
-      const btn = document.getElementById("profileBtn");
       if (!panel) return;
 
-      panel.classList.remove("hidden");
-      if (backdrop) backdrop.classList.remove("hidden");
+      showDialog("profilePanel");
+      const btn = document.getElementById("profileBtn");
       if (btn) btn.setAttribute("aria-expanded", "true");
       updateProfileExtras();
       updateXpRings(myProgress ? myProgress.progressPercent : 0);
@@ -1208,37 +1647,20 @@
     }
 
     function closeProfilePanel() {
-      const panel = document.getElementById("profilePanel");
-      const backdrop = document.getElementById("profileBackdrop");
-      const btn = document.getElementById("profileBtn");
-      if (panel) panel.classList.add("hidden");
-      if (backdrop) backdrop.classList.add("hidden");
-      if (btn) btn.setAttribute("aria-expanded", "false");
-      closeAvatarMenu();
+      closeDialog("profilePanel");
     }
 
     function toggleProfilePanel(event) {
       if (event) event.stopPropagation();
       const panel = document.getElementById("profilePanel");
       if (!panel) return;
-      if (panel.classList.contains("hidden")) openProfilePanel();
+      if (!panel.open) openProfilePanel();
       else closeProfilePanel();
     }
 
-    document.addEventListener("click", function (e) {
-      const panel = document.getElementById("profilePanel");
-      const btn = document.getElementById("profileBtn");
-      if (!panel || panel.classList.contains("hidden")) return;
-      if (panel.contains(e.target) || (btn && btn.contains(e.target))) return;
-      closeProfilePanel();
-    });
-
+    // Native dialogs handle backdrop clicks and Escape; only the small avatar menu needs help.
     document.addEventListener("keydown", function (e) {
-      if (e.key !== "Escape") return;
-      closeAvatarMenu();
-      closeProfilePanel();
-      closeAvatarModal();
-      closeXpReward();
+      if (e.key === "Escape") closeAvatarMenu();
     });
 
     /* ------------------------------------------------------------------ */
@@ -1403,7 +1825,7 @@
     // so a broken or blocked Drive image simply reveals them again.
     function applyMyAvatar(url, version) {
       const source = url ? avatarSrc(url, version) : "";
-      ["profileAvatarImg", "profilePanelAvatarImg", "rewardAvatarImg"].forEach(function (id) {
+      ["profileAvatarImg", "profilePanelAvatarImg", "settingsAvatarImg", "rewardAvatarImg"].forEach(function (id) {
         const img = document.getElementById(id);
         if (!img) return;
         if (source) {
@@ -1507,8 +1929,7 @@
         const preview = document.getElementById("avatarPreviewImg");
         if (preview) preview.src = pendingAvatarDataUrl;
         showAvatarModalMessage("");
-        const modal = document.getElementById("avatarModal");
-        if (modal) modal.classList.remove("hidden");
+        showDialog("avatarModal");
       } catch (err) {
         alert("That photo could not be opened. Please try another one.");
       }
@@ -1522,12 +1943,7 @@
     }
 
     function closeAvatarModal() {
-      const modal = document.getElementById("avatarModal");
-      if (modal) modal.classList.add("hidden");
-      pendingAvatarDataUrl = "";
-      showAvatarModalMessage("");
-      const preview = document.getElementById("avatarPreviewImg");
-      if (preview) preview.removeAttribute("src");
+      closeDialog("avatarModal");
     }
 
     async function saveMyAvatar() {
@@ -1603,6 +2019,12 @@
       return !!ONESIGNAL_APP_ID && ONESIGNAL_APP_ID.indexOf("PASTE_") !== 0;
     }
 
+    // Reminders are personal student nudges. Teachers and school admins never
+    // subscribe a device, even though the admin panel is now on its own page.
+    function remindersDisabledForRole() {
+      return userRole === "teacher" || userRole === "admin";
+    }
+
     function isIosDevice() {
       return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
         (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -1644,7 +2066,7 @@
     }
 
     async function initializeOneSignal() {
-      if (!remindersConfigured() || userRole === "teacher") return null;
+      if (!remindersConfigured() || remindersDisabledForRole()) return null;
       if (oneSignalInstance) return oneSignalInstance;
       if (oneSignalInitPromise) return oneSignalInitPromise;
 
@@ -1684,19 +2106,19 @@
 
       OneSignal.User.PushSubscription.addEventListener("change", function () {
         refreshReminderUi();
-        if (currentUser && userRole !== "teacher") syncPushSubscription();
+        if (currentUser && !remindersDisabledForRole()) syncPushSubscription();
       });
 
       OneSignal.Notifications.addEventListener("permissionChange", function () {
         refreshReminderUi();
-        if (currentUser && userRole !== "teacher") syncPushSubscription();
+        if (currentUser && !remindersDisabledForRole()) syncPushSubscription();
       });
     }
 
     function reminderButtonClasses(active) {
       return active
         ? "mt-2 w-full py-1.5 rounded-lg text-[11px] font-bold transition bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/60 border border-rose-200 dark:border-rose-900/60"
-        : "mt-2 w-full py-1.5 rounded-lg text-[11px] font-bold transition bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-600";
+        : "ghost-button mt-2 w-full py-1.5 rounded-lg text-[11px] font-bold transition border";
     }
 
     function setReminderUi(status, detail, button) {
@@ -1705,7 +2127,7 @@
       const detailEl = document.getElementById("reminderDetail");
       const btn = document.getElementById("reminderButton");
 
-      if (card) card.classList.toggle("hidden", !currentUser || userRole === "teacher");
+      if (card) card.classList.toggle("hidden", !currentUser || remindersDisabledForRole());
       if (statusEl) statusEl.innerText = status || "";
       if (detailEl) detailEl.innerText = detail || "";
       if (!btn) return;
@@ -1719,7 +2141,7 @@
     }
 
     function refreshReminderUi() {
-      if (!currentUser || userRole === "teacher") {
+      if (!currentUser || remindersDisabledForRole()) {
         const card = document.getElementById("reminderCard");
         if (card) card.classList.add("hidden");
         return;
@@ -1784,7 +2206,7 @@
     }
 
     async function syncPushSubscription(force) {
-      if (!currentUser || userRole === "teacher") return;
+      if (!currentUser || remindersDisabledForRole()) return;
       const OneSignal = oneSignalInstance || await initializeOneSignal();
       if (!OneSignal) return;
 
@@ -1820,7 +2242,7 @@
     }
 
     async function toggleReminders() {
-      if (reminderUiBusy || !currentUser || userRole === "teacher") return;
+      if (reminderUiBusy || !currentUser || remindersDisabledForRole()) return;
 
       const OneSignal = await initializeOneSignal();
       if (!OneSignal) {
@@ -1857,7 +2279,7 @@
     }
 
     async function initReminders() {
-      if (!currentUser || userRole === "teacher") {
+      if (!currentUser || remindersDisabledForRole()) {
         refreshReminderUi();
         return;
       }
@@ -1875,7 +2297,7 @@
 
     // Runs before sign-out so a shared phone stops showing the previous student's reminders.
     async function detachRemindersOnLogout() {
-      if (!currentUser || userRole === "teacher") return;
+      if (!currentUser || remindersDisabledForRole()) return;
 
       let OneSignal = oneSignalInstance;
       if (!OneSignal && oneSignalInitPromise) {
@@ -1977,8 +2399,7 @@
       const bar = document.getElementById("rewardBar");
       if (bar) bar.style.width = beforePercent + "%";
 
-      overlay.classList.remove("hidden");
-      overlay.classList.add("flex");
+      showDialog("xpRewardOverlay");
 
       if (xpRewardTimer) clearTimeout(xpRewardTimer);
       if (xpRewardCountTimer) clearInterval(xpRewardCountTimer);
@@ -2005,19 +2426,8 @@
     }
 
     function closeXpReward() {
-      const overlay = document.getElementById("xpRewardOverlay");
-      if (overlay) {
-        overlay.classList.add("hidden");
-        overlay.classList.remove("flex");
-      }
-      if (xpRewardTimer) {
-        clearTimeout(xpRewardTimer);
-        xpRewardTimer = null;
-      }
-      if (xpRewardCountTimer) {
-        clearInterval(xpRewardCountTimer);
-        xpRewardCountTimer = null;
-      }
+      closeDialog("xpRewardOverlay");
+      resetXpRewardTimers();
     }
 
     function showXpToast(progress, isMedal) {
@@ -2034,10 +2444,10 @@
       if (amount > 0) {
         title.innerText = "+" + amount + " XP" + (rankName ? " · " + rankName : "");
         sub.innerText = isMedal
-          ? "🏅 Perfect run — medal earned!"
+          ? "Perfect run — medal earned!"
           : "Nice work. Every question counts.";
       } else {
-        title.innerText = isMedal ? "🏅 Medal earned!" : "Practice saved";
+        title.innerText = isMedal ? "Medal earned!" : "Practice saved";
         sub.innerText = isMedal
           ? "Every answer was right without retrying."
           : "Repeating a question you already mastered earns less. Try another unit.";
@@ -2084,7 +2494,7 @@
       
       const footer = document.getElementById("quizModalFooter");
       if (footer) footer.classList.remove("hidden");
-      document.getElementById("quizModal").classList.remove("hidden");
+      showDialog("quizModal");
       
       renderQuizQuestions();
     }
@@ -2102,7 +2512,7 @@
 
       const footer = document.getElementById("quizModalFooter");
       if (footer) footer.classList.remove("hidden");
-      document.getElementById("quizModal").classList.remove("hidden");
+      showDialog("quizModal");
 
       renderQuizQuestions();
     }
@@ -2222,7 +2632,7 @@
     function updateThemeIcon(isDark) {
       const icon = document.getElementById("themeIcon");
       if (icon) {
-        icon.innerText = isDark ? "☀️" : "🌙";
+        setIcon(icon, isDark ? 'sun' : 'moon', 14);
       }
     }
 
@@ -2328,10 +2738,11 @@
       const loginBtn = document.getElementById("loginBtn");
 
       if (!email || !password) {
-        alert("Please enter both your email and password.");
+        showLoginError("Please enter both your email and password.", true);
         return;
       }
 
+      showLoginError("");
       loginBtn.innerText = "Verifying credentials...";
       loginBtn.disabled = true;
 
@@ -2339,19 +2750,20 @@
         const data = await API.call("login", { email: email, password: password });
 
         if (!data.authenticated) {
-          alert(data.error || "Authentication failed. Please check your credentials.");
-          loginBtn.innerText = "Authenticate & Enter Portal →";
+          showLoginError(data.error || "Authentication failed. Please check your credentials.", true);
+          loginBtn.innerText = "Authenticate & sign in →";
           loginBtn.disabled = false;
           return;
         }
 
         if (!data.token) {
-          alert("Could not start a secure session. Please try again, or tell your teacher.");
-          loginBtn.innerText = "Authenticate & Enter Portal →";
+          showLoginError("Could not start a secure session. Please try again, or tell your teacher.", true);
+          loginBtn.innerText = "Authenticate & sign in →";
           loginBtn.disabled = false;
           return;
         }
         API.setToken(data.token);
+        if (data.school) applySchoolBranding(data.school);
 
         currentUser = email;
         userRole = data.role;     
@@ -2366,6 +2778,8 @@
         } else if (data.name) {
           const nameParts = data.name.trim().split(" ");
           commonName = nameParts.length > 1 ? nameParts[1] : nameParts[0];
+        } else if (userRole === "admin") {
+          commonName = "Admin";
         } else {
           commonName = "Student";
         }
@@ -2387,6 +2801,8 @@
           name: userName,
           commonName: commonName,
           gradeStream: userGradeStream,
+          schoolId: data.schoolId || "",
+          school: data.school || null,
           streakData: userStreakData,
           avatarUrl: myAvatarUrl,
           avatarVersion: myAvatarVersion
@@ -2395,15 +2811,24 @@
         await initPortalSession();
 
       } catch (err) {
-        alert("Error connecting to Google Apps Script backend.");
-        loginBtn.innerText = "Authenticate & Enter Portal →";
+        showLoginError("Error connecting to Google Apps Script backend.", true);
+        loginBtn.innerText = "Authenticate & sign in →";
         loginBtn.disabled = false;
       }
     }
 
     async function initPortalSession() {
-      document.getElementById("loginModal").classList.add("hidden");
+      showLoginError("");
+      closeDialog("loginModal");
+      if (typeof applyRoleVisibility === "function") applyRoleVisibility();
       updateUserUI(userStreakData);
+
+      // Admins manage schools; they are not part of the student streak, quiz or reminder flows.
+      if (userRole === "admin") {
+        closeProfilePanel();
+        return;
+      }
+
       loadMyProgress();
       initReminders();
 
@@ -2417,19 +2842,9 @@
         });
       }
 
-      const miniBanner = document.getElementById("miniQuizBanner");
-      if (miniBanner) miniBanner.classList.remove("hidden");
-
       if (userRole === "teacher") {
-        document.getElementById("teacherBanner").classList.remove("hidden");
-        document.getElementById("teacherTableContainer").classList.remove("hidden");
-        document.getElementById("studentStatsGrid").classList.add("hidden");
-        document.getElementById("missedCard").classList.add("hidden");
         await loadTeacherData();
       } else {
-        document.getElementById("teacherBanner").classList.add("hidden");
-        document.getElementById("teacherTableContainer").classList.add("hidden");
-        document.getElementById("studentStatsGrid").classList.remove("hidden");
         loadMissedSummary();
         await loadStudentStats(); 
       }
@@ -2441,6 +2856,7 @@
 
     // Called after results that were waiting on this device have been sent: refresh what is on screen
     window.onQueueSynced = async function () {
+      if (userRole === "admin") return;
       try { if (typeof window.refreshStreakStatus === "function") await window.refreshStreakStatus(); } catch (e) { /* ignore */ }
       if (userRole === "teacher") {
         await loadTeacherData();
@@ -2466,12 +2882,14 @@
 
       const profileBtn = document.getElementById("profileBtn");
       if (profileBtn) {
-        const showProfile = userRole !== "teacher";
+        const showProfile = userRole !== "teacher" && userRole !== "admin";
         profileBtn.classList.toggle("hidden", !showProfile);
         const initials = getInitials(userName || commonName || "");
         setText("profileInitials", initials);
         setText("profilePanelAvatar", initials);
         setText("profilePanelName", userName || displayName);
+        setText("settingsAvatar", initials);
+        setText("settingsProfileName", userName || displayName);
         applyMyAvatar(myAvatarUrl, myAvatarVersion);
         if (!showProfile) closeProfilePanel();
       }
@@ -2561,10 +2979,12 @@
         const studentStat = studentIndex !== -1 ? rankedList[studentIndex] : null;
 
         if (studentStat) {
-          document.getElementById("statAvgScore").innerText = (studentStat.bestScore || 0) + "%";
+          const bestScore = Number(studentStat.bestScore) || 0;
+          const rank = studentIndex + 1;
+          document.getElementById("statAvgScore").innerText = bestScore + "%";
           document.getElementById("statFirstTry").innerText = studentStat.firstTry100s || 0;
           document.getElementById("statAttempts").innerText = studentStat.attemptsCount || 0;
-          document.getElementById("statRank").innerText = `#${studentIndex + 1}`;
+          document.getElementById("statRank").innerText = `#${rank}`;
 
           myMedals = Math.max(0, Number(studentStat.firstTry100s) || 0);
           updateProfileExtras();
@@ -2590,47 +3010,57 @@
       return displayName;
     }
 
-    function openLeaderboardModal() {
+    function renderLeaderboardPage() {
       const tbody = document.getElementById("leaderboardModalTableBody");
+      if (!tbody) return;
       tbody.innerHTML = "";
 
       const rankedList = sortRankings(filteredLeaderboardList.length > 0 ? filteredLeaderboardList : cachedLeaderboardData);
       renderedLeaderboardList = Array.isArray(rankedList) ? rankedList : [];
 
       if (renderedLeaderboardList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No leaderboard entries found for your stream.</td></tr>`;
-      } else {
-        renderedLeaderboardList.forEach((r, idx) => {
-          const displayName = leaderboardDisplayName(r);
-          const streakVal = Math.max(0, Number(r.streak || r.streakCount) || 0);
-          const streakHtml = streakVal > 0
-            ? `<span class="inline-flex items-center align-middle font-extrabold text-amber-600 dark:text-amber-300" title="${streakVal}-day streak">🔥${streakVal}</span>`
-            : `<span class="inline-flex items-center align-middle text-slate-400 dark:text-slate-500" title="No active streak">—</span>`;
-          const isCurrent = r.email && r.email.toLowerCase() === currentUser.toLowerCase();
-          const xp = Number(r.xp) || 0;
-          const rankName = r.rankName || "Beginner";
-
-          tbody.innerHTML += `
-            <tr class="border-b border-slate-200 dark:border-slate-800/60 ${isCurrent ? 'bg-emerald-500/10 font-bold' : ''}">
-              <td class="p-3 text-center font-bold ${idx === 0 ? 'text-amber-500 text-sm' : idx === 1 ? 'text-slate-400' : idx === 2 ? 'text-amber-700' : 'text-slate-500'}">
-                ${idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `#${idx + 1}`}
-              </td>
-              <td class="p-3">${avatarChipHtml(displayName, r.avatarUrl, r.avatarVersion, idx)}${streakHtml}</td>
-              <td class="p-3 text-center text-slate-600 dark:text-slate-300"><span class="font-bold text-amber-600 dark:text-amber-300">${xp}</span> <span class="text-[10px]">${rankName}</span></td>
-              <td class="p-3 text-center text-amber-600 dark:text-amber-300 font-bold">${r.firstTry100s || 0}</td>
-              <td class="p-3 text-center text-slate-600 dark:text-slate-300">${r.attemptsCount || 0}</td>
-              <td class="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${r.bestScore || 0}%</td>
-            </tr>
-          `;
-        });
+        tbody.innerHTML = `<tr><td colspan="4" class="px-2 py-3 text-center text-slate-500">No leaderboard entries found for your stream.</td></tr>`;
+        return;
       }
 
-      document.getElementById("leaderboardModal").classList.remove("hidden");
+      renderedLeaderboardList.forEach((r, idx) => {
+        const displayName = leaderboardDisplayName(r);
+        const streakVal = Math.max(0, Number(r.streak || r.streakCount) || 0);
+        const streakHtml = streakVal > 0
+          ? `<span class="inline-flex items-center align-middle font-extrabold text-amber-600 dark:text-amber-300" title="${streakVal}-day streak">🔥${streakVal}</span>`
+          : `<span class="inline-flex items-center align-middle text-slate-400 dark:text-slate-500" title="No active streak">—</span>`;
+        const isCurrent = r.email && r.email.toLowerCase() === currentUser.toLowerCase();
+        const xp = Number(r.xp) || 0;
+        const rankName = r.rankName || "Beginner";
+
+        tbody.innerHTML += `
+          <tr class="border-b border-slate-200 dark:border-slate-800/60 last:border-0 ${isCurrent ? 'bg-emerald-500/10 font-bold' : ''}">
+            <td data-label="Rank" class="px-2 py-1.5 text-center font-bold ${idx === 0 ? 'text-amber-500' : idx === 1 ? 'text-slate-400' : idx === 2 ? 'text-amber-700' : 'text-slate-500'}">
+              ${idx === 0 ? '🥇1' : idx === 1 ? '🥈2' : idx === 2 ? '🥉3' : `#${idx + 1}`}
+            </td>
+            <td data-label="Student" class="px-2 py-1.5">
+              <span class="inline-flex min-w-0 items-center align-middle">
+                ${avatarChipHtml(displayName, r.avatarUrl, r.avatarVersion, idx)}<span class="truncate font-semibold">${studyspaceEscapeHtml(displayName)}</span>${streakHtml}
+              </span>
+            </td>
+            <td data-label="XP · Level" class="px-2 py-1.5 text-center whitespace-nowrap text-slate-600 dark:text-slate-300">
+              <span class="font-bold text-amber-600 dark:text-amber-300">${xp}</span>
+              <span class="ml-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500">· ${studyspaceEscapeHtml(rankName)}</span>
+            </td>
+            <td data-label="Medals" class="px-2 py-1.5 text-center font-bold text-amber-600 dark:text-amber-300">${r.firstTry100s || 0}</td>
+          </tr>
+        `;
+      });
+    }
+
+    async function openLeaderboardModal() {
+      if (userRole === "teacher" || userRole === "admin") return;
+      if (!cachedLeaderboardData.length) await loadStudentStats();
+      goToPage("leaderboard");
     }
 
     function closeLeaderboardModal() {
-      closeStudentProfile();
-      document.getElementById("leaderboardModal").classList.add("hidden");
+      goToPage("home");
     }
 
     // A read-only classmate profile, opened by holding a photo on the class leaderboard.
@@ -2679,12 +3109,11 @@
         you.classList.toggle("hidden", !isMe);
       }
 
-      modal.classList.remove("hidden");
+      showDialog("studentProfileModal");
     }
 
     function closeStudentProfile() {
-      const modal = document.getElementById("studentProfileModal");
-      if (modal) modal.classList.add("hidden");
+      closeDialog("studentProfileModal");
     }
 
     async function loadTeacherData() {
@@ -2823,21 +3252,21 @@
 
           tbody.innerHTML += `
             <tr class="border-b border-slate-200 dark:border-slate-800/60">
-              <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${q.quizId || q.unit || 'Quiz'}</td>
-              <td class="p-3 text-center text-slate-600 dark:text-slate-300">${attemptsMade}</td>
-              <td class="p-3 text-center">${medalCell}</td>
-              <td class="p-3 text-center">${runCell}</td>
-              <td class="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${scoreCell}</td>
+              <td data-label="Quiz ID / Unit" class="p-3 font-semibold text-slate-800 dark:text-slate-200">${studyspaceEscapeHtml(q.quizId || q.unit || 'Quiz')}</td>
+              <td data-label="Attempts Made" class="p-3 text-center text-slate-600 dark:text-slate-300">${attemptsMade}</td>
+              <td data-label="Medals" class="p-3 text-center">${medalCell}</td>
+              <td data-label="100% Run" class="p-3 text-center">${runCell}</td>
+              <td data-label="Highest Score" class="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${scoreCell}</td>
             </tr>
           `;
         });
       }
 
-      document.getElementById("analyticsModal").classList.remove("hidden");
+      showDialog("analyticsModal");
     }
 
     function closeAnalyticsModal() {
-      document.getElementById("analyticsModal").classList.add("hidden");
+      closeDialog("analyticsModal");
     }
 
     async function refreshUnits() {
@@ -2953,15 +3382,12 @@
           if (pct >= 60) return { label: "Good", color: "#14b8a6" };
           if (pct >= 40) return { label: "Building", color: "#f59e0b" };
           if (pct > 0) return { label: "Starting", color: "#f97316" };
-          return { label: "Not started", color: "#94a3b8" };
+          return { label: "Not started", color: "#8a8a8a" };
         }
 
         const subjectNames = Object.keys(subjectsMap);
-        const openKey = "lhs_open_subject_v5";
-        let openSubject = localStorage.getItem(openKey);
-        if (!openSubject || !subjectsMap[openSubject]) {
-          openSubject = subjectNames[0];
-        }
+        // Every subject starts closed; students choose which one to open.
+        let openSubject = "";
         const isTeacher = userRole === "teacher";
 
         subjectNames.forEach(subject => {
@@ -2977,8 +3403,7 @@
           subjectCard.className = "subject-card rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 overflow-hidden " + (isOpen ? "is-open" : "");
           subjectCard.dataset.subject = subject;
 
-          const initial = (subject && subject.trim()) ? subject.trim().charAt(0).toUpperCase() : "S";
-          const iconColors = getSubjectIconColors(subject);
+          const subjectIcon = typeof uiSubjectIcon === "function" ? uiSubjectIcon(subject, 22) : "";
 
           const statChip = (inner, extra) =>
             `<span class="flex-1 min-w-0 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/70 text-[10px] font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap ${extra || ''}">${inner}</span>`;
@@ -3020,7 +3445,7 @@
           subjectCard.innerHTML = `
             <button type="button" class="subject-toggle w-full text-left px-4 py-3" data-subject-toggle="${subject.replace(/"/g, '&quot;')}" aria-expanded="${isOpen ? 'true' : 'false'}">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-extrabold shadow-sm shrink-0" style="background: linear-gradient(135deg, ${iconColors[0]}, ${iconColors[1]});">${initial}</div>
+                <div class="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-[#e9e9e9] dark:bg-[#262626] border border-slate-200 dark:border-[#333333]">${subjectIcon}</div>
                 <div class="min-w-0 flex-1">
                   <h3 class="text-sm font-extrabold text-slate-900 dark:text-white truncate">${subject}</h3>
                   <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${unitStats.total} ${unitStats.total === 1 ? 'unit' : 'units'} · ${unitStats.open} open</p>
@@ -3051,7 +3476,7 @@
                   <div>
                     <div class="flex items-start justify-between gap-2 mb-1">
                       <h3 class="font-bold text-slate-500 dark:text-slate-400 text-sm leading-tight">${q.unit}</h3>
-                      <span class="text-base" aria-hidden="true">🔒</span>
+                      ${uiIcon('lock', 16)}
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-500 mb-3">${q.title}</p>
                   </div>
@@ -3066,7 +3491,7 @@
             const prog = getSavedUnitProgress(q.quizId, currentSelectedPaper);
 
             const studyBtn = q.notesUrl 
-              ? `<a href="${q.notesUrl}" target="_blank" class="flex-1 text-center inline-flex items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer">Study</a>`
+              ? `<a href="${q.notesUrl}" target="_blank" class="quiet-button flex-1 text-center inline-flex items-center justify-center py-2.5 px-2 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer">Study</a>`
               : `<button disabled class="flex-1 py-2.5 px-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-900/50 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-800/50 cursor-not-allowed">Notes Unavailable</button>`;
 
             const p1P2ToggleHtml = (q.paper2SheetId && q.paper2SheetId.trim().length > 0) ? `
@@ -3117,11 +3542,9 @@
           btn.addEventListener('click', () => {
             const card = btn.closest('.subject-card');
             if (!card) return;
-            const subjectName = btn.getAttribute('data-subject-toggle') || card.dataset.subject;
             if (card.classList.contains('is-open')) {
               card.classList.remove('is-open');
               btn.setAttribute('aria-expanded', 'false');
-              localStorage.removeItem(openKey);
               return;
             }
             grid.querySelectorAll('.subject-card').forEach(c => {
@@ -3131,9 +3554,6 @@
             });
             card.classList.add('is-open');
             btn.setAttribute('aria-expanded', 'true');
-            if (subjectName) {
-              localStorage.setItem(openKey, subjectName);
-            }
           });
         });
 
@@ -3165,7 +3585,7 @@
           <p class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-2">Fetching questions...</p>
         </div>
       `;
-      document.getElementById("quizModal").classList.remove("hidden");
+      showDialog("quizModal");
 
       try {
         const fetchedQuestions = await API.call("getQuiz", { sheetId: sheetId });
@@ -3244,7 +3664,7 @@
       if (q.caseStudy) {
         const caseBox = document.createElement("div");
         caseBox.className = "p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-xs text-amber-900 dark:text-amber-200 leading-relaxed";
-        caseBox.innerHTML = `<strong class="text-amber-700 dark:text-amber-400 block mb-1">Case Study:</strong><div class="case-study-text">${q.caseStudy}</div>`;
+        caseBox.innerHTML = `<strong class="text-amber-700 dark:text-amber-400 block mb-1">Case Study:</strong><div class="case-study-text">${studyspaceEscapeHtml(q.caseStudy)}</div>`;
         applyContentDirection(caseBox.querySelector(".case-study-text"), q.caseStudy);
         qCard.appendChild(caseBox);
       }
@@ -3261,7 +3681,7 @@
       qCard.appendChild(qTitle);
 
       if (q.imageUrl) {
-        qCard.innerHTML += `<img src="${q.imageUrl}" class="max-w-full rounded-lg my-2 border border-slate-200 dark:border-slate-800" />`;
+        qCard.innerHTML += `<img src="${studyspaceSafeImageUrl(q.imageUrl)}" class="max-w-full rounded-lg my-2 border border-slate-200 dark:border-slate-800" />`;
       }
 
       if (isWritten) {
@@ -3295,7 +3715,7 @@
               onbeforeinput="if (event.inputType === 'insertFromPaste' || event.inputType === 'insertFromDrop') { event.preventDefault(); return false; }"
               placeholder="Type your structured answer here (include knowledge, application, and reasoning)..."
               class="w-full p-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 outline-none leading-relaxed"
-            >${savedData.text || ''}</textarea>
+            >${studyspaceEscapeHtml(savedData.text || '')}</textarea>
             <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Typing only — pasting is disabled.</p>
           </div>
 
@@ -3314,7 +3734,7 @@
               onclick="startWrittenRetry(${idx})"
               class="w-full py-2.5 px-4 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
             >
-              <span>🔄 Let's try that again</span>
+              <span class="inline-flex items-center gap-1.5">${uiIcon('refresh', 13)} Let's try that again</span>
             </button>
             <p class="text-[10px] text-slate-500 dark:text-slate-400 text-center">Use the feedback above. A retry still earns XP, but a medal needs a clean run with no retries.</p>
           ` : ''}
@@ -3393,8 +3813,8 @@
           hintText.innerText = getRetryHint(q);
 
           const hintBtn = document.createElement("button");
-          hintBtn.className = "mt-2.5 w-full py-2 px-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-[11px] rounded-lg transition-all cursor-pointer";
-          hintBtn.innerText = "🔄 Let's try that again →";
+          hintBtn.className = "mt-2.5 w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-[11px] rounded-lg transition-all cursor-pointer";
+          hintBtn.innerHTML = uiIcon('refresh', 13) + " Let's try that again →";
           hintBtn.onclick = () => startRetry(idx);
 
           hintBox.appendChild(hintTitle);
@@ -3416,7 +3836,7 @@
           if (q.explanation) {
             const exp = document.createElement("div");
             exp.className = "p-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs rounded-lg border border-slate-200 dark:border-slate-800 mt-2 animate-float-in";
-            exp.innerHTML = `<strong class="${wasRight ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">Explanation:</strong> <div class="explanation-text mt-1">${q.explanation}</div>`;
+            exp.innerHTML = `<strong class="${wasRight ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">Explanation:</strong> <div class="explanation-text mt-1">${studyspaceEscapeHtml(q.explanation)}</div>`;
             applyContentDirection(exp.querySelector(".explanation-text"), q.explanation);
             qCard.appendChild(exp);
           }
@@ -3493,7 +3913,7 @@
         }
 
         // The student closed this quiz while we were waiting: drop the answer rather than showing it in the wrong place
-        if (activeQuiz !== startedQuiz || document.getElementById("quizModal").classList.contains("hidden")) return;
+        if (activeQuiz !== startedQuiz || !document.getElementById("quizModal").open) return;
 
         if (evalRes && evalRes.busy) {
           alert("The AI examiner is very busy right now. Your answer is still in the box. Please try again in a minute.");
@@ -3709,9 +4129,9 @@
           if (stillDue > 0) {
             msg += `\n${stillDue} still due. A short round later today will keep them moving.`;
           } else if (nextDue) {
-            msg += `\nAll caught up. Next review ${formatReviewDay(nextDue)}.`;
+            msg += `\nNothing due today. Next review ${formatReviewDay(nextDue)}.`;
           } else {
-            msg += "\nAll caught up. Nothing left on your review list.";
+            msg += "\nNothing due today.";
           }
           if (practiceCount > 0) {
             msg += `\n${practiceCount} extra question${practiceCount === 1 ? " was" : "s were"} practice only; their review dates did not change.`;
@@ -4000,7 +4420,7 @@
 
     async function loadMissedSummary() {
       const card = document.getElementById("missedCard");
-      if (!card || userRole === "teacher") return;
+      if (!card || userRole === "teacher" || userRole === "admin") return;
       try {
         const data = await API.call("getMissedSummary");
         if (data && !data.error) {
@@ -4047,7 +4467,7 @@
           : `${due} question${due === 1 ? "" : "s"} to review.`;
       } else if (total > 0) {
         const nextLine = missedSummary.nextDue ? ` Next review ${formatReviewDay(missedSummary.nextDue)}.` : "";
-        desc.innerText = "All caught up." + nextLine;
+        desc.innerText = "Nothing due today." + nextLine;
       } else {
         desc.innerText = "Nothing to review yet. Questions you get wrong in a quiz will appear here so you can practise them again.";
       }
@@ -4065,7 +4485,7 @@
       if (subjects.length > 1) {
         chips.classList.remove("hidden");
         chips.innerHTML = subjects.map((s, i) => `
-          <button onclick="startMissedReview(${i})" ${missedBusy ? "disabled" : ""} class="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-sky-500 transition cursor-pointer">
+          <button onclick="startMissedReview(${i})" ${missedBusy ? "disabled" : ""} class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-sky-500 transition cursor-pointer">
             ${escapeMissed(s.subject)} (${s.mcq})
           </button>`).join("");
       } else {
@@ -4122,34 +4542,15 @@
 
       const footer = document.getElementById("quizModalFooter");
       if (footer) footer.classList.remove("hidden");
-      document.getElementById("quizModal").classList.remove("hidden");
+      showDialog("quizModal");
 
       renderQuizQuestions();
     }
 
     function closeQuizModal() {
       stopQuestionTimer();
-      document.getElementById("quizModal").classList.add("hidden");
+      closeDialog("quizModal");
     }
-
-    function openStudyHubModal() {
-      document.getElementById("studyHubModal").classList.remove("hidden");
-      document.body.style.overflow = "hidden";          // the page behind stays still while reading
-      if (typeof loadStudyHub === "function") {
-        loadStudyHub("studyHubContainer");
-      }
-    }
-
-    function closeStudyHubModal() {
-      document.getElementById("studyHubModal").classList.add("hidden");
-      document.body.style.overflow = "";
-    }
-
-    // If the server says the session has ended, sign out (once) and go back to the login screen
-    API.setExpiredHandler(() => {
-      alert("Your session has ended. Please sign in again.");
-      logoutUser();
-    });
 
     // Asks the server who this person really is, so the role and details never depend on what is stored in the browser
     async function refreshProfileFromServer() {
@@ -4158,12 +4559,14 @@
         if (!data || !data.authenticated) return;
 
         const roleChanged = data.role !== userRole;
+        const schoolChanged = !!data.school && (!currentSchool || currentSchool.schoolId !== data.school.schoolId);
         const oldGrade = userGradeStream;
         userRole = data.role;
         userTitle = data.title;
         userName = data.name || "";
         userGradeStream = data.grade || data.gradeStream || "";
         const gradeChanged = userGradeStream !== oldGrade;
+        if (data.school) applySchoolBranding(data.school);
         if (data.commonName) commonName = data.commonName;
         myAvatarUrl = data.avatarUrl || "";
         myAvatarVersion = Number(data.avatarVersion) || 0;
@@ -4175,16 +4578,24 @@
         saved.name = userName;
         saved.commonName = commonName;
         saved.gradeStream = userGradeStream;
+        saved.schoolId = data.schoolId || (data.school && data.school.schoolId) || "";
+        saved.school = data.school || currentSchool || null;
         saved.avatarUrl = myAvatarUrl;
         saved.avatarVersion = myAvatarVersion;
         localStorage.setItem("lhs_user_session", JSON.stringify(saved));
 
-        initReminders();
+        if (typeof applyRoleVisibility === "function") applyRoleVisibility();
+        updateUserUI(userStreakData);
+        if (userRole === "admin") {
+          closeProfilePanel();
+          closeAdminSettings();
+        } else {
+          initReminders();
+        }
 
-        // A corrected stream must refresh an already-open Study Hub without a full reload.
-        if (gradeChanged && !roleChanged && typeof loadStudyHub === "function") {
-          const hubModal = document.getElementById("studyHubModal");
-          if (hubModal && !hubModal.classList.contains("hidden")) {
+        // A corrected stream must refresh an already-open Studyarea without a full reload.
+        if ((gradeChanged || schoolChanged) && !roleChanged && typeof loadStudyHub === "function") {
+          if (document.body.getAttribute("data-page") === "studyarea") {
             loadStudyHub("studyHubContainer");
           }
         }
@@ -4200,6 +4611,13 @@
     }
 
     window.onload = () => {
+      // A fresh load always starts on Home, whatever tab was open before.
+      setPage("home", { scroll: false });
+      // The deferred API client is ready by now; register the expired-session handler before any request.
+      API.setExpiredHandler(() => {
+        alert("Your session has ended. Please sign in again.");
+        logoutUser();
+      });
       const savedSession = localStorage.getItem("lhs_user_session");
       if (savedSession && API.getToken()) {
         try {
@@ -4213,6 +4631,7 @@
           userGradeStream = user.gradeStream || user.grade || "";
           myAvatarUrl = user.avatarUrl || "";
           myAvatarVersion = Number(user.avatarVersion) || 0;
+          if (user.school && typeof applySchoolBranding === "function") applySchoolBranding(user.school);
           if (user.streakData) {
             userStreakData = user.streakData;
           }
@@ -4220,16 +4639,432 @@
           refreshProfileFromServer();
         } catch (e) {
           localStorage.removeItem("lhs_user_session");
-          document.getElementById("loginModal").classList.remove("hidden");
+          showDialog("loginModal");
         }
       } else {
         // First visit, or signed in before secure sessions existed: sign in (once) to get a session
         localStorage.removeItem("lhs_user_session");
-        document.getElementById("loginModal").classList.remove("hidden");
+        showDialog("loginModal");
       }
     };
   </script>
   
+  <script>
+    /* ================================================================= */
+    /* VERSION 13 - school branding and administrator settings           */
+    /* ================================================================= */
+
+    let currentSchool = null;
+    let adminTab = "overview";
+    let adminDash = null;
+    let adminUsers = [];
+    let adminConstraints = [];
+
+    function adminEsc(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function adminMoney(value, currency) {
+      const n = Number(value) || 0;
+      return (Math.round(n * 1000000) / 1000000).toFixed(6) + " " + (currency || "USD");
+    }
+
+    function adminSetText(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+
+    function applySchoolBranding(school) {
+      if (!school || !school.name) return;
+      currentSchool = school;
+      const name = school.name;
+      const logo = school.logoUrl || "logo.png";
+      document.title = name + " - Studyspace";
+      adminSetText("schoolNameText", name);
+      adminSetText("loginSchoolName", name);
+      adminSetText("schoolFooterText", name + " - Studyspace © 2026");
+      adminSetText("adminHomeSchool", name + ": Gemini cost, prepaid balance, users and unit constraints");
+
+      [["schoolLogo", "schoolLogoFallback"], ["loginSchoolLogo", "loginLogoFallback"]].forEach(function (pair) {
+        const img = document.getElementById(pair[0]);
+        const fallback = document.getElementById(pair[1]);
+        if (!img) return;
+        if (fallback) fallback.style.display = "none";
+        img.style.display = "";
+        img.onerror = function () {
+          this.style.display = "none";
+          if (fallback) fallback.style.display = pair[1] === "loginLogoFallback" ? "block" : "flex";
+        };
+        if (img.getAttribute("src") !== logo) img.src = logo;
+      });
+    }
+
+    /** Keeps Settings consistent with the signed-in role. */
+    function applySettingsVisibility() {
+      const admin = userRole === "admin";
+      const teacher = userRole === "teacher";
+      const student = !admin && !teacher;
+      const show = function (id, visible) {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle("hidden", !visible);
+      };
+
+      show("adminHome", admin);
+      show("settingsProfileCard", student);
+      show("reminderCard", student);
+      if (!student) {
+        const status = document.getElementById("reminderStatus");
+        if (status) status.innerText = "Reminders are only available to students.";
+      }
+    }
+
+    /** One function resets the whole page when the signed-in role changes. */
+    function applyRoleVisibility() {
+      const admin = userRole === "admin";
+      const teacher = userRole === "teacher";
+      const show = function (id, visible) {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle("hidden", !visible);
+      };
+
+      show("welcomeBoard", !admin);
+      show("miniQuizBanner", !admin);
+      show("missedCard", !admin && !teacher);
+      show("teacherBanner", teacher);
+      show("adminHomeNotice", admin);
+      show("teacherTableContainer", teacher);
+      show("studentStatsGrid", !admin && !teacher);
+      show("adminSettingsBtn", admin);
+      show("profileBtn", !admin && !teacher);
+      show("adminPlatformTab", false);
+      applySettingsVisibility();
+      applyNavVisibility();
+
+      if (admin) {
+        adminSetText("welcomeTitle", "Welcome " + (commonName || userName || "Admin") + "!");
+        closeAdminSettings();
+      }
+    }
+
+    function openAdminSettings() {
+      if (userRole !== "admin") return;
+      showDialog("adminModal");
+      if (currentSchool) adminSetText("adminSchoolLabel", currentSchool.name + " · signed in as " + currentUser);
+      adminSwitchTab(adminTab || "overview");
+    }
+
+    function closeAdminSettings() {
+      closeDialog("adminModal");
+    }
+
+    function adminSwitchTab(tab) {
+      adminTab = tab;
+      document.querySelectorAll("[data-admin-tab]").forEach(function (btn) {
+        const active = btn.getAttribute("data-admin-tab") === tab;
+        btn.className = "px-3 py-2 rounded-lg transition cursor-pointer " + (active
+          ? "bg-emerald-500 text-slate-950 font-extrabold"
+          : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold");
+      });
+      if (tab === "overview") adminLoadOverview();
+      else if (tab === "details") adminLoadDetails();
+      else if (tab === "users") adminLoadUsers();
+      else if (tab === "units") adminLoadConstraints();
+      else if (tab === "platform") adminLoadPlatform();
+    }
+
+    function adminContent() { return document.getElementById("adminTabContent"); }
+    function adminLoading() { adminContent().innerHTML = '<div class="py-10 text-center text-slate-400">Loading…</div>'; }
+
+    async function adminLoadOverview() {
+      adminLoading();
+      try {
+        const data = await API.call("adminDashboard", {});
+        if (data.error) { adminContent().innerHTML = '<p class="text-rose-500 font-bold">' + adminEsc(data.error) + "</p>"; return; }
+        adminDash = data;
+        applySchoolBranding(data.school);
+        const platformBtn = document.getElementById("adminPlatformTab");
+        if (platformBtn) platformBtn.classList.toggle("hidden", !data.isPlatform);
+
+        const t = data.totals;
+        const c = data.billing;
+        const rows = (data.usage || []).map(function (u) {
+          const when = u.timestamp ? new Date(u.timestamp).toLocaleString() : "";
+          return "<tr class='border-t border-slate-200 dark:border-slate-800'>" +
+            "<td class='py-1.5 pr-2'>" + adminEsc(when) + "</td>" +
+            "<td class='py-1.5 pr-2'>" + adminEsc(u.email || "—") + "</td>" +
+            "<td class='py-1.5 pr-2'>" + adminEsc(u.subject || "—") + "</td>" +
+            "<td class='py-1.5 pr-2 text-right'>" + (u.promptTokens || 0) + " / " + (u.outputTokens || 0) + "</td>" +
+            "<td class='py-1.5 pr-2 text-right font-bold'>" + adminMoney(u.totalCost, t ? c.currency : "USD") + "</td>" +
+            "<td class='py-1.5 text-right'>" + (u.success ? "✅" : "⚠️ " + u.statusCode) + "</td></tr>";
+        }).join("");
+
+        adminContent().innerHTML =
+          "<div class='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4'>" +
+            "<div class='p-3 rounded-xl bg-slate-100 dark:bg-slate-800'><div class='text-[10px] font-bold uppercase text-slate-500'>Total Gemini cost</div><div class='text-lg font-extrabold text-emerald-600 dark:text-emerald-400'>" + adminMoney(t.totalCost, c.currency) + "</div></div>" +
+            "<div class='p-3 rounded-xl bg-slate-100 dark:bg-slate-800'><div class='text-[10px] font-bold uppercase text-slate-500'>This month</div><div class='text-lg font-extrabold'>" + adminMoney(t.monthCost, c.currency) + "</div></div>" +
+            "<div class='p-3 rounded-xl bg-slate-100 dark:bg-slate-800'><div class='text-[10px] font-bold uppercase text-slate-500'>Prepaid</div><div class='text-lg font-extrabold'>" + adminMoney(t.prepaid, c.currency) + "</div></div>" +
+            "<div class='p-3 rounded-xl " + (t.remaining < 0 ? "bg-rose-100 dark:bg-rose-950/40" : "bg-slate-100 dark:bg-slate-800") + "'><div class='text-[10px] font-bold uppercase text-slate-500'>Remaining</div><div class='text-lg font-extrabold " + (t.remaining < 0 ? "text-rose-600 dark:text-rose-400" : "") + "'>" + adminMoney(t.remaining, c.currency) + "</div></div>" +
+          "</div>" +
+          (!c.configured ? "<div class='mb-4 p-3 rounded-xl bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200'>Rates are not set yet. Ask the platform owner to enter the Gemini input and output price on the Platform tab; until then costs show 0.</div>" : "") +
+          "<div class='text-[10px] font-bold uppercase text-slate-500 mb-2'>Latest answer checks (tokens: prompt / output)</div>" +
+          "<div class='table-wrapper' tabindex='0' role='region' aria-label='Latest Gemini answer checks, scrollable'><table class='w-full text-[11px]'><caption class='sr-only'>Latest Gemini answer checks</caption><thead><tr class='text-left text-slate-500 font-bold'><th scope='col' class='pb-2'>When</th><th scope='col' class='pb-2'>Student</th><th scope='col' class='pb-2'>Subject</th><th scope='col' class='pb-2 text-right'>Tokens</th><th scope='col' class='pb-2 text-right'>Cost</th><th scope='col' class='pb-2 text-right'>Result</th></tr></thead><tbody>" +
+          (rows || "<tr><td colspan='6' class='py-6 text-center text-slate-400'>No Gemini calls recorded yet.</td></tr>") +
+          "</tbody></table></div>" +
+          "<p class='mt-3 text-[10px] text-slate-400'>Model " + adminEsc(c.model) + " · " + adminMoney(c.inputRate, c.currency) + " per 1M input tokens · " + adminMoney(c.outputRate, c.currency) + " per 1M output tokens. Charged at cost, no markup.</p>";
+      } catch (e) {
+        adminContent().innerHTML = '<p class="text-rose-500 font-bold">Could not load usage: ' + adminEsc(e.message) + "</p>";
+      }
+    }
+
+    async function adminLoadDetails() {
+      adminLoading();
+      try {
+        const data = await API.call("adminGetSchool", {});
+        if (data.error) { adminContent().innerHTML = '<p class="text-rose-500 font-bold">' + adminEsc(data.error) + "</p>"; return; }
+        const s = data.school;
+        const disabled = data.isPlatform ? "" : " disabled title='Only the platform owner can change billing'";
+        adminContent().innerHTML =
+          "<div class='max-w-xl space-y-3'>" +
+          "<label class='block'>School name<input id='adminSchoolName' value='" + adminEsc(s.name) + "' class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "<label class='block'>Logo URL (image on the same site, e.g. logo.png)<input id='adminLogoUrl' value='" + adminEsc(s.logoUrl) + "' class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "<div class='grid grid-cols-2 gap-3'>" +
+          "<label class='block'>Prepaid amount<input id='adminPrepaid' type='number' min='0' step='0.01' value='" + adminEsc(s.prepaidAmount) + "'" + disabled + " class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "<label class='block'>Currency<input id='adminCurrency' value='" + adminEsc(s.currency) + "'" + disabled + " class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "</div>" +
+          "<button onclick='adminSaveDetails()' class='px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs cursor-pointer'>Save school details</button>" +
+          "</div>";
+      } catch (e) {
+        adminContent().innerHTML = '<p class="text-rose-500 font-bold">' + adminEsc(e.message) + "</p>";
+      }
+    }
+
+    async function adminSaveDetails() {
+      const val = function (id) { const el = document.getElementById(id); return el ? el.value : ""; };
+      try {
+        const data = await API.call("adminSaveSchool", {
+          name: val("adminSchoolName"), logoUrl: val("adminLogoUrl"),
+          prepaidAmount: Number(val("adminPrepaid")) || 0, currency: val("adminCurrency")
+        });
+        if (data.error) { alert(data.error); return; }
+        applySchoolBranding(data.school);
+        alert("School details saved.");
+        adminLoadDetails();
+      } catch (e) { alert(e.message); }
+    }
+
+    async function adminLoadUsers() {
+      adminLoading();
+      try {
+        const data = await API.call("adminListUsers", {});
+        if (data.error) { adminContent().innerHTML = '<p class="text-rose-500 font-bold">' + adminEsc(data.error) + "</p>"; return; }
+        adminUsers = data.users || [];
+        const rows = adminUsers.map(function (u, i) {
+          return "<tr class='border-t border-slate-200 dark:border-slate-800'>" +
+            "<td class='py-1.5 pr-2'>" + adminEsc(u.name || "—") + "</td>" +
+            "<td class='py-1.5 pr-2'>" + adminEsc(u.email) + "</td>" +
+            "<td class='py-1.5 pr-2'>" + adminEsc(u.role) + "</td>" +
+            "<td class='py-1.5 pr-2'>" + adminEsc(u.gradeStream || u.title || "—") + "</td>" +
+            "<td class='py-1.5 pr-2'>" + (u.active ? "Active" : "Disabled") + "</td>" +
+            "<td class='py-1.5 text-right'><button onclick='adminToggleUser(" + i + ")' class='underline text-emerald-600 dark:text-emerald-400 cursor-pointer'>" + (u.active ? "Disable" : "Enable") + "</button></td></tr>";
+        }).join("");
+
+        adminContent().innerHTML =
+          "<div class='table-wrapper mb-5' tabindex='0' role='region' aria-label='School accounts, scrollable'><table class='w-full text-[11px]'><caption class='sr-only'>School accounts</caption><thead><tr class='text-left text-slate-500 font-bold'><th scope='col' class='pb-2'>Name</th><th scope='col' class='pb-2'>Email</th><th scope='col' class='pb-2'>Role</th><th scope='col' class='pb-2'>Stream / title</th><th scope='col' class='pb-2'>Status</th><th scope='col' class='pb-2 text-right'>Action</th></tr></thead><tbody>" +
+          (rows || "<tr><td colspan='6' class='py-5 text-center text-slate-400'>No accounts in this school yet.</td></tr>") +
+          "</tbody></table></div>" +
+          "<div class='text-[10px] font-bold uppercase text-slate-500 mb-2'>Add a teacher or student</div>" +
+          "<div class='grid sm:grid-cols-2 gap-3 max-w-2xl'>" +
+          "<label class='block'>Role<select id='adminNewRole' class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs'><option value='student'>Student</option><option value='teacher'>Teacher</option></select></label>" +
+          "<label class='block'>Name<input id='adminNewName' class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "<label class='block'>Email<input id='adminNewEmail' type='email' class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "<label class='block'>Password<input id='adminNewPassword' name='password' type='password' autocomplete='new-password' class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "<label class='block'>Stream (students), e.g. 9B<input id='adminNewGrade' class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "<label class='block'>Title (teachers), e.g. Business<input id='adminNewTitle' class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "</div>" +
+          "<button onclick='adminAddUser()' class='mt-3 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs cursor-pointer'>Add account</button>" +
+          "<p class='mt-3 text-[10px] text-slate-400'>Accounts are email and password only. No Google sign-in. Disabled accounts cannot sign in.</p>";
+      } catch (e) {
+        adminContent().innerHTML = '<p class="text-rose-500 font-bold">' + adminEsc(e.message) + "</p>";
+      }
+    }
+
+    async function adminAddUser() {
+      const val = function (id) { const el = document.getElementById(id); return el ? el.value.trim() : ""; };
+      try {
+        const data = await API.call("adminSaveUser", {
+          role: val("adminNewRole"), name: val("adminNewName"), email: val("adminNewEmail"),
+          password: val("adminNewPassword"), gradeStream: val("adminNewGrade"), title: val("adminNewTitle")
+        });
+        if (data.error) { alert(data.error); return; }
+        alert("Account added.");
+        adminLoadUsers();
+      } catch (e) { alert(e.message); }
+    }
+
+    async function adminToggleUser(index) {
+      const user = adminUsers[index];
+      if (!user) return;
+      if (!confirm((user.active ? "Disable" : "Enable") + " " + user.email + "?")) return;
+      try {
+        const data = await API.call("adminSaveUser", {
+          role: user.role, name: user.name, email: user.email,
+          gradeStream: user.gradeStream, title: user.title, active: !user.active
+        });
+        if (data.error) { alert(data.error); return; }
+        adminLoadUsers();
+      } catch (e) { alert(e.message); }
+    }
+
+    async function adminLoadConstraints() {
+      adminLoading();
+      try {
+        const data = await API.call("adminGetConstraints", {});
+        if (data.error) { adminContent().innerHTML = '<p class="text-rose-500 font-bold">' + adminEsc(data.error) + "</p>"; return; }
+        adminConstraints = data.constraints || [];
+        adminRenderConstraints();
+      } catch (e) {
+        adminContent().innerHTML = '<p class="text-rose-500 font-bold">' + adminEsc(e.message) + "</p>";
+      }
+    }
+
+    function adminRenderConstraints() {
+      const rows = adminConstraints.map(function (c, i) {
+        return "<tr class='border-t border-slate-200 dark:border-slate-800'>" +
+          "<td class='py-1 pr-1'><input data-c='gradeStream' data-i='" + i + "' value='" + adminEsc(c.gradeStream) + "' placeholder='9B' class='w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-[11px]' /></td>" +
+          "<td class='py-1 pr-1'><input data-c='subject' data-i='" + i + "' value='" + adminEsc(c.subject) + "' placeholder='business' class='w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-[11px]' /></td>" +
+          "<td class='py-1 pr-1'><input data-c='maxUnit' data-i='" + i + "' value='" + adminEsc(c.maxUnit) + "' placeholder='all' class='w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-[11px]' /></td>" +
+          "<td class='py-1 pr-1'><input data-c='dailyQuestions' data-i='" + i + "' value='" + adminEsc(c.dailyQuestions) + "' placeholder='default' class='w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-[11px]' /></td>" +
+          "<td class='py-1 text-right'><button onclick='adminRemoveConstraint(" + i + ")' class='text-rose-500 underline cursor-pointer'>Remove</button></td></tr>";
+      }).join("");
+
+      adminContent().innerHTML =
+        "<p class='mb-3 text-slate-500 dark:text-slate-400'>One row per stream and subject in your school. <b>MaxUnit</b> is the highest unit students may open; leave it blank for all units. <b>DailyQuestions</b> can be a number, yes, or no.</p>" +
+        "<div class='table-wrapper' tabindex='0' role='region' aria-label='Subject constraints, scrollable'><table class='w-full text-[11px]'><caption class='sr-only'>Subject constraints</caption><thead><tr class='text-left text-slate-500 font-bold'><th scope='col' class='pb-2 pr-1'>Stream</th><th scope='col' class='pb-2 pr-1'>Subject</th><th scope='col' class='pb-2 pr-1'>MaxUnit</th><th scope='col' class='pb-2 pr-1'>DailyQuestions</th><th scope='col' class='pb-2 text-right'><span class='sr-only'>Action</span></th></tr></thead><tbody>" +
+        (rows || "<tr><td colspan='5' class='py-5 text-center text-slate-400'>No constraints. All units are open.</td></tr>") +
+        "</tbody></table></div>" +
+        "<div class='flex gap-2 mt-3'><button onclick='adminAddConstraint()' class='px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 font-bold cursor-pointer'>Add row</button>" +
+        "<button onclick='adminSaveConstraints()' class='px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold cursor-pointer'>Save constraints</button></div>";
+    }
+
+    function adminCollectConstraints() {
+      document.querySelectorAll("[data-c]").forEach(function (input) {
+        const i = Number(input.getAttribute("data-i"));
+        const key = input.getAttribute("data-c");
+        if (adminConstraints[i]) adminConstraints[i][key] = input.value.trim();
+      });
+    }
+
+    function adminAddConstraint() {
+      adminCollectConstraints();
+      adminConstraints.push({ gradeStream: "", subject: "", maxUnit: "", dailyQuestions: "" });
+      adminRenderConstraints();
+    }
+
+    function adminRemoveConstraint(index) {
+      adminCollectConstraints();
+      adminConstraints.splice(index, 1);
+      adminRenderConstraints();
+    }
+
+    async function adminSaveConstraints() {
+      adminCollectConstraints();
+      try {
+        const data = await API.call("adminSaveConstraints", { constraints: adminConstraints });
+        if (data.error) { alert(data.error); return; }
+        alert("Unit constraints saved for your school.");
+        adminLoadConstraints();
+      } catch (e) { alert(e.message); }
+    }
+
+    async function adminLoadPlatform() {
+      adminLoading();
+      try {
+        const [schoolsData, adminsData] = await Promise.all([
+          API.call("adminListSchools", {}), API.call("adminListAdmins", {})
+        ]);
+        if (schoolsData.error || adminsData.error) {
+          adminContent().innerHTML = '<p class="text-rose-500 font-bold">' + adminEsc((schoolsData.error || adminsData.error)) + "</p>";
+          return;
+        }
+        const billing = adminDash && adminDash.billing ? adminDash.billing : (await API.call("adminGetSchool", {})).billing;
+        const options = (schoolsData.schools || []).map(function (s) {
+          return "<option value='" + adminEsc(s.schoolId) + "'>" + adminEsc(s.name) + "</option>";
+        }).join("");
+        const schoolRows = (schoolsData.schools || []).map(function (s) {
+          return "<tr class='border-t border-slate-200 dark:border-slate-800'><td class='py-1.5 pr-2'>" + adminEsc(s.name) + "</td><td class='py-1.5 pr-2'>" + adminEsc(s.schoolId) + "</td><td class='py-1.5 pr-2 text-right'>" + adminMoney(s.prepaidAmount, s.currency) + "</td></tr>";
+        }).join("");
+        const adminRows = (adminsData.admins || []).map(function (a) {
+          return "<tr class='border-t border-slate-200 dark:border-slate-800'><td class='py-1.5 pr-2'>" + adminEsc(a.name || "—") + "</td><td class='py-1.5 pr-2'>" + adminEsc(a.email) + "</td><td class='py-1.5 pr-2'>" + adminEsc(a.schoolId) + "</td><td class='py-1.5 pr-2'>" + adminEsc(a.role) + "</td><td class='py-1.5 text-right'>" + (a.active ? "Active" : "Disabled") + "</td></tr>";
+        }).join("");
+
+        adminContent().innerHTML =
+          "<div class='grid lg:grid-cols-2 gap-6'>" +
+          "<div><div class='text-[10px] font-bold uppercase text-slate-500 mb-2'>Schools</div><div class='table-wrapper' tabindex='0' role='region' aria-label='Schools, scrollable'><table class='w-full text-[11px]'><caption class='sr-only'>Schools</caption><tbody>" + (schoolRows || "<tr><td class='py-3 text-slate-400'>No schools yet.</td></tr>") + "</tbody></table></div>" +
+          "<div class='mt-3 grid sm:grid-cols-2 gap-2 max-w-lg'>" +
+          "<label class='block'>New school name<input id='adminNewSchoolName' class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "<label class='block'>Prepaid amount<input id='adminNewSchoolPrepaid' type='number' min='0' step='0.01' value='0' class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "</div><button onclick='adminCreateSchool()' class='mt-2 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs cursor-pointer'>Create school</button></div>" +
+
+          "<div><div class='text-[10px] font-bold uppercase text-slate-500 mb-2'>Admin accounts</div><div class='table-wrapper' tabindex='0' role='region' aria-label='Admin accounts, scrollable'><table class='w-full text-[11px]'><caption class='sr-only'>Admin accounts</caption><tbody>" + (adminRows || "<tr><td class='py-3 text-slate-400'>No admin accounts yet.</td></tr>") + "</tbody></table></div>" +
+          "<div class='mt-3 grid sm:grid-cols-2 gap-2 max-w-lg'>" +
+          "<label class='block'>Admin name<input id='adminNewAdminName' class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "<label class='block'>Admin email<input id='adminNewAdminEmail' type='email' class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "<label class='block'>Password<input id='adminNewAdminPassword' name='password' type='password' autocomplete='new-password' class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "<label class='block'>School<select id='adminNewAdminSchool' class='mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs'>" + options + "</select></label>" +
+          "</div><button onclick='adminCreateAdmin()' class='mt-2 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs cursor-pointer'>Create school admin</button></div>" +
+          "</div>" +
+
+          "<div class='mt-6 p-4 rounded-xl bg-slate-100 dark:bg-slate-800 max-w-xl'>" +
+          "<div class='text-[10px] font-bold uppercase text-slate-500 mb-2'>Gemini rates (per 1,000,000 tokens)</div>" +
+          "<div class='grid grid-cols-3 gap-2'>" +
+          "<label class='block'>Input rate<input id='adminInputRate' type='number' min='0' step='0.000001' value='" + adminEsc(billing.inputRate) + "' class='mt-1 w-full px-2 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "<label class='block'>Output rate<input id='adminOutputRate' type='number' min='0' step='0.000001' value='" + adminEsc(billing.outputRate) + "' class='mt-1 w-full px-2 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "<label class='block'>Currency<input id='adminBillingCurrency' value='" + adminEsc(billing.currency) + "' class='mt-1 w-full px-2 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs' /></label>" +
+          "</div><button onclick='adminSaveRates()' class='mt-2 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs cursor-pointer'>Save rates</button>" +
+          "<p class='mt-2 text-[10px] text-slate-500'>Use exactly what your Gemini plan charges. Cost is tokens × rate with no markup.</p></div>";
+      } catch (e) {
+        adminContent().innerHTML = '<p class="text-rose-500 font-bold">' + adminEsc(e.message) + "</p>";
+      }
+    }
+
+    async function adminCreateSchool() {
+      const val = function (id) { const el = document.getElementById(id); return el ? el.value.trim() : ""; };
+      try {
+        const data = await API.call("adminCreateSchool", { name: val("adminNewSchoolName"), prepaidAmount: Number(val("adminNewSchoolPrepaid")) || 0 });
+        if (data.error) { alert(data.error); return; }
+        alert("School created: " + data.school.name);
+        adminLoadPlatform();
+      } catch (e) { alert(e.message); }
+    }
+
+    async function adminCreateAdmin() {
+      const val = function (id) { const el = document.getElementById(id); return el ? el.value.trim() : ""; };
+      try {
+        const data = await API.call("adminSaveAdmin", {
+          name: val("adminNewAdminName"), email: val("adminNewAdminEmail"),
+          password: val("adminNewAdminPassword"), schoolId: val("adminNewAdminSchool")
+        });
+        if (data.error) { alert(data.error); return; }
+        alert("Admin account created.");
+        adminLoadPlatform();
+      } catch (e) { alert(e.message); }
+    }
+
+    async function adminSaveRates() {
+      const val = function (id) { const el = document.getElementById(id); return el ? el.value : ""; };
+      try {
+        const data = await API.call("adminSaveBillingConfig", {
+          inputRate: Number(val("adminInputRate")), outputRate: Number(val("adminOutputRate")), currency: val("adminBillingCurrency")
+        });
+        if (data.error) { alert(data.error); return; }
+        alert("Gemini rates saved.");
+        adminLoadPlatform();
+      } catch (e) { alert(e.message); }
+    }
+  </script>
+
   <script>
     if ('serviceWorker' in navigator) {
       let refreshing = false;

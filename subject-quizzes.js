@@ -1,8 +1,24 @@
 /**
  * Studyspace - Unified Subject Quizzes & AI Feedback Registry
+ *
+ * AI feedback is untrusted text: escape every value before it enters HTML.
  * Cambridge IGCSE Subjects (Business Studies 0450, Economics 0455, Accounting 0452, Travel & Tourism 0471,
  * Biology 0610, Chemistry 0620, Physics 0625)
  */
+
+function studyspaceEscapeHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function studyspaceSafeImageUrl(value) {
+  const url = String(value == null ? "" : value).trim();
+  const lower = url.toLowerCase();
+  const allowed = lower.indexOf("http://") === 0 || lower.indexOf("https://") === 0 ||
+    lower.indexOf("./") === 0 || lower.charAt(0) === "/";
+  if (!allowed) return "";
+  return studyspaceEscapeHtml(url);
+}
 
 const SubjectQuizRegistry = {
   // Utility: Shuffle helper function
@@ -93,19 +109,19 @@ const SubjectQuizRegistry = {
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[11px]">
             <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
               <strong class="text-purple-400 block mb-0.5">Band / Level:</strong>
-              <span class="text-slate-300">${evalRes.breakdown.level || 'N/A'}</span>
+              <span class="text-slate-300">${studyspaceEscapeHtml(evalRes.breakdown.level || 'N/A')}</span>
             </div>
             <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
               <strong class="text-amber-400 block mb-0.5">AO1 Knowledge:</strong>
-              <span class="text-slate-300">${evalRes.breakdown.knowledge || 'N/A'}</span>
+              <span class="text-slate-300">${studyspaceEscapeHtml(evalRes.breakdown.knowledge || 'N/A')}</span>
             </div>
             <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
               <strong class="text-emerald-400 block mb-0.5">AO2 Application:</strong>
-              <span class="text-slate-300">${evalRes.breakdown.application || 'N/A'}</span>
+              <span class="text-slate-300">${studyspaceEscapeHtml(evalRes.breakdown.application || 'N/A')}</span>
             </div>
             <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
               <strong class="text-sky-400 block mb-0.5">AO3 Analysis:</strong>
-              <span class="text-slate-300">${evalRes.breakdown.analysis || 'N/A'}</span>
+              <span class="text-slate-300">${studyspaceEscapeHtml(evalRes.breakdown.analysis || 'N/A')}</span>
             </div>
           </div>
         `;
@@ -136,21 +152,21 @@ const SubjectQuizRegistry = {
           ${evalRes.lostMarksReason ? `
             <div class="p-3 bg-rose-950/30 border border-rose-800/40 rounded-lg">
               <strong class="text-rose-400 block mb-1">❌ Explanation for Lost Marks:</strong>
-              <p class="text-slate-300 leading-relaxed">${evalRes.lostMarksReason}</p>
+              <p class="text-slate-300 leading-relaxed">${studyspaceEscapeHtml(evalRes.lostMarksReason)}</p>
             </div>
           ` : ''}
 
           ${evalRes.howToImprove ? `
             <div class="p-3 bg-emerald-950/40 border border-emerald-800/50 rounded-lg">
               <strong class="text-emerald-400 block mb-1">💡 How to Write the Full-Mark Answer:</strong>
-              <p class="text-slate-300 leading-relaxed">${evalRes.howToImprove}</p>
+              <p class="text-slate-300 leading-relaxed">${studyspaceEscapeHtml(evalRes.howToImprove)}</p>
             </div>
           ` : ''}
 
           ${evalRes.modelAnswer ? `
             <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-lg">
               <strong class="text-amber-300 block mb-1">📝 Model Cambridge Answer:</strong>
-              <p class="text-slate-300 italic leading-relaxed">${evalRes.modelAnswer}</p>
+              <p class="text-slate-300 italic leading-relaxed">${studyspaceEscapeHtml(evalRes.modelAnswer)}</p>
             </div>
           ` : ''}
         </div>
@@ -243,7 +259,7 @@ const SubjectQuizRegistry = {
       if (evalRes.capsApplied && Array.isArray(evalRes.capsApplied) && evalRes.capsApplied.length > 0) {
         capsBannerHtml = evalRes.capsApplied.map(cap => `
           <div class="p-2.5 bg-amber-950/60 border border-amber-500/50 rounded-lg text-amber-200 text-xs font-semibold flex items-center gap-2">
-            <span>⚠️</span> <span><strong>Examiner Cap Applied:</strong> ${cap}</span>
+            <span>⚠️</span> <span><strong>Examiner Cap Applied:</strong> ${studyspaceEscapeHtml(cap)}</span>
           </div>
         `).join("");
       }
@@ -254,19 +270,19 @@ const SubjectQuizRegistry = {
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[11px]">
             <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
               <strong class="text-purple-400 block mb-0.5">Band / Level:</strong>
-              <span class="text-slate-300">${evalRes.breakdown.level || 'N/A'}</span>
+              <span class="text-slate-300">${studyspaceEscapeHtml(evalRes.breakdown.level || 'N/A')}</span>
             </div>
             <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
               <strong class="text-amber-400 block mb-0.5">AO1 Knowledge:</strong>
-              <span class="text-slate-300">${evalRes.breakdown.knowledge || 'N/A'}</span>
+              <span class="text-slate-300">${studyspaceEscapeHtml(evalRes.breakdown.knowledge || 'N/A')}</span>
             </div>
             <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
               <strong class="text-sky-400 block mb-0.5">AO2 Analysis:</strong>
-              <span class="text-slate-300">${evalRes.breakdown.analysis || 'N/A'}</span>
+              <span class="text-slate-300">${studyspaceEscapeHtml(evalRes.breakdown.analysis || 'N/A')}</span>
             </div>
             <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
               <strong class="text-emerald-400 block mb-0.5">AO3 Evaluation:</strong>
-              <span class="text-slate-300">${evalRes.breakdown.evaluation || 'N/A'}</span>
+              <span class="text-slate-300">${studyspaceEscapeHtml(evalRes.breakdown.evaluation || 'N/A')}</span>
             </div>
           </div>
         `;
@@ -298,21 +314,21 @@ const SubjectQuizRegistry = {
           ${evalRes.lostMarksReason ? `
             <div class="p-3 bg-rose-950/30 border border-rose-800/40 rounded-lg">
               <strong class="text-rose-400 block mb-1">❌ Explanation for Lost Marks:</strong>
-              <p class="text-slate-300 leading-relaxed">${evalRes.lostMarksReason}</p>
+              <p class="text-slate-300 leading-relaxed">${studyspaceEscapeHtml(evalRes.lostMarksReason)}</p>
             </div>
           ` : ''}
 
           ${evalRes.howToImprove || evalRes.constructiveFeedback ? `
             <div class="p-3 bg-emerald-950/40 border border-emerald-800/50 rounded-lg">
               <strong class="text-emerald-400 block mb-1">💡 How to Write the Full-Mark Answer:</strong>
-              <p class="text-slate-300 leading-relaxed">${evalRes.howToImprove || evalRes.constructiveFeedback}</p>
+              <p class="text-slate-300 leading-relaxed">${studyspaceEscapeHtml(evalRes.howToImprove || evalRes.constructiveFeedback)}</p>
             </div>
           ` : ''}
 
           ${evalRes.modelAnswer ? `
             <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-lg">
               <strong class="text-amber-300 block mb-1">📝 Cambridge Model Answer:</strong>
-              <p class="text-slate-300 italic leading-relaxed">${evalRes.modelAnswer}</p>
+              <p class="text-slate-300 italic leading-relaxed">${studyspaceEscapeHtml(evalRes.modelAnswer)}</p>
             </div>
           ` : ''}
         </div>
@@ -374,21 +390,21 @@ const SubjectQuizRegistry = {
           ${evalRes.lostMarksReason ? `
             <div class="p-3 bg-rose-950/30 border border-rose-800/40 rounded-lg">
               <strong class="text-rose-400 block mb-1">❌ Accounting/Working Errors:</strong>
-              <p class="text-slate-300 leading-relaxed">${evalRes.lostMarksReason}</p>
+              <p class="text-slate-300 leading-relaxed">${studyspaceEscapeHtml(evalRes.lostMarksReason)}</p>
             </div>
           ` : ''}
 
           ${evalRes.howToImprove ? `
             <div class="p-3 bg-sky-950/40 border border-sky-800/50 rounded-lg">
               <strong class="text-sky-400 block mb-1">💡 Step-by-Step Ledger/Calculation Guide:</strong>
-              <p class="text-slate-300 leading-relaxed">${evalRes.howToImprove}</p>
+              <p class="text-slate-300 leading-relaxed">${studyspaceEscapeHtml(evalRes.howToImprove)}</p>
             </div>
           ` : ''}
 
           ${evalRes.modelAnswer ? `
             <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-lg">
               <strong class="text-amber-300 block mb-1">📝 Correct Entry / Model Solution:</strong>
-              <p class="text-slate-300 italic font-mono leading-relaxed">${evalRes.modelAnswer}</p>
+              <p class="text-slate-300 italic font-mono leading-relaxed">${studyspaceEscapeHtml(evalRes.modelAnswer)}</p>
             </div>
           ` : ''}
         </div>
@@ -464,19 +480,19 @@ const SubjectQuizRegistry = {
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[11px]">
             <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
               <strong class="text-teal-400 block mb-0.5">Band / Level:</strong>
-              <span class="text-slate-300">${evalRes.breakdown.level || 'N/A'}</span>
+              <span class="text-slate-300">${studyspaceEscapeHtml(evalRes.breakdown.level || 'N/A')}</span>
             </div>
             <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
               <strong class="text-amber-400 block mb-0.5">AO1 Knowledge:</strong>
-              <span class="text-slate-300">${evalRes.breakdown.knowledge || 'N/A'}</span>
+              <span class="text-slate-300">${studyspaceEscapeHtml(evalRes.breakdown.knowledge || 'N/A')}</span>
             </div>
             <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
               <strong class="text-emerald-400 block mb-0.5">AO2 Application:</strong>
-              <span class="text-slate-300">${evalRes.breakdown.application || 'N/A'}</span>
+              <span class="text-slate-300">${studyspaceEscapeHtml(evalRes.breakdown.application || 'N/A')}</span>
             </div>
             <div class="p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
               <strong class="text-sky-400 block mb-0.5">AO3/AO4 Evaluation:</strong>
-              <span class="text-slate-300">${evalRes.breakdown.analysis || evalRes.breakdown.evaluation || 'N/A'}</span>
+              <span class="text-slate-300">${studyspaceEscapeHtml(evalRes.breakdown.analysis || evalRes.breakdown.evaluation || 'N/A')}</span>
             </div>
           </div>
         `;
@@ -507,21 +523,21 @@ const SubjectQuizRegistry = {
           ${evalRes.lostMarksReason ? `
             <div class="p-3 bg-rose-950/30 border border-rose-800/40 rounded-lg">
               <strong class="text-rose-400 block mb-1">❌ Explanation for Lost Marks:</strong>
-              <p class="text-slate-300 leading-relaxed">${evalRes.lostMarksReason}</p>
+              <p class="text-slate-300 leading-relaxed">${studyspaceEscapeHtml(evalRes.lostMarksReason)}</p>
             </div>
           ` : ''}
 
           ${evalRes.howToImprove ? `
             <div class="p-3 bg-teal-950/40 border border-teal-800/50 rounded-lg">
               <strong class="text-teal-400 block mb-1">💡 How to Write the Full-Mark Answer:</strong>
-              <p class="text-slate-300 leading-relaxed">${evalRes.howToImprove}</p>
+              <p class="text-slate-300 leading-relaxed">${studyspaceEscapeHtml(evalRes.howToImprove)}</p>
             </div>
           ` : ''}
 
           ${evalRes.modelAnswer ? `
             <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-lg">
               <strong class="text-amber-300 block mb-1">📝 Cambridge Model Answer:</strong>
-              <p class="text-slate-300 italic leading-relaxed">${evalRes.modelAnswer}</p>
+              <p class="text-slate-300 italic leading-relaxed">${studyspaceEscapeHtml(evalRes.modelAnswer)}</p>
             </div>
           ` : ''}
         </div>

@@ -64,6 +64,15 @@
     return isDhivehi(value) ? ' dv-rtl' : '';
   }
 
+  /* Solid subject icons from icons.js, with a safe fallback if it has not loaded. */
+  function subjectIconHtml(subject, size) {
+    return typeof window.uiSubjectIcon === 'function' ? window.uiSubjectIcon(subject, size || 15) : '';
+  }
+
+  function welcomeIconHtml(size) {
+    return typeof window.uiIcon === 'function' ? window.uiIcon('bookOpen', size || 34) : ICON.book;
+  }
+
   function store(key, value) { try { localStorage.setItem(key, value); } catch (e) { /* ignore */ } }
   function recall(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
 
@@ -92,10 +101,10 @@
     var c = [];
     c.push(R + '{--sh-bg:#f6f8fb;--sh-panel:#ffffff;--sh-side:#eef2f7;--sh-text:#1e293b;--sh-muted:#64748b;--sh-line:#dde4ee;' +
       '--sh-accent:#059669;--sh-accent-fg:#022c22;--sh-accent-soft:rgba(16,185,129,.13);--sh-strong:#047857;--sh-mark:#fde68a;' +
-      '--sh-code:#eef2f7;--sh-shadow:0 12px 34px rgba(15,23,42,.14);--sh-head:' + HEADING_FONT + ';--sh-body:' + BODY_FONT + ';}');
-    c.push('html.dark ' + R + '{--sh-bg:#030712;--sh-panel:#0b1220;--sh-side:#090f1c;--sh-text:#dbe4f0;--sh-muted:#8b9bb2;--sh-line:#1c2638;' +
+      '--sh-code:#eef2f7;--sh-shadow:0 12px 34px rgba(0,0,0,.14);--sh-head:' + HEADING_FONT + ';--sh-body:' + BODY_FONT + ';}');
+    c.push('html.dark ' + R + '{--sh-bg:#080808;--sh-panel:#161616;--sh-side:#242424;--sh-text:#f0f0f0;--sh-muted:#a0a0a0;--sh-line:#333333;' +
       '--sh-accent:#34d399;--sh-accent-soft:rgba(52,211,153,.14);--sh-strong:#6ee7b7;--sh-mark:rgba(250,204,21,.26);' +
-      '--sh-code:#0f1829;--sh-shadow:0 12px 34px rgba(0,0,0,.55);}');
+      '--sh-code:#242424;--sh-shadow:0 12px 34px rgba(0,0,0,.55);}');
 
     c.push(rule('*, *::before, *::after', 'box-sizing:border-box;'));
     c.push(R + '{position:relative;font-family:"Plus Jakarta Sans","Faruma",system-ui,sans-serif;color:var(--sh-text);}');
@@ -105,9 +114,10 @@
 
     /* scrollbars */
     c.push(rule('*', 'scrollbar-width:thin;scrollbar-color:var(--sh-line) transparent;'));
-    c.push(rule('*::-webkit-scrollbar', 'width:7px;height:7px;'));
+    c.push(rule('*::-webkit-scrollbar', 'width:3px;height:3px;'));
+    c.push(rule('*::-webkit-scrollbar-track', 'background:transparent;'));
     c.push(rule('*::-webkit-scrollbar-thumb', 'background:var(--sh-line);border-radius:99px;'));
-    c.push(rule('*::-webkit-scrollbar-thumb:hover', 'background:var(--sh-accent);'));
+    c.push(rule('*::-webkit-scrollbar-thumb:hover', 'background:#717171;'));
 
     /* top bar */
     c.push(rule('.sh-top', 'flex:0 0 auto;display:flex;align-items:center;gap:12px;height:54px;padding:0 14px;background:var(--sh-panel);border-bottom:1px solid var(--sh-line);'));
@@ -115,20 +125,17 @@
     c.push(rule('.sh-brand-ico', 'width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--sh-accent-soft);color:var(--sh-accent);'));
     c.push(rule('.sh-tabs', 'flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;padding:2px 2px;scrollbar-width:none;'));
     c.push(rule('.sh-tabs::-webkit-scrollbar', 'display:none;'));
-    c.push(rule('.sh-tab', 'flex:0 0 auto;border:1px solid transparent;border-radius:999px;padding:7px 15px;font-size:12px;font-weight:700;color:var(--sh-muted);background:transparent;transition:background .15s,color .15s;'));
+    c.push(rule('.sh-tab', 'flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;border-radius:999px;padding:7px 15px;font-size:12px;font-weight:700;color:var(--sh-muted);background:transparent;transition:background .15s,color .15s;'));
     c.push(rule('.sh-tab:hover', 'background:var(--sh-accent-soft);color:var(--sh-text);'));
     c.push(rule('.sh-tab[aria-selected="true"]', 'background:var(--sh-accent);color:var(--sh-accent-fg, #022c22);font-weight:800;box-shadow:0 4px 14px rgba(16,185,129,.28);'));
     c.push(dark('.sh-tab[aria-selected="true"]', 'color:#022c22;'));
-    c.push(rule('.sh-close', 'flex:0 0 auto;display:flex;align-items:center;gap:7px;border:1px solid var(--sh-line);background:var(--sh-panel);color:var(--sh-text);border-radius:12px;padding:7px 12px;font-size:12px;font-weight:700;transition:border-color .15s,color .15s;'));
-    c.push(rule('.sh-close:hover', 'border-color:var(--sh-accent);color:var(--sh-accent);'));
-
     /* body, sidebar and the edge arrow */
     c.push(rule('.sh-body', 'position:relative;flex:1;min-height:0;display:flex;overflow:hidden;'));
     c.push(rule('.sh-side', 'flex:0 0 ' + SIDEBAR_WIDTH + 'px;width:' + SIDEBAR_WIDTH + 'px;background:var(--sh-side);border-right:1px solid var(--sh-line);overflow:hidden;transition:width .28s ease,flex-basis .28s ease,border-color .28s;'));
     c.push(rule('.sh-closed .sh-side', 'width:0;flex-basis:0;border-right-width:0;'));
     c.push(rule('.sh-side-inner', 'width:' + SIDEBAR_WIDTH + 'px;height:100%;display:flex;flex-direction:column;'));
     c.push(rule('.sh-edge', 'position:absolute;z-index:40;top:50%;left:' + (SIDEBAR_WIDTH - 16) + 'px;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;' +
-      'border:1px solid var(--sh-line);background:var(--sh-panel);color:var(--sh-muted);box-shadow:0 4px 14px rgba(15,23,42,.16);transition:left .28s ease,color .15s,border-color .15s,background .15s;'));
+      'border:1px solid var(--sh-line);background:var(--sh-panel);color:var(--sh-muted);box-shadow:0 4px 14px rgba(0,0,0,.16);transition:left .28s ease,color .15s,border-color .15s,background .15s;'));
     c.push(rule('.sh-edge:hover', 'color:var(--sh-accent-fg, #022c22);background:var(--sh-accent);border-color:var(--sh-accent);'));
     c.push(rule('.sh-closed .sh-edge', 'left:0;width:22px;height:64px;border-radius:0 14px 14px 0;border-left-width:0;'));
 
@@ -163,6 +170,7 @@
     c.push(rule('.sh-crumb b', 'color:var(--sh-accent);font-weight:800;'));
     c.push(rule('.sh-welcome', 'min-height:60%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;color:var(--sh-muted);padding:60px 20px;'));
     c.push(rule('.sh-welcome-ico', 'width:64px;height:64px;border-radius:20px;display:flex;align-items:center;justify-content:center;background:var(--sh-accent-soft);color:var(--sh-accent);font-size:28px;'));
+    c.push(dark('.sh-welcome-ico', 'background:#242424;border:1px solid #333333;'));
     c.push(rule('.sh-welcome h2', 'margin:6px 0 0;font:800 20px var(--sh-head);color:var(--sh-text);'));
     c.push(rule('.sh-welcome p', 'margin:0;max-width:340px;font-size:13px;line-height:1.7;'));
     c.push(rule('.sh-loading', 'display:flex;flex-direction:column;gap:14px;padding-top:6px;'));
@@ -213,7 +221,7 @@
     c.push(rule('.sh-note code', 'font-family:var(--sh-head);font-size:.9em;background:var(--sh-code);padding:.15em .4em;border-radius:6px;'));
     c.push(rule('.sh-note pre', 'background:var(--sh-code);padding:1rem 1.2rem;border-radius:14px;overflow-x:auto;margin:1.4rem 0;'));
     c.push(rule('.sh-note pre code', 'background:transparent;padding:0;'));
-    c.push(rule('.sh-note img', 'display:block;max-width:100%;height:auto;margin:1.6rem auto;border-radius:14px;cursor:zoom-in;box-shadow:0 6px 22px rgba(15,23,42,.12);'));
+    c.push(rule('.sh-note img', 'display:block;max-width:100%;height:auto;margin:1.6rem auto;border-radius:14px;cursor:zoom-in;box-shadow:0 6px 22px rgba(0,0,0,.12);'));
     c.push(dark('.sh-note img', 'background:#ffffff;box-shadow:0 6px 22px rgba(0,0,0,.5);'));
     c.push(rule('.sh-note p > img:only-child', 'margin:1.6rem auto;'));
     c.push(rule('.sh-note sup, .sh-note sub', 'font-size:.72em;line-height:0;'));
@@ -229,12 +237,12 @@
 
     /* embedded players */
     c.push(rule('.sh-embed', 'margin:1.8rem 0;'));
-    c.push(rule('.sh-embed-frame', 'position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:#0b1220;box-shadow:0 10px 30px rgba(15,23,42,.22);'));
-    c.push(rule('.sh-embed-play', 'position:absolute;inset:0;width:100%;height:100%;border:0;padding:0;background-color:#0f172a;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:#fff;'));
-    c.push(rule('.sh-embed-play::before', 'content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(2,6,23,.05),rgba(2,6,23,.55));'));
+    c.push(rule('.sh-embed-frame', 'position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:#080808;box-shadow:0 10px 30px rgba(0,0,0,.22);'));
+    c.push(rule('.sh-embed-play', 'position:absolute;inset:0;width:100%;height:100%;border:0;padding:0;background-color:#161616;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:#fff;'));
+    c.push(rule('.sh-embed-play::before', 'content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.55));'));
     c.push(rule('.sh-embed-icon', 'position:relative;width:68px;height:68px;border-radius:50%;background:#10b981;color:#022c22;display:flex;align-items:center;justify-content:center;padding-left:4px;box-shadow:0 8px 24px rgba(16,185,129,.45);transition:transform .15s;'));
     c.push(rule('.sh-embed-play:hover .sh-embed-icon', 'transform:scale(1.09);'));
-    c.push(rule('.sh-embed-kind', 'position:absolute;left:14px;top:12px;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:rgba(2,6,23,.6);padding:4px 9px;border-radius:99px;'));
+    c.push(rule('.sh-embed-kind', 'position:absolute;left:14px;top:12px;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.6);padding:4px 9px;border-radius:99px;'));
     c.push(rule('.sh-embed-frame iframe', 'position:absolute;inset:0;width:100%;height:100%;border:0;'));
     c.push(rule('.sh-embed figcaption', 'display:flex;justify-content:space-between;gap:12px;margin-top:.7rem;font-size:.82rem;font-weight:600;color:var(--sh-muted);line-height:1.5;'));
     c.push(rule('.sh-embed figcaption a', 'flex:0 0 auto;font-size:.78rem;'));
@@ -250,7 +258,7 @@
     c.push(rule('.sh-item.dv-rtl, .sh-unit-name.dv-rtl, .sh-tab.dv-rtl', 'text-align:right;'));
 
     /* picture viewer */
-    c.push(rule('.sh-lightbox', 'position:fixed;inset:0;z-index:2147483000;background:rgba(2,6,23,.93);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out;'));
+    c.push(rule('.sh-lightbox', 'position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.93);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out;'));
     c.push(rule('.sh-lightbox img', 'max-width:96vw;max-height:92vh;border-radius:12px;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.6);'));
 
     /* small screens: the sidebar becomes a drawer over the note */
@@ -260,10 +268,9 @@
       rule('.sh-side-inner', 'width:100%;') +
       rule('.sh-edge', 'left:calc(min(86vw,350px) - 16px);') +
       rule('.sh-closed .sh-edge', 'left:0;') +
-      rule('.sh-scrim', 'position:absolute;inset:0;z-index:20;background:rgba(2,6,23,.5);') +
+      rule('.sh-scrim', 'position:absolute;inset:0;z-index:20;background:rgba(0,0,0,.5);') +
       rule('.sh-closed .sh-scrim', 'display:none;') +
       rule('.sh-reader', 'padding:26px 22px 90px 26px;') +
-      rule('.sh-close span', 'display:none;') +
       rule('.sh-brand span', 'display:none;') +
       rule('.sh-note', 'font-size:15.5px;') +
       rule('.sh-pager', 'grid-template-columns:1fr;') +
@@ -761,7 +768,6 @@
         '<div class="sh-top">' +
           '<div class="sh-brand"><div class="sh-brand-ico">' + ICON.book + '</div><span>Study Hub</span></div>' +
           '<div class="sh-tabs" role="tablist" aria-label="Subjects"></div>' +
-          '<button type="button" class="sh-close" aria-label="Close Study Hub" title="Close (Esc)">' + ICON.close + '<span>Close</span></button>' +
         '</div>' +
         '<div class="sh-body">' +
           '<aside class="sh-side" aria-label="Syllabus">' +
@@ -802,7 +808,8 @@
     var tabs = q('.sh-tabs');
     if (!tabs) return;
     tabs.innerHTML = subjects().map(function (s) {
-      return '<button type="button" class="sh-tab' + dvClass(s) + '" role="tab" data-subject="' + esc(s) + '" aria-selected="' + (s === state.subject ? 'true' : 'false') + '">' + esc(s) + '</button>';
+      return '<button type="button" class="sh-tab' + dvClass(s) + '" role="tab" data-subject="' + esc(s) + '" aria-selected="' + (s === state.subject ? 'true' : 'false') + '">' +
+        subjectIconHtml(s, 15) + '<span>' + esc(s) + '</span></button>';
     }).join('');
   }
 
@@ -814,6 +821,10 @@
 
     if (!state.indexLoaded) {
       tree.innerHTML = '<div class="sh-empty-tree">' + (state.indexError ? 'Could not load the topics.<br>Check your connection.' : 'Loading topics...') + '</div>';
+      return;
+    }
+    if (!state.subject) {
+      tree.innerHTML = '<div class="sh-empty-tree">Choose a subject above to see its topics.</div>';
       return;
     }
     if (query) {
@@ -854,7 +865,7 @@
       var emptyText = nothingForStream
         ? 'No notes have been published for your stream yet. Please check back soon.'
         : (isTeacher() ? 'No notes have been published yet. In Apps Script, run <code>syncAllNotesToGitHub</code>, then reopen the Study Hub.' : 'Your teacher has not published notes here yet. Please check back soon.');
-      reader.innerHTML = '<div class="sh-welcome"><div class="sh-welcome-ico">&#128214;</div><h2>' +
+      reader.innerHTML = '<div class="sh-welcome"><div class="sh-welcome-ico">' + welcomeIconHtml(34) + '</div><h2>' +
         (nothingForStream ? 'No notes for your stream yet' : 'Notes are on their way') + '</h2><p>' + emptyText + '</p></div>';
       return;
     }
@@ -862,7 +873,7 @@
       reader.innerHTML = '<div class="sh-error">Could not load the topics.<br>Please check your connection.<br><button type="button" data-act="retry-index">Try again</button></div>';
       return;
     }
-    reader.innerHTML = '<div class="sh-welcome"><div class="sh-welcome-ico">&#128214;</div><h2>Pick a topic to start</h2><p>Choose a subject at the top, then a topic from the list. Use the arrow on the edge of the list to hide or show it.</p></div>';
+    reader.innerHTML = '<div class="sh-welcome"><div class="sh-welcome-ico">' + welcomeIconHtml(34) + '</div><h2>Pick a topic to start</h2><p>Choose a subject at the top, then a topic from the list. Use the arrow on the edge of the list to hide or show it.</p></div>';
   }
 
   function crumb(entry) {
@@ -918,17 +929,9 @@
     if (opts.closeDrawer && window.matchMedia && window.matchMedia('(max-width:900px)').matches) setSidebar(false, false);
   }
 
-  // Nothing is open yet for this subject: open the first unit so there is something to click
-  function openFirstUnit(subject) {
-    var list = notesOfSubject(subject);
-    if (!list.length) return;
-    var decided = list.some(function (n) { return state.openUnits[n.unit] !== undefined; });
-    if (!decided) state.openUnits[list[0].unit] = true;
-  }
-
+  // No unit is expanded until the student opens it.
   function selectSubject(subject) {
     state.subject = subject;
-    openFirstUnit(subject);
     state.query = '';
     var input = q('.sh-search-input');
     if (input) input.value = '';
@@ -979,7 +982,6 @@
       var t = e.target;
       if (!(t instanceof Element)) return;
 
-      if (t.closest('.sh-close')) { if (typeof closeStudyHubModal === 'function') closeStudyHubModal(); return; }
       if (t.closest('.sh-edge')) { setSidebar(!state.sidebarOpen, true); return; }
       if (t.closest('.sh-scrim')) { setSidebar(false, false); return; }
 
@@ -1012,7 +1014,7 @@
       if (act) {
         var what = act.getAttribute('data-act');
         if (what === 'retry-index') {
-          fetchIndex().then(function () { renderTabs(); if (!state.subject && subjects().length) state.subject = subjects()[0]; renderTabs(); renderTree(); renderWelcome(); });
+          fetchIndex().then(function () { renderTabs(); renderTree(); renderWelcome(); });
         } else if (what === 'retry-note') {
           var again = visibleIndex().find(function (n) { return n.filePath === act.getAttribute('data-path'); });
           if (again) { delete noteCache[again.filePath]; openNote(again); }
@@ -1048,11 +1050,9 @@
 
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape' || !state.container) return;
-    var modal = document.getElementById('studyHubModal');
-    if (modal && modal.classList.contains('hidden')) return;
+    if (document.body.getAttribute('data-page') !== 'studyarea') return;
     var box = state.container.querySelector('.sh-lightbox');
-    if (box) { box.parentNode.removeChild(box); return; }
-    if (typeof closeStudyHubModal === 'function') closeStudyHubModal();
+    if (box) { e.preventDefault(); box.parentNode.removeChild(box); }
   });
 
   /* ======================================================================= */
@@ -1079,8 +1079,6 @@
 
     // look for new or updated notes every time the hub is opened
     if (!state.indexLoaded || !state.index.length || state.indexError) await fetchIndex();
-    if (!state.subject || subjects().indexOf(state.subject) === -1) state.subject = subjects()[0] || '';
-    openFirstUnit(state.subject);
     renderTabs();
     renderTree();
     if (!state.current) renderWelcome();
@@ -1101,7 +1099,7 @@
     studentStream: studentStream,
     subjectStream: subjectStream,
     state: state,
-    version: 4
+    version: 5
   };
 
   document.addEventListener('DOMContentLoaded', initStudyEngine);

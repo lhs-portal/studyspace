@@ -131,62 +131,64 @@
     const canRestore = currentData.canRestore === true;
     const restoreLen = Number(currentData.restorableStreak) || 0;
     const restoreLeft = Number(currentData.restoreDaysLeft) || 0;
+    const currentStreak = Number(currentData.streak) || 0;
+    const streakText = currentStreak > 0 ? `${currentStreak}-day streak` : "start a streak";
     const restoreLabel = `Restore ${restoreLen}-day streak`;
 
     // The extra "restore" button is only needed when the main button is doing something else
     let showExtraRestoreButton = false;
 
     if (isLost && canRestore) {
-      banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-rose-500/10 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/40";
+      banner.className = "pt-4 border-t border-rose-200 dark:border-rose-500/30 flex flex-col sm:flex-row items-center justify-between gap-3";
       titleEl.innerText = `Restore your ${restoreLen}-day streak!`;
       titleEl.className = "text-sm font-bold text-rose-700 dark:text-rose-400";
-      descEl.innerText = `Pass a short challenge to get it back. ${restoreLeft} day${restoreLeft === 1 ? "" : "s"} left to restore.`;
+      descEl.innerText = `Pass a short challenge · ${restoreLeft} day${restoreLeft === 1 ? "" : "s"} left to restore.`;
       iconEl.innerText = "💔";
-      iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400";
+      iconEl.className = "text-xl leading-none shrink-0";
 
       quizBtn.innerText = "Restore Streak →";
       quizBtn.disabled = false;
-      quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-500/20 transition flex items-center justify-center gap-2 cursor-pointer";
+      quizBtn.className = "w-full sm:w-auto px-4 py-2 bg-rose-500 hover:bg-rose-400 text-white font-bold text-[11px] rounded-lg shadow-sm shadow-black/10 transition flex items-center justify-center gap-2 cursor-pointer";
       quizBtn.onclick = () => startRestoreChallenge();
     } else if (isLost) {
-      banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700";
+      banner.className = "pt-4 border-t border-slate-200 dark:border-[#333333] flex flex-col sm:flex-row items-center justify-between gap-3";
       titleEl.innerText = "Start a new streak";
       titleEl.className = "text-sm font-bold text-slate-900 dark:text-white";
-      descEl.innerText = "Your last streak has ended. Take today's quiz to start a new one!";
+      descEl.innerText = "Last streak ended · start again with today's quiz";
       iconEl.innerText = "🔥";
-      iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 dark:text-orange-400";
+      iconEl.className = "text-xl leading-none shrink-0";
 
       quizBtn.innerText = "Take Quiz →";
       quizBtn.disabled = false;
-      quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer";
+      quizBtn.className = "w-full sm:w-auto px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-[11px] rounded-lg shadow-sm shadow-black/10 transition flex items-center justify-center gap-2 cursor-pointer";
       quizBtn.onclick = () => startBusinessMiniQuiz(false);
     } else if (isCompletedToday) {
-      banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-emerald-500/10 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-500/30";
+      banner.className = "pt-4 border-t border-emerald-200 dark:border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-3";
       titleEl.innerText = "Today's Mini Quiz Completed!";
       titleEl.className = "text-sm font-bold text-emerald-700 dark:text-emerald-400";
       descEl.innerText = canRestore
-        ? `Great job! You can still restore your ${restoreLen}-day streak (${restoreLeft} day${restoreLeft === 1 ? "" : "s"} left).`
-        : "Great job! Your streak is secured for today.";
+        ? `Streak secured · restore window open (${restoreLeft} day${restoreLeft === 1 ? "" : "s"} left).`
+        : `Streak secured for today · ${streakText}`;
       iconEl.innerText = "✅";
-      iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 dark:text-emerald-400";
+      iconEl.className = "text-xl leading-none shrink-0";
 
       quizBtn.innerText = "Completed ✅";
       quizBtn.disabled = true;
-      quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-medium text-xs rounded-xl cursor-not-allowed";
+      quizBtn.className = "w-full sm:w-auto px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-medium text-[11px] rounded-lg cursor-not-allowed";
       showExtraRestoreButton = canRestore;
     } else {
-      banner.className = "p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700";
+      banner.className = "pt-4 border-t border-slate-200 dark:border-[#333333] flex flex-col sm:flex-row items-center justify-between gap-3";
       titleEl.innerText = "Today's Mini Quiz";
       titleEl.className = "text-sm font-bold text-slate-900 dark:text-white";
       descEl.innerText = canRestore
-        ? `Daily Challenge — and you can still restore your ${restoreLen}-day streak (${restoreLeft} day${restoreLeft === 1 ? "" : "s"} left).`
-        : "Daily Challenge — keep your streak alive!";
+        ? `${streakText} · restore window open (${restoreLeft} day${restoreLeft === 1 ? "" : "s"} left).`
+        : `One quiz today · ${streakText}`;
       iconEl.innerText = "🔥";
-      iconEl.className = "w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 dark:text-orange-400";
+      iconEl.className = "text-xl leading-none shrink-0";
 
       quizBtn.innerText = "Take Quiz →";
       quizBtn.disabled = false;
-      quizBtn.className = "w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer";
+      quizBtn.className = "w-full sm:w-auto px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-[11px] rounded-lg shadow-sm shadow-black/10 transition flex items-center justify-center gap-2 cursor-pointer";
       quizBtn.onclick = () => startBusinessMiniQuiz(false);
       showExtraRestoreButton = canRestore;
     }
@@ -211,7 +213,7 @@
       banner.appendChild(btn);
     }
 
-    btn.className = "w-full sm:w-auto px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2 cursor-pointer";
+    btn.className = "w-full sm:w-auto px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] rounded-lg shadow-sm shadow-black/10 transition flex items-center justify-center gap-2 cursor-pointer";
     btn.innerText = label;
     btn.disabled = false;
     btn.onclick = () => startRestoreChallenge();

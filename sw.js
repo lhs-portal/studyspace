@@ -9,19 +9,24 @@ try {
   console.warn('[Service Worker] OneSignal push script could not load. Offline caching will still work.', err);
 }
 
-const CACHE_NAME = 'studyspace-v39'; // Bumped so every phone and laptop picks up the new files
+const CACHE_NAME = 'studyspace-v85-v16'; // Five-page study UI; Studyarea close button removed
+
+const MAX_CACHE_ENTRIES = 80;
+const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
+  './styles.css',
+  './icons.js?v=5',
   './manifest.json',
   './logo.png',
-  './offline-sync.js',
-  './study-engine.js?v=4',
+  './offline-sync.js?v=12',
+  './study-engine.js?v=8',
   './fonts/Faruma.woff2',
   './fonts/Faruma.woff',
-  './api.js?v=1',
-  './streaks.js?v=11',
+  './api.js?v=2',
+  './streaks.js?v=15',
   './cache-reset.js?v=8'
 ];
 
@@ -30,7 +35,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching core assets for v39');
+      console.log('[Service Worker] Caching core assets for v85');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -51,6 +56,19 @@ self.addEventListener('activate', (event) => {
     }).then(() => self.clients.claim())
   );
 });
+
+// Keep the runtime cache bounded and expire stale entries.
+async function trimCache(cache) {
+  const now = Date.now();
+  const keys = await cache.keys();
+  await Promise.all(keys.map(async (request) => {
+    const response = await cache.match(request);
+    const cachedAt = Number(response && response.headers.get('x-studyspace-cached-at'));
+    if (cachedAt && now - cachedAt > MAX_CACHE_AGE_MS) await cache.delete(request);
+  }));
+  const remaining = await cache.keys();
+  await Promise.all(remaining.slice(0, Math.max(0, remaining.length - MAX_CACHE_ENTRIES)).map((request) => cache.delete(request)));
+}
 
 // 3. Fetch event: Network-First strategy to guarantee fresh code/streaks, fallback to cache if offline
 self.addEventListener('fetch', (event) => {
@@ -74,7 +92,10 @@ self.addEventListener('fetch', (event) => {
         // Cache a clone of the fresh network response for offline use
         const responseToCache = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
+          const headers = new Headers(responseToCache.headers);
+          headers.set('x-studyspace-cached-at', String(Date.now()));
+          const stamped = new Response(responseToCache.body, { status: responseToCache.status, statusText: responseToCache.statusText, headers: headers });
+          cache.put(event.request, stamped).then(() => trimCache(cache));
         });
 
         return networkResponse;
