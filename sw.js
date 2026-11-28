@@ -9,7 +9,7 @@ try {
   console.warn('[Service Worker] OneSignal push script could not load. Offline caching will still work.', err);
 }
 
-const CACHE_NAME = 'studyspace-v85-v16'; // Five-page study UI; Studyarea close button removed
+const CACHE_NAME = 'studyspace-v87-v16'; // Mobile bottom tabs lifted to the Instagram level
 
 const MAX_CACHE_ENTRIES = 80;
 const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -22,7 +22,7 @@ const ASSETS_TO_CACHE = [
   './manifest.json',
   './logo.png',
   './offline-sync.js?v=12',
-  './study-engine.js?v=8',
+  './study-engine.js?v=9',
   './fonts/Faruma.woff2',
   './fonts/Faruma.woff',
   './api.js?v=2',
@@ -35,7 +35,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching core assets for v85');
+      console.log('[Service Worker] Caching core assets for v87');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );

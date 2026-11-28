@@ -26,6 +26,8 @@
   var HEADING_FONT = "'Roboto Mono', 'Faruma', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
   var SIDEBAR_KEY = 'lhs_hub_sidebar';           // remembers whether the sidebar was left open or closed
   var SIDEBAR_WIDTH = 330;                       // pixels
+  var SWIPE_EDGE = 30;                           // start zone for opening from the left edge
+  var SWIPE_MIN = 46;                            // minimum horizontal travel to act
 
   /* ======================================================================= */
   /* STATE                                                                   */
@@ -130,7 +132,8 @@
     c.push(rule('.sh-tab[aria-selected="true"]', 'background:var(--sh-accent);color:var(--sh-accent-fg, #022c22);font-weight:800;box-shadow:0 4px 14px rgba(16,185,129,.28);'));
     c.push(dark('.sh-tab[aria-selected="true"]', 'color:#022c22;'));
     /* body, sidebar and the edge arrow */
-    c.push(rule('.sh-body', 'position:relative;flex:1;min-height:0;display:flex;overflow:hidden;'));
+    c.push(rule('.sh-body', 'position:relative;flex:1;min-height:0;display:flex;overflow:hidden;touch-action:pan-y;'));
+    c.push(rule('.sh-edge', 'touch-action:none;'));
     c.push(rule('.sh-side', 'flex:0 0 ' + SIDEBAR_WIDTH + 'px;width:' + SIDEBAR_WIDTH + 'px;background:var(--sh-side);border-right:1px solid var(--sh-line);overflow:hidden;transition:width .28s ease,flex-basis .28s ease,border-color .28s;'));
     c.push(rule('.sh-closed .sh-side', 'width:0;flex-basis:0;border-right-width:0;'));
     c.push(rule('.sh-side-inner', 'width:' + SIDEBAR_WIDTH + 'px;height:100%;display:flex;flex-direction:column;'));
@@ -792,7 +795,7 @@
     if (!body || !edge) return;
     body.classList.toggle('sh-closed', !state.sidebarOpen);
     edge.innerHTML = state.sidebarOpen ? ICON.left : ICON.right;
-    var label = state.sidebarOpen ? 'Hide the topic list' : 'Show the topic list';
+    var label = state.sidebarOpen ? 'Hide the topic list (swipe left)' : 'Show the topic list (swipe from the left edge)';
     edge.setAttribute('aria-label', label);
     edge.setAttribute('title', label);
     edge.setAttribute('aria-expanded', state.sidebarOpen ? 'true' : 'false');
@@ -978,7 +981,41 @@
   /* EVENTS                                                                  */
   /* ======================================================================= */
   function wire(container) {
+    var swipe = null;
+    var suppressClick = false;
+
+    container.addEventListener('pointerdown', function (e) {
+      var t = e.target;
+      if (!(t instanceof Element)) return;
+      if (e.button && e.button !== 0) return;
+      if (t.closest('input, textarea, select, a')) return;
+      var body = t.closest('.sh-body') || q('.sh-body');
+      if (!body || !container.contains(body)) return;
+      var rect = body.getBoundingClientRect();
+      var x = e.clientX - rect.left;
+      var y = e.clientY - rect.top;
+      if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
+      if (!state.sidebarOpen && x > SWIPE_EDGE) return;
+      swipe = { id: e.pointerId, x: e.clientX, y: e.clientY, handled: false };
+    });
+
+    container.addEventListener('pointerup', function (e) {
+      if (!swipe || e.pointerId !== swipe.id) return;
+      var dx = e.clientX - swipe.x;
+      var dy = e.clientY - swipe.y;
+      var horizontal = Math.abs(dx) > Math.abs(dy) * 1.2;
+      if (horizontal && Math.abs(dx) >= SWIPE_MIN) {
+        if (!state.sidebarOpen && dx > 0) { setSidebar(true, true); swipe.handled = true; }
+        else if (state.sidebarOpen && dx < 0) { setSidebar(false, true); swipe.handled = true; }
+      }
+      if (swipe.handled) { suppressClick = true; e.preventDefault(); }
+      swipe = null;
+    });
+
+    container.addEventListener('pointercancel', function () { swipe = null; });
+
     container.addEventListener('click', function (e) {
+      if (suppressClick) { suppressClick = false; return; }
       var t = e.target;
       if (!(t instanceof Element)) return;
 

@@ -25,7 +25,7 @@
   <script src="./streaks.js?v=15" defer></script>
   <script src="./offline-sync.js?v=12" defer></script>
   <script src="./cache-reset.js?v=8" defer></script>
-  <script src="./study-engine.js?v=8" defer></script>
+  <script src="./study-engine.js?v=9" defer></script>
   <title>Hithadhoo School - Studyspace</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="logo.png" />
@@ -400,6 +400,22 @@
     #bottomTabBar .tab-button.hidden { display: none; }
     #bottomTabBar .tab-button[aria-current="page"] { background: #e9e9e9; }
     html.dark #bottomTabBar .tab-button[aria-current="page"] { background: #262626; }
+
+    /* Mobile: lift the icon row to the Instagram level with a little breathing
+       room below the buttons instead of letting them sit on the screen edge. */
+    @media (max-width: 640px) {
+      body { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
+      #bottomTabBar { padding-bottom: calc(0.25rem + env(safe-area-inset-bottom)); }
+      #bottomTabBar .tab-strip { padding: 0.4rem 0.5rem 0.8rem; gap: 0.2rem; }
+      #bottomTabBar .tab-button {
+        flex-basis: 2.95rem;
+        min-width: 2.95rem;
+        min-height: 2.95rem;
+        border-radius: 0.9rem;
+      }
+      #xpToast { bottom: calc(5.1rem + env(safe-area-inset-bottom)) !important; }
+      #syncPending { bottom: calc(5.1rem + env(safe-area-inset-bottom)) !important; }
+    }
 
     /* Icons carry the label: quiet when idle, full colour when active. */
     #bottomTabBar .tab-icon { display: inline-flex; align-items: center; justify-content: center; }
