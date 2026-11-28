@@ -137,10 +137,10 @@
     c.push(rule('.sh-side', 'flex:0 0 ' + SIDEBAR_WIDTH + 'px;width:' + SIDEBAR_WIDTH + 'px;background:var(--sh-side);border-right:1px solid var(--sh-line);overflow:hidden;transition:width .28s ease,flex-basis .28s ease,border-color .28s;'));
     c.push(rule('.sh-closed .sh-side', 'width:0;flex-basis:0;border-right-width:0;'));
     c.push(rule('.sh-side-inner', 'width:' + SIDEBAR_WIDTH + 'px;height:100%;display:flex;flex-direction:column;'));
-    c.push(rule('.sh-edge', 'position:absolute;z-index:40;top:50%;left:' + (SIDEBAR_WIDTH - 16) + 'px;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;' +
-      'border:1px solid var(--sh-line);background:var(--sh-panel);color:var(--sh-muted);box-shadow:0 4px 14px rgba(0,0,0,.16);transition:left .28s ease,color .15s,border-color .15s,background .15s;'));
+    c.push(rule('.sh-edge', 'position:absolute;z-index:40;top:50%;left:0;transform:translateY(-50%);width:22px;height:64px;border-radius:0 14px 14px 0;display:flex;align-items:center;justify-content:center;' +
+      'border:1px solid var(--sh-line);border-left-width:0;background:var(--sh-panel);color:var(--sh-muted);box-shadow:0 4px 14px rgba(0,0,0,.16);transition:color .15s,border-color .15s,background .15s;'));
     c.push(rule('.sh-edge:hover', 'color:var(--sh-accent-fg, #022c22);background:var(--sh-accent);border-color:var(--sh-accent);'));
-    c.push(rule('.sh-closed .sh-edge', 'left:0;width:22px;height:64px;border-radius:0 14px 14px 0;border-left-width:0;'));
+    c.push(rule('.sh-closed .sh-edge', 'left:0;'));
 
     /* search + syllabus tree */
     c.push(rule('.sh-search', 'position:relative;flex:0 0 auto;padding:14px 14px 10px;'));
@@ -269,8 +269,7 @@
       rule('.sh-side', 'position:absolute;z-index:30;top:0;bottom:0;left:0;width:min(86vw,350px);flex-basis:auto;box-shadow:var(--sh-shadow);transition:transform .28s ease;') +
       rule('.sh-closed .sh-side', 'width:min(86vw,350px);transform:translateX(-104%);box-shadow:none;border-right-width:1px;') +
       rule('.sh-side-inner', 'width:100%;') +
-      rule('.sh-edge', 'left:calc(min(86vw,350px) - 16px);') +
-      rule('.sh-closed .sh-edge', 'left:0;') +
+      rule('.sh-edge', 'left:0;') +
       rule('.sh-scrim', 'position:absolute;inset:0;z-index:20;background:rgba(0,0,0,.5);') +
       rule('.sh-closed .sh-scrim', 'display:none;') +
       rule('.sh-reader', 'padding:26px 22px 90px 26px;') +
